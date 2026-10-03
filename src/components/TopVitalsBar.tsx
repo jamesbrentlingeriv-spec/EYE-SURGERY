@@ -103,12 +103,12 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
     const timer = setInterval(() => {
       setPulse(true);
       if (!isMuted) {
-        audioEngine.playTelemetryHeartbeat(fluidics.cornealFoldsPresent);
+        audioEngine.playTelemetryHeartbeat();
       }
       setTimeout(() => setPulse(false), 160);
     }, intervalMs);
     return () => clearInterval(timer);
-  }, [vitals.heartRate, isMuted, fluidics.cornealFoldsPresent]);
+  }, [vitals.heartRate, isMuted]);
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -193,9 +193,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 overflow-hidden">
         {/* IOP Monitor (Always shown) */}
         <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]">
-          <Droplets className={`w-3.5 h-3.5 shrink-0 ${fluidics.iopActual < 8 ? 'text-rose-400 animate-pulse' : 'text-cyan-400'}`} />
+          <Droplets className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
           <span className="text-slate-400 text-[10px] hidden sm:inline">IOP:</span>
-          <span className={`font-mono font-bold text-xs sm:text-sm ${fluidics.iopActual < 8 ? 'text-rose-400 font-extrabold' : fluidics.iopActual > 35 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <span className="font-mono font-bold text-xs sm:text-sm text-cyan-300">
             {fluidics.iopActual.toFixed(1)}
           </span>
           <span className="text-[9px] text-slate-500 font-mono hidden md:inline">mmHg</span>

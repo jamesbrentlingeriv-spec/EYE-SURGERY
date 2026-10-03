@@ -1259,13 +1259,6 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         </div>
       </div>
 
-      {/* Corneal Fold Warning Banner */}
-      {fluidics.cornealFoldsPresent && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 bg-rose-950/90 border border-rose-500 text-rose-200 px-4 py-1.5 rounded-full shadow-lg backdrop-blur-md text-xs font-semibold flex items-center gap-2 animate-bounce">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
-          CRITICAL: ANTERIOR CHAMBER SHALLOWING / CORNEAL FOLDS (IOP: {fluidics.iopActual.toFixed(1)} mmHg)
-        </div>
-      )}
 
       {/* Complication Alert */}
       {(cccState.zonularDehiscenceOccurred || nucleusState.posteriorCapsulePunctured) && (

@@ -622,10 +622,6 @@ video {
   top: 0.5rem;
 }
 
-.top-20 {
-  top: 5rem;
-}
-
 .top-28 {
   top: 7rem;
 }
@@ -1484,11 +1480,6 @@ video {
 
 .bg-red-950\/90 {
   background-color: rgb(69 10 10 / 0.9);
-}
-
-.bg-rose-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(244 63 94 / var(--tw-bg-opacity, 1));
 }
 
 .bg-rose-600 {
