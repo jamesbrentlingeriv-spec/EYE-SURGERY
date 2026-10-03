@@ -6,7 +6,7 @@
     <title>Ophthalmic Anterior Segment Surgical Simulator | Phaco, IOL & Nd:YAG</title>
     
     <!-- PWA Manifest & App Identity -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#060a12" />
     <meta name="description" content="Medically accurate Anterior Segment Ophthalmic Surgical Simulator for Phacoemulsification, Foldable IOL, and Nd:YAG Capsulotomy with AI Attending Voice Narration." />
 
@@ -14,8 +14,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="EyeSurgSim" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="./index.css" />
@@ -30,7 +30,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then((reg) => {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
             console.log('[PWA] Service Worker registered with scope:', reg.scope);
           }).catch((err) => {
             console.warn('[PWA] Service Worker registration error:', err);

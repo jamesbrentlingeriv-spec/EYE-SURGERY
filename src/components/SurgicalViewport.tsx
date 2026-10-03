@@ -93,7 +93,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
   const [plasmaSparks, setPlasmaSparks] = useState<Array<{ x: number; y: number; age: number }>>([]);
 
-  // Load actual eye photography assets
+  // Load actual eye photography assets with relative subpath resolution for GitHub Pages
   useEffect(() => {
     let loadedCount = 0;
     const checkLoaded = () => {
@@ -103,19 +103,38 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       }
     };
 
+    const getAssetPath = (relativePath: string) => {
+      const base = window.location.pathname.endsWith('/')
+        ? window.location.pathname
+        : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+      return `${base}${relativePath.replace(/^\.?\//, '')}`;
+    };
+
     const cImg = new window.Image();
-    cImg.src = '/images/cataract_eye.jpg';
+    cImg.src = getAssetPath('images/cataract_eye.jpg');
     cImg.onload = checkLoaded;
+    cImg.onerror = () => {
+      console.warn('[Simulator] Notice: Could not load cataract_eye.jpg at', cImg.src);
+      checkLoaded();
+    };
     cataractImgRef.current = cImg;
 
     const iImg = new window.Image();
-    iImg.src = '/images/iol_eye.jpg';
+    iImg.src = getAssetPath('images/iol_eye.jpg');
     iImg.onload = checkLoaded;
+    iImg.onerror = () => {
+      console.warn('[Simulator] Notice: Could not load iol_eye.jpg at', iImg.src);
+      checkLoaded();
+    };
     iolImgRef.current = iImg;
 
     const yImg = new window.Image();
-    yImg.src = '/images/yag_pco_eye.jpg';
+    yImg.src = getAssetPath('images/yag_pco_eye.jpg');
     yImg.onload = checkLoaded;
+    yImg.onerror = () => {
+      console.warn('[Simulator] Notice: Could not load yag_pco_eye.jpg at', yImg.src);
+      checkLoaded();
+    };
     yagImgRef.current = yImg;
   }, []);
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node serve.js",
-    "build": "npx tsc -p tsconfig.build.json && npx tailwindcss -i ./src/index.css -o ./dist/index.css && npx rollup -c rollup.config.js",
+    "build": "npx tsc -p tsconfig.build.json && npx tailwindcss -i ./src/index.css -o ./dist/index.css && npx rollup -c rollup.config.js && node scripts/sync-dist.js",
     "start": "node serve.js",
     "lint": "oxlint"
   },
