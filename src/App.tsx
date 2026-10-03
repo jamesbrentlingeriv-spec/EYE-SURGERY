@@ -75,6 +75,10 @@ export const App: React.FC = () => {
   const [pedalPosition, setPedalPosition] = useState<FootPedalPosition>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
+  // Mobile Drawer State
+  const [isToolsOpen, setIsToolsOpen] = useState<boolean>(false);
+  const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(false);
+
   // Modals
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
   const [isReferenceOpen, setIsReferenceOpen] = useState<boolean>(false);
@@ -491,55 +495,63 @@ export const App: React.FC = () => {
           setIsMuted(!isMuted);
           audioEngine.setMuted(!isMuted);
         }}
+        onToggleTools={() => setIsToolsOpen(!isToolsOpen)}
+        isToolsOpen={isToolsOpen}
+        onToggleConsole={() => setIsConsoleOpen(!isConsoleOpen)}
+        isConsoleOpen={isConsoleOpen}
+        activeInstrument={activeInstrument}
       />
 
-      {/* Module Selector Bar with Step Navigation */}
-      <div className="bg-[#09101e] border-b border-[#1b2b44] px-4 py-2 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-3">
-          <span className="text-slate-400 font-medium">Workflows:</span>
-          <div className="flex items-center gap-1.5 bg-[#070c16] p-1 rounded-xl border border-[#17253a]">
+      {/* Module Selector Bar with Step Navigation & Active Tool Pill */}
+      <div className="bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <span className="text-slate-400 font-medium hidden md:inline">Workflows:</span>
+          <div className="flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]">
             {/* Module A */}
             <button
               onClick={() => { setModule('phaco'); }}
-              className={`px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'phaco'
                   ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/60'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>1. Phacoemulsification</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">1. Phacoemulsification</span>
+              <span className="sm:hidden">1. Phaco</span>
             </button>
 
             {/* Module B */}
             <button
               onClick={() => { setModule('iol'); }}
-              className={`px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'iol'
                   ? 'bg-sky-600 text-white shadow-md shadow-sky-950/60'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Disc className="w-3.5 h-3.5" />
-              <span>2. Foldable IOL</span>
+              <Disc className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">2. Foldable IOL</span>
+              <span className="sm:hidden">2. IOL</span>
             </button>
 
             {/* Module C */}
             <button
               onClick={() => { setModule('yag'); }}
-              className={`px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'yag'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>3. Nd:YAG Laser</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">3. Nd:YAG Laser</span>
+              <span className="sm:hidden">3. YAG</span>
             </button>
           </div>
 
           {/* Quick Step Navigation Arrows */}
-          <div className="flex items-center gap-1 bg-[#070c16] px-2 py-1 rounded-xl border border-[#17253a]">
+          <div className="flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-[#17253a]">
             <button
               onClick={handlePrevStep}
               className="p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition"
@@ -547,7 +559,7 @@ export const App: React.FC = () => {
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[11px] font-mono text-cyan-300 px-1 font-semibold">
+            <span className="text-[10px] sm:text-[11px] font-mono text-cyan-300 px-1 font-semibold whitespace-nowrap">
               Step {getCurrentInstruction().stepNumber} / {module === 'phaco' ? 7 : 5}
             </span>
             <button
@@ -560,27 +572,45 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Reset Button */}
-        <button
-          onClick={handleRestartModule}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition"
-        >
-          <RotateCcw className="w-3 h-3" />
-          <span>Reset Eye</span>
-        </button>
+        {/* Right side: Quick Tool Chip + Reset Button */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Active Tool Chip (Tapping opens the Hamburger Tools Drawer) */}
+          <button
+            onClick={() => setIsToolsOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-cyan-800/60 text-cyan-300 transition text-[11px] font-mono shadow-sm active:scale-95"
+            title="Click to Open Tools Menu (Hamburger Drawer)"
+          >
+            <span className="text-slate-500 hidden sm:inline">Tool:</span>
+            <span className="font-bold uppercase text-white truncate max-w-[85px] xs:max-w-[120px] sm:max-w-none">
+              {activeInstrument.replace('_', ' ')}
+            </span>
+          </button>
+
+          {/* Quick Reset Button */}
+          <button
+            onClick={handleRestartModule}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition active:scale-95"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span className="hidden xs:inline">Reset Eye</span>
+            <span className="xs:hidden">Reset</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Workspace: Left Tray + Center Viewport + Right Machine Console */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Sterile Instrument Tray */}
+        {/* Sterile Instrument Tray (Desktop Sidebar + Mobile Drawer) */}
         <InstrumentTray
           module={module}
           activeInstrument={activeInstrument}
           onSelectInstrument={(inst) => setActiveInstrument(inst)}
+          isOpenMobile={isToolsOpen}
+          onCloseMobile={() => setIsToolsOpen(false)}
         />
 
         {/* Center High-Fidelity 3D/2D Viewport */}
-        <div className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex-1 flex flex-col relative overflow-hidden h-full">
           {/* Top Left: Spoken Attending Voice & Surgical Instructions HUD */}
           <SurgicalInstructionBanner
             currentInstruction={getCurrentInstruction()}
@@ -625,44 +655,100 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Right Console: Phaco Machine (for phaco/iol) or Nd:YAG Console (for yag) */}
-        {module === 'yag' ? (
-          <YagConsolePanel
-            settings={yagEngineRef.current.settings}
-            capsulotomy={yagEngineRef.current.capsulotomy}
-            onUpdateSettings={(newSet) => {
-              Object.assign(yagEngineRef.current.settings, newSet);
-              setTick(t => t + 1);
-            }}
-            onResetLaser={() => {
-              yagEngineRef.current.capsulotomy.shots = [];
-              yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
-              yagEngineRef.current.capsulotomy.iolPitsCount = 0;
-              yagEngineRef.current.settings.burstCount = 0;
-              yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
-              setTick(t => t + 1);
-            }}
-          />
-        ) : (
-          <PhacoMachinePanel
-            fluidics={fluidics}
-            settings={phacoSettings}
-            cataractGrade={cataractGrade}
-            onUpdateSettings={(newSet) => {
-              setPhacoSettings(prev => ({ ...prev, ...newSet }));
-            }}
-            onUpdateFluidics={(bottle, vac, flow) => {
-              fluidicsEngineRef.current.setBottleHeight(bottle);
-              fluidicsEngineRef.current.setVacuumTarget(vac);
-              fluidicsEngineRef.current.setAspirationFlowTarget(flow);
-              setFluidics(fluidicsEngineRef.current.getState());
-            }}
-            onGradeChange={(g) => {
-              setCataractGrade(g);
-              cataractEngineRef.current.cataractGrade = g;
-            }}
+        {/* Desktop Docked Machine Console (Hidden on < lg screens) */}
+        <div className="hidden lg:flex h-full">
+          {module === 'yag' ? (
+            <YagConsolePanel
+              settings={yagEngineRef.current.settings}
+              capsulotomy={yagEngineRef.current.capsulotomy}
+              onUpdateSettings={(newSet) => {
+                Object.assign(yagEngineRef.current.settings, newSet);
+                setTick(t => t + 1);
+              }}
+              onResetLaser={() => {
+                yagEngineRef.current.capsulotomy.shots = [];
+                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
+                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
+                yagEngineRef.current.settings.burstCount = 0;
+                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                setTick(t => t + 1);
+              }}
+            />
+          ) : (
+            <PhacoMachinePanel
+              fluidics={fluidics}
+              settings={phacoSettings}
+              cataractGrade={cataractGrade}
+              onUpdateSettings={(newSet) => {
+                setPhacoSettings(prev => ({ ...prev, ...newSet }));
+              }}
+              onUpdateFluidics={(bottle, vac, flow) => {
+                fluidicsEngineRef.current.setBottleHeight(bottle);
+                fluidicsEngineRef.current.setVacuumTarget(vac);
+                fluidicsEngineRef.current.setAspirationFlowTarget(flow);
+                setFluidics(fluidicsEngineRef.current.getState());
+              }}
+              onGradeChange={(g) => {
+                setCataractGrade(g);
+                cataractEngineRef.current.cataractGrade = g;
+              }}
+            />
+          )}
+        </div>
+
+        {/* Mobile Machine Console Drawer (Slide-over drawer on < lg screens) */}
+        {isConsoleOpen && (
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+            onClick={() => setIsConsoleOpen(false)}
+            aria-label="Close machine console backdrop"
           />
         )}
+        <div
+          className={`fixed top-0 right-0 bottom-0 z-50 w-80 max-w-[85vw] h-full bg-[#0a101d] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${
+            isConsoleOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {module === 'yag' ? (
+            <YagConsolePanel
+              settings={yagEngineRef.current.settings}
+              capsulotomy={yagEngineRef.current.capsulotomy}
+              onUpdateSettings={(newSet) => {
+                Object.assign(yagEngineRef.current.settings, newSet);
+                setTick(t => t + 1);
+              }}
+              onResetLaser={() => {
+                yagEngineRef.current.capsulotomy.shots = [];
+                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
+                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
+                yagEngineRef.current.settings.burstCount = 0;
+                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                setTick(t => t + 1);
+              }}
+              onClose={() => setIsConsoleOpen(false)}
+            />
+          ) : (
+            <PhacoMachinePanel
+              fluidics={fluidics}
+              settings={phacoSettings}
+              cataractGrade={cataractGrade}
+              onUpdateSettings={(newSet) => {
+                setPhacoSettings(prev => ({ ...prev, ...newSet }));
+              }}
+              onUpdateFluidics={(bottle, vac, flow) => {
+                fluidicsEngineRef.current.setBottleHeight(bottle);
+                fluidicsEngineRef.current.setVacuumTarget(vac);
+                fluidicsEngineRef.current.setAspirationFlowTarget(flow);
+                setFluidics(fluidicsEngineRef.current.getState());
+              }}
+              onGradeChange={(g) => {
+                setCataractGrade(g);
+                cataractEngineRef.current.cataractGrade = g;
+              }}
+              onClose={() => setIsConsoleOpen(false)}
+            />
+          )}
+        </div>
       </div>
 
       {/* Modals */}

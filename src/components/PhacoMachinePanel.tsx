@@ -13,7 +13,8 @@ import {
   Sliders,
   AlertTriangle,
   Flame,
-  ArrowUpCircle
+  ArrowUpCircle,
+  X
 } from 'lucide-react';
 
 interface PhacoMachinePanelProps {
@@ -23,6 +24,7 @@ interface PhacoMachinePanelProps {
   onUpdateSettings: (newSettings: Partial<PhacoMachineSettings>) => void;
   onUpdateFluidics: (bottleHeight: number, vacuumTarget: number, flowTarget: number) => void;
   onGradeChange: (grade: LocsNuclearGrade) => void;
+  onClose?: () => void;
 }
 
 export const PhacoMachinePanel: React.FC<PhacoMachinePanelProps> = ({
@@ -32,12 +34,13 @@ export const PhacoMachinePanel: React.FC<PhacoMachinePanelProps> = ({
   onUpdateSettings,
   onUpdateFluidics,
   onGradeChange,
+  onClose,
 }) => {
   const modes: PhacoMode[] = ['continuous', 'pulse', 'burst'];
   const grades: LocsNuclearGrade[] = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'NO6'];
 
   return (
-    <div className="w-80 bg-[#0a101d] border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto">
+    <div className="w-full lg:w-80 bg-[#0a101d] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full">
       {/* Console Header */}
       <div className="pb-2 border-b border-[#1b2b44] flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -49,9 +52,20 @@ export const PhacoMachinePanel: React.FC<PhacoMachinePanelProps> = ({
             <div className="text-[10px] text-slate-400 font-mono">Active Fluidics™ System</div>
           </div>
         </div>
-        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-          ONLINE
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+            ONLINE
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition lg:hidden"
+              title="Close Console"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Cataract Nuclear Density Selector (LOCS III NO1 - NO6) */}

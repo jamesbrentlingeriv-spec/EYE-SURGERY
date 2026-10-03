@@ -14,7 +14,7 @@ import {
   IncisionPoint
 } from '../types/ophthalmic';
 import { audioEngine } from '../audio/SoundSynthesizer';
-import { ZoomIn, ZoomOut, Eye, Camera, Image, Layers, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut, Eye, Camera, Image, Layers, Sparkles, X } from 'lucide-react';
 
 interface SurgicalViewportProps {
   module: SurgicalModule;
@@ -80,6 +80,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   const [coaxialLight, setCoaxialLight] = useState<number>(92); // 0 to 100%
   const [redReflexGain, setRedReflexGain] = useState<number>(88); // 0 to 100%
   const [laserDefocusZ, setLaserDefocusZ] = useState<number>(150); // µm offset for YAG focus
+  const [showOptics, setShowOptics] = useState<boolean>(false); // Collapsed on mobile by default to preserve eye view
 
   // Pre-loaded Real Eye Image Elements
   const cataractImgRef = useRef<HTMLImageElement | null>(null);
@@ -902,13 +903,14 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     redReflexGain
   ]);
 
-  // Handle Mouse Interactions
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  // Unified Pointer (Mouse & Touch) Interactions
+  const handlePointerDownAction = useCallback((clientX: number, clientY: number) => {
     setIsMouseDown(true);
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    setMousePos({ x, y });
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     const eyeRadiusPx = (175 * magnification) / 12;
@@ -976,11 +978,11 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     onYagFire
   ]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerMoveAction = useCallback((clientX: number, clientY: number, isDown: boolean) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     setMousePos({ x, y });
 
     const centerX = rect.width / 2;
@@ -989,7 +991,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     const normX = (x - centerX) / (eyeRadiusPx * 0.65);
     const normY = (y - centerY) / (eyeRadiusPx * 0.65);
 
-    if (isMouseDown) {
+    if (isDown) {
       if (activeInstrument === 'utrata_forceps' || activeInstrument === 'cystotome') {
         onCccDrag(normX, normY);
       }
@@ -1003,7 +1005,6 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       }
     }
   }, [
-    isMouseDown,
     activeInstrument,
     magnification,
     pedalPosition,
@@ -1012,18 +1013,48 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     onIaAspirate
   ]);
 
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    handlePointerDownAction(e.clientX, e.clientY);
+  }, [handlePointerDownAction]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    handlePointerMoveAction(e.clientX, e.clientY, isMouseDown);
+  }, [handlePointerMoveAction, isMouseDown]);
+
   const handleMouseUp = useCallback(() => {
+    setIsMouseDown(false);
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      handlePointerDownAction(touch.clientX, touch.clientY);
+    }
+  }, [handlePointerDownAction]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      handlePointerMoveAction(touch.clientX, touch.clientY, true);
+    }
+  }, [handlePointerMoveAction]);
+
+  const handleTouchEnd = useCallback(() => {
     setIsMouseDown(false);
   }, []);
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair"
+      className="relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* Three.js WebGL 3D Canvas (Cornea dome, lighting, specular highlights) */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
@@ -1031,135 +1062,169 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       {/* 2D High-Resolution Composite Canvas (Real Eye Photo + Dynamic Overlays) */}
       <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-      {/* Top Right Optical Controls Panel */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 bg-[#0d1522]/90 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64">
-        {/* Render Mode Switcher: Real Photo vs Hybrid vs 3D Shader */}
-        <div className="pb-2 border-b border-[#1e2e48]/70 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
-            <span className="flex items-center gap-1.5 text-cyan-400">
-              <Camera className="w-3.5 h-3.5" />
-              VIEWPORT MODE
-            </span>
-            {renderMode === 'photo' && (
-              <span className="text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
-                REAL PHOTO
+      {/* Top Right Optical Controls Toggle Button & Dropdown */}
+      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowOptics(!showOptics);
+          }}
+          title="Microscope Optics & Illumination Settings"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
+            showOptics
+              ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+              : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'
+          }`}
+        >
+          <Camera className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="font-mono">{magnification}x</span>
+          <span className="text-[10px] hidden xs:inline uppercase text-slate-400">Optics</span>
+        </button>
+
+        {showOptics && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn"
+          >
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70">
+              <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" />
+                MICROSCOPE CONTROLS
               </span>
+              <button
+                onClick={() => setShowOptics(false)}
+                className="p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Render Mode Switcher: Real Photo vs Hybrid vs 3D Shader */}
+            <div className="pb-2 border-b border-[#1e2e48]/70 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                <span className="text-slate-400">View Mode</span>
+                {renderMode === 'photo' && (
+                  <span className="text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
+                    REAL PHOTO
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <button
+                  onClick={() => setRenderMode('photo')}
+                  className={`py-1 rounded-lg text-center font-semibold transition ${
+                    renderMode === 'photo'
+                      ? 'bg-cyan-600 text-white shadow-md'
+                      : 'bg-[#101b2d] text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Photo
+                </button>
+                <button
+                  onClick={() => setRenderMode('hybrid')}
+                  className={`py-1 rounded-lg text-center font-semibold transition ${
+                    renderMode === 'hybrid'
+                      ? 'bg-cyan-600 text-white shadow-md'
+                      : 'bg-[#101b2d] text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Hybrid
+                </button>
+                <button
+                  onClick={() => setRenderMode('shader')}
+                  className={`py-1 rounded-lg text-center font-semibold transition ${
+                    renderMode === 'shader'
+                      ? 'bg-cyan-600 text-white shadow-md'
+                      : 'bg-[#101b2d] text-slate-400 hover:text-white'
+                  }`}
+                >
+                  3D Mesh
+                </button>
+              </div>
+            </div>
+
+            {/* Magnification Slider (6x - 25x) */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>Microscope Zoom</span>
+                <span className="font-mono text-cyan-300 font-bold">{magnification}x</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ZoomOut className="w-3 h-3 text-slate-400" />
+                <input
+                  type="range"
+                  min="6"
+                  max="25"
+                  step="1"
+                  value={magnification}
+                  onChange={(e) => setMagnification(Number(e.target.value))}
+                  className="w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+                />
+                <ZoomIn className="w-3 h-3 text-slate-400" />
+              </div>
+            </div>
+
+            {/* Coaxial Illumination */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>Coaxial Light</span>
+                <span className="font-mono text-amber-300">{coaxialLight}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={coaxialLight}
+                onChange={(e) => setCoaxialLight(Number(e.target.value))}
+                className="w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+              />
+            </div>
+
+            {/* Red Reflex Retroillumination */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>Red Reflex</span>
+                <span className="font-mono text-rose-400">{redReflexGain}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={redReflexGain}
+                onChange={(e) => setRedReflexGain(Number(e.target.value))}
+                className="w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+              />
+            </div>
+
+            {/* Nd:YAG Defocus Control */}
+            {module === 'yag' && (
+              <div className="space-y-1 pt-1.5 border-t border-[#1e2e48]/70">
+                <div className="flex justify-between text-[11px] text-rose-300">
+                  <span>Focal Offset (Posterior)</span>
+                  <span className="font-mono font-bold text-rose-400">+{laserDefocusZ} µm</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="350"
+                  step="10"
+                  value={laserDefocusZ}
+                  onChange={(e) => setLaserDefocusZ(Number(e.target.value))}
+                  className="w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+                />
+                <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                  <span>0 µm (Risk)</span>
+                  <span className="text-emerald-400">150-250 Safe</span>
+                  <span>350 µm</span>
+                </div>
+              </div>
             )}
-          </div>
-          <div className="grid grid-cols-3 gap-1">
-            <button
-              onClick={() => setRenderMode('photo')}
-              className={`py-1 rounded-lg text-center font-semibold transition ${
-                renderMode === 'photo'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'bg-[#101b2d] text-slate-400 hover:text-white'
-              }`}
-            >
-              Photo
-            </button>
-            <button
-              onClick={() => setRenderMode('hybrid')}
-              className={`py-1 rounded-lg text-center font-semibold transition ${
-                renderMode === 'hybrid'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'bg-[#101b2d] text-slate-400 hover:text-white'
-              }`}
-            >
-              Hybrid
-            </button>
-            <button
-              onClick={() => setRenderMode('shader')}
-              className={`py-1 rounded-lg text-center font-semibold transition ${
-                renderMode === 'shader'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'bg-[#101b2d] text-slate-400 hover:text-white'
-              }`}
-            >
-              3D Mesh
-            </button>
-          </div>
-        </div>
-
-        {/* Magnification Slider (6x - 25x) */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px] text-slate-400">
-            <span>Microscope Zoom</span>
-            <span className="font-mono text-cyan-300 font-bold">{magnification}x</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <ZoomOut className="w-3 h-3 text-slate-400" />
-            <input
-              type="range"
-              min="6"
-              max="25"
-              step="1"
-              value={magnification}
-              onChange={(e) => setMagnification(Number(e.target.value))}
-              className="w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-            />
-            <ZoomIn className="w-3 h-3 text-slate-400" />
-          </div>
-        </div>
-
-        {/* Coaxial Illumination */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px] text-slate-400">
-            <span>Coaxial Illumination</span>
-            <span className="font-mono text-amber-300">{coaxialLight}%</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={coaxialLight}
-            onChange={(e) => setCoaxialLight(Number(e.target.value))}
-            className="w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-          />
-        </div>
-
-        {/* Red Reflex Retroillumination */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px] text-slate-400">
-            <span>Fundus Red Reflex</span>
-            <span className="font-mono text-rose-400">{redReflexGain}%</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={redReflexGain}
-            onChange={(e) => setRedReflexGain(Number(e.target.value))}
-            className="w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-          />
-        </div>
-
-        {/* Nd:YAG Defocus Control */}
-        {module === 'yag' && (
-          <div className="space-y-1 pt-1.5 border-t border-[#1e2e48]/70">
-            <div className="flex justify-between text-[11px] text-rose-300">
-              <span>Focal Offset (Posterior)</span>
-              <span className="font-mono font-bold text-rose-400">+{laserDefocusZ} µm</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="350"
-              step="10"
-              value={laserDefocusZ}
-              onChange={(e) => setLaserDefocusZ(Number(e.target.value))}
-              className="w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[9px] text-slate-500 font-mono">
-              <span>0 µm (Risk)</span>
-              <span className="text-emerald-400">150-250 Safe</span>
-              <span>350 µm</span>
-            </div>
           </div>
         )}
       </div>
 
-      {/* Center Reticle and Medical Photography Badge */}
-      <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-slate-400 font-mono text-xs flex flex-col gap-0.5">
+      {/* Center Reticle and Medical Photography Badge (Hidden on mobile) */}
+      <div className="hidden md:flex absolute bottom-3 left-3 z-10 pointer-events-none text-slate-400 font-mono text-xs flex-col gap-0.5">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="text-slate-200 font-semibold uppercase tracking-wider">

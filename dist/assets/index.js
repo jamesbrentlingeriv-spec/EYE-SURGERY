@@ -21071,7 +21071,7 @@ function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
  */
 
 
-const __iconData$F = {
+const __iconData$I = {
   name: "activity",
   size: 24,
   node: [
@@ -21084,8 +21084,8 @@ const __iconData$F = {
     ]
   ]
 };
-__iconData$F.node;
-const Activity = createLucideIcon(__iconData$F);
+__iconData$I.node;
+const Activity = createLucideIcon(__iconData$I);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21095,7 +21095,7 @@ const Activity = createLucideIcon(__iconData$F);
  */
 
 
-const __iconData$E = {
+const __iconData$H = {
   name: "award",
   size: 24,
   node: [
@@ -21109,8 +21109,8 @@ const __iconData$E = {
     ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
   ]
 };
-__iconData$E.node;
-const Award = createLucideIcon(__iconData$E);
+__iconData$H.node;
+const Award = createLucideIcon(__iconData$H);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21120,7 +21120,7 @@ const Award = createLucideIcon(__iconData$E);
  */
 
 
-const __iconData$D = {
+const __iconData$G = {
   name: "book-open",
   size: 24,
   node: [
@@ -21134,8 +21134,8 @@ const __iconData$D = {
     ]
   ]
 };
-__iconData$D.node;
-const BookOpen = createLucideIcon(__iconData$D);
+__iconData$G.node;
+const BookOpen = createLucideIcon(__iconData$G);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21145,7 +21145,7 @@ const BookOpen = createLucideIcon(__iconData$D);
  */
 
 
-const __iconData$C = {
+const __iconData$F = {
   name: "camera",
   size: 24,
   node: [
@@ -21159,8 +21159,56 @@ const __iconData$C = {
     ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
   ]
 };
+__iconData$F.node;
+const Camera$1 = createLucideIcon(__iconData$F);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$E = {
+  name: "chevron-down",
+  size: 24,
+  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+};
+__iconData$E.node;
+const ChevronDown = createLucideIcon(__iconData$E);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$D = {
+  name: "chevron-right",
+  size: 24,
+  node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
+};
+__iconData$D.node;
+const ChevronRight = createLucideIcon(__iconData$D);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$C = {
+  name: "chevron-left",
+  size: 24,
+  node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
+};
 __iconData$C.node;
-const Camera$1 = createLucideIcon(__iconData$C);
+const ChevronLeft = createLucideIcon(__iconData$C);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21171,12 +21219,12 @@ const Camera$1 = createLucideIcon(__iconData$C);
 
 
 const __iconData$B = {
-  name: "chevron-down",
+  name: "chevron-up",
   size: 24,
-  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
 __iconData$B.node;
-const ChevronDown = createLucideIcon(__iconData$B);
+const ChevronUp = createLucideIcon(__iconData$B);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21187,12 +21235,16 @@ const ChevronDown = createLucideIcon(__iconData$B);
 
 
 const __iconData$A = {
-  name: "chevron-right",
+  name: "circle-check-big",
   size: 24,
-  node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
+  node: [
+    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+  ],
+  aliases: ["check-circle"]
 };
 __iconData$A.node;
-const ChevronRight = createLucideIcon(__iconData$A);
+const CircleCheckBig = createLucideIcon(__iconData$A);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21203,12 +21255,17 @@ const ChevronRight = createLucideIcon(__iconData$A);
 
 
 const __iconData$z = {
-  name: "chevron-left",
+  name: "circle-question-mark",
   size: 24,
-  node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", key: "1u773s" }],
+    ["path", { d: "M12 17h.01", key: "p32p05" }]
+  ],
+  aliases: ["help-circle", "circle-help"]
 };
 __iconData$z.node;
-const ChevronLeft = createLucideIcon(__iconData$z);
+const CircleQuestionMark = createLucideIcon(__iconData$z);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21219,63 +21276,6 @@ const ChevronLeft = createLucideIcon(__iconData$z);
 
 
 const __iconData$y = {
-  name: "chevron-up",
-  size: 24,
-  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
-};
-__iconData$y.node;
-const ChevronUp = createLucideIcon(__iconData$y);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$x = {
-  name: "circle-check-big",
-  size: 24,
-  node: [
-    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
-  ],
-  aliases: ["check-circle"]
-};
-__iconData$x.node;
-const CircleCheckBig = createLucideIcon(__iconData$x);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$w = {
-  name: "circle-question-mark",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", key: "1u773s" }],
-    ["path", { d: "M12 17h.01", key: "p32p05" }]
-  ],
-  aliases: ["help-circle", "circle-help"]
-};
-__iconData$w.node;
-const CircleQuestionMark = createLucideIcon(__iconData$w);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$v = {
   name: "compass",
   size: 24,
   node: [
@@ -21289,8 +21289,8 @@ const __iconData$v = {
     ]
   ]
 };
-__iconData$v.node;
-const Compass = createLucideIcon(__iconData$v);
+__iconData$y.node;
+const Compass = createLucideIcon(__iconData$y);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21300,7 +21300,7 @@ const Compass = createLucideIcon(__iconData$v);
  */
 
 
-const __iconData$u = {
+const __iconData$x = {
   name: "crosshair",
   size: 24,
   node: [
@@ -21311,8 +21311,8 @@ const __iconData$u = {
     ["line", { x1: "12", x2: "12", y1: "22", y2: "18", key: "15g9kq" }]
   ]
 };
-__iconData$u.node;
-const Crosshair = createLucideIcon(__iconData$u);
+__iconData$x.node;
+const Crosshair = createLucideIcon(__iconData$x);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21322,7 +21322,7 @@ const Crosshair = createLucideIcon(__iconData$u);
  */
 
 
-const __iconData$t = {
+const __iconData$w = {
   name: "disc",
   size: 24,
   node: [
@@ -21330,8 +21330,8 @@ const __iconData$t = {
     ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
   ]
 };
-__iconData$t.node;
-const Disc = createLucideIcon(__iconData$t);
+__iconData$w.node;
+const Disc = createLucideIcon(__iconData$w);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21341,7 +21341,7 @@ const Disc = createLucideIcon(__iconData$t);
  */
 
 
-const __iconData$s = {
+const __iconData$v = {
   name: "download",
   size: 24,
   node: [
@@ -21350,8 +21350,8 @@ const __iconData$s = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$s.node;
-const Download = createLucideIcon(__iconData$s);
+__iconData$v.node;
+const Download = createLucideIcon(__iconData$v);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21361,7 +21361,7 @@ const Download = createLucideIcon(__iconData$s);
  */
 
 
-const __iconData$r = {
+const __iconData$u = {
   name: "droplets",
   size: 24,
   node: [
@@ -21381,8 +21381,8 @@ const __iconData$r = {
     ]
   ]
 };
-__iconData$r.node;
-const Droplets = createLucideIcon(__iconData$r);
+__iconData$u.node;
+const Droplets = createLucideIcon(__iconData$u);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21392,7 +21392,7 @@ const Droplets = createLucideIcon(__iconData$r);
  */
 
 
-const __iconData$q = {
+const __iconData$t = {
   name: "eye",
   size: 24,
   node: [
@@ -21406,8 +21406,8 @@ const __iconData$q = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$q.node;
-const Eye = createLucideIcon(__iconData$q);
+__iconData$t.node;
+const Eye = createLucideIcon(__iconData$t);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21417,7 +21417,7 @@ const Eye = createLucideIcon(__iconData$q);
  */
 
 
-const __iconData$p = {
+const __iconData$s = {
   name: "file-text",
   size: 24,
   node: [
@@ -21434,8 +21434,8 @@ const __iconData$p = {
     ["path", { d: "M16 17H8", key: "z1uh3a" }]
   ]
 };
-__iconData$p.node;
-const FileText = createLucideIcon(__iconData$p);
+__iconData$s.node;
+const FileText = createLucideIcon(__iconData$s);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21445,7 +21445,7 @@ const FileText = createLucideIcon(__iconData$p);
  */
 
 
-const __iconData$o = {
+const __iconData$r = {
   name: "flame",
   size: 24,
   node: [
@@ -21458,8 +21458,8 @@ const __iconData$o = {
     ]
   ]
 };
-__iconData$o.node;
-const Flame = createLucideIcon(__iconData$o);
+__iconData$r.node;
+const Flame = createLucideIcon(__iconData$r);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21469,7 +21469,7 @@ const Flame = createLucideIcon(__iconData$o);
  */
 
 
-const __iconData$n = {
+const __iconData$q = {
   name: "gauge",
   size: 24,
   node: [
@@ -21477,8 +21477,8 @@ const __iconData$n = {
     ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
   ]
 };
-__iconData$n.node;
-const Gauge = createLucideIcon(__iconData$n);
+__iconData$q.node;
+const Gauge = createLucideIcon(__iconData$q);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21488,7 +21488,7 @@ const Gauge = createLucideIcon(__iconData$n);
  */
 
 
-const __iconData$m = {
+const __iconData$p = {
   name: "heart",
   size: 24,
   node: [
@@ -21501,8 +21501,8 @@ const __iconData$m = {
     ]
   ]
 };
-__iconData$m.node;
-const Heart = createLucideIcon(__iconData$m);
+__iconData$p.node;
+const Heart = createLucideIcon(__iconData$p);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21512,7 +21512,7 @@ const Heart = createLucideIcon(__iconData$m);
  */
 
 
-const __iconData$l = {
+const __iconData$o = {
   name: "layers",
   size: 24,
   node: [
@@ -21540,8 +21540,8 @@ const __iconData$l = {
   ],
   aliases: ["layers-3"]
 };
-__iconData$l.node;
-const Layers$1 = createLucideIcon(__iconData$l);
+__iconData$o.node;
+const Layers$1 = createLucideIcon(__iconData$o);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21551,7 +21551,7 @@ const Layers$1 = createLucideIcon(__iconData$l);
  */
 
 
-const __iconData$k = {
+const __iconData$n = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -21566,8 +21566,70 @@ const __iconData$k = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
+__iconData$n.node;
+const Lightbulb = createLucideIcon(__iconData$n);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$m = {
+  name: "maximize-2",
+  size: 24,
+  node: [
+    ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+    ["path", { d: "m21 3-7 7", key: "1l2asr" }],
+    ["path", { d: "m3 21 7-7", key: "tjx5ai" }],
+    ["path", { d: "M9 21H3v-6", key: "wtvkvv" }]
+  ]
+};
+__iconData$m.node;
+const Maximize2 = createLucideIcon(__iconData$m);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$l = {
+  name: "menu",
+  size: 24,
+  node: [
+    ["path", { d: "M4 5h16", key: "1tepv9" }],
+    ["path", { d: "M4 12h16", key: "1lakjw" }],
+    ["path", { d: "M4 19h16", key: "1djgab" }]
+  ]
+};
+__iconData$l.node;
+const Menu = createLucideIcon(__iconData$l);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$k = {
+  name: "minimize-2",
+  size: 24,
+  node: [
+    ["path", { d: "m14 10 7-7", key: "oa77jy" }],
+    ["path", { d: "M20 10h-6V4", key: "mjg0md" }],
+    ["path", { d: "m3 21 7-7", key: "tjx5ai" }],
+    ["path", { d: "M4 14h6v6", key: "rmj7iw" }]
+  ]
+};
 __iconData$k.node;
-const Lightbulb = createLucideIcon(__iconData$k);
+const Minimize2 = createLucideIcon(__iconData$k);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -22019,7 +22081,7 @@ const __iconData = {
 __iconData.node;
 const ZoomOut = createLucideIcon(__iconData);
 
-const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vitals, elapsedSeconds, onOpenReport, onOpenReference, isMuted, onToggleMute, }) => {
+const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vitals, elapsedSeconds, onOpenReport, onOpenReference, isMuted, onToggleMute, onToggleTools, isToolsOpen = false, onToggleConsole, isConsoleOpen = false, activeInstrument = 'mvr_blade', }) => {
     const [pulse, setPulse] = reactExports.useState(false);
     const [deferredPrompt, setDeferredPrompt] = reactExports.useState(null);
     const [isAppInstalled, setIsAppInstalled] = reactExports.useState(false);
@@ -22101,7 +22163,11 @@ const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vita
             return stepLabels[yagStep];
         }
     };
-    return (jsxRuntimeExports.jsxs("header", { className: "h-14 bg-[#0a101d] border-b border-[#1b2b44] px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 pr-3 border-r border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" }), jsxRuntimeExports.jsx("span", { className: "font-bold tracking-wide text-white text-sm", children: "SURGICAL SIMULATOR" }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded", children: "PWA" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium", children: "Phase:" }), jsxRuntimeExports.jsx("span", { className: "font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded", children: getStepTitle() })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 px-2.5 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Droplets, { className: `w-3.5 h-3.5 ${fluidics.iopActual < 8 ? 'text-rose-400 animate-pulse' : 'text-cyan-400'}` }), jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "IOP:" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold text-sm ${fluidics.iopActual < 8 ? 'text-rose-400 font-extrabold' : fluidics.iopActual > 35 ? 'text-amber-400' : 'text-emerald-400'}`, children: fluidics.iopActual.toFixed(1) }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "mmHg" })] }), module === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 px-2.5 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Zap, { className: `w-3.5 h-3.5 ${cde > 18 ? 'text-amber-400' : 'text-yellow-400'}` }), jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "CDE:" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-sm text-yellow-300", children: cde.toFixed(2) }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "%-sec" })] })), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 px-3 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Heart, { className: `w-3.5 h-3.5 text-rose-500 transition-transform ${pulse ? 'scale-125' : 'scale-100'}` }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200", children: vitals.heartRate }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "BPM" })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "BP:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-slate-200", children: [vitals.bloodPressureSys, "/", vitals.bloodPressureDia] })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "SpO\u2082:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-emerald-400", children: [vitals.spO2, "%"] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Timer, { className: "w-3.5 h-3.5 text-slate-400" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200", children: formatTime(elapsedSeconds) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [!isAppInstalled && (jsxRuntimeExports.jsxs("button", { onClick: handleInstallClick, title: "Install Ophthalmic Simulator as Standalone Desktop/Mobile App", className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-semibold text-xs shadow-md transition", children: [jsxRuntimeExports.jsx(Download, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Install PWA" })] })), jsxRuntimeExports.jsx("button", { onClick: onToggleMute, title: isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', className: "p-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-white transition", children: isMuted ? jsxRuntimeExports.jsx(VolumeX, { className: "w-4 h-4 text-rose-400" }) : jsxRuntimeExports.jsx(Volume2, { className: "w-4 h-4 text-cyan-400" }) }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, title: "Clinical Anatomical Reference & Technique Guide", className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-cyan-300 text-xs transition", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Clinical Guide" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReport, title: "View Surgical Efficiency & Report Card", className: "flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-900/40 transition", children: [jsxRuntimeExports.jsx(FileText, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Post-Op Debrief" })] })] })] }));
+    return (jsxRuntimeExports.jsxs("header", { className: "h-14 bg-[#0a101d] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: onToggleTools, title: "Toggle Surgical Tools Menu (Hamburger)", "aria-label": "Toggle Surgical Tools Menu", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 ${isToolsOpen
+                            ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+                            : 'bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500'}`, children: [jsxRuntimeExports.jsx(Menu, { className: "w-4 h-4 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Tools" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2 sm:pr-3 sm:border-r border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse hidden xs:inline-block" }), jsxRuntimeExports.jsxs("span", { className: "font-bold tracking-wide text-white text-xs sm:text-sm", children: [jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "SURGICAL SIMULATOR" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "EYE SIM" })] }), jsxRuntimeExports.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded hidden sm:inline-block", children: "PWA" })] }), jsxRuntimeExports.jsxs("div", { className: "hidden lg:flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium", children: "Phase:" }), jsxRuntimeExports.jsx("span", { className: "font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[200px] xl:max-w-none", children: getStepTitle() })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 overflow-hidden", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Droplets, { className: `w-3.5 h-3.5 shrink-0 ${fluidics.iopActual < 8 ? 'text-rose-400 animate-pulse' : 'text-cyan-400'}` }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px] hidden sm:inline", children: "IOP:" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold text-xs sm:text-sm ${fluidics.iopActual < 8 ? 'text-rose-400 font-extrabold' : fluidics.iopActual > 35 ? 'text-amber-400' : 'text-emerald-400'}`, children: fluidics.iopActual.toFixed(1) }), jsxRuntimeExports.jsx("span", { className: "text-[9px] text-slate-500 font-mono hidden md:inline", children: "mmHg" })] }), module === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Zap, { className: `w-3.5 h-3.5 shrink-0 ${cde > 18 ? 'text-amber-400' : 'text-yellow-400'}` }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px] hidden md:inline", children: "CDE:" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-xs sm:text-sm text-yellow-300", children: cde.toFixed(2) })] })), jsxRuntimeExports.jsxs("div", { className: "hidden xl:flex items-center gap-2.5 px-2.5 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Heart, { className: `w-3.5 h-3.5 text-rose-500 transition-transform ${pulse ? 'scale-125' : 'scale-100'}` }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200", children: vitals.heartRate }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "BPM" })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "BP:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-slate-200", children: [vitals.bloodPressureSys, "/", vitals.bloodPressureDia] })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "SpO\u2082:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-emerald-400", children: [vitals.spO2, "%"] })] })] }), jsxRuntimeExports.jsxs("div", { className: "hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Timer, { className: "w-3.5 h-3.5 text-slate-400" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200 text-xs", children: formatTime(elapsedSeconds) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-2 shrink-0", children: [onToggleConsole && (jsxRuntimeExports.jsxs("button", { onClick: onToggleConsole, title: "Toggle Machine Settings Console", "aria-label": "Toggle Machine Settings Console", className: `flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-semibold transition lg:hidden ${isConsoleOpen
+                            ? 'bg-amber-600 border-amber-400 text-white shadow-md'
+                            : 'bg-[#0d1626] hover:bg-[#162238] border-[#1e2f4a] text-amber-400 hover:text-amber-300'}`, children: [jsxRuntimeExports.jsx(Gauge, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] hidden sm:inline", children: "Console" })] })), !isAppInstalled && (jsxRuntimeExports.jsxs("button", { onClick: handleInstallClick, title: "Install Ophthalmic Simulator", className: "hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-semibold text-xs shadow-md transition", children: [jsxRuntimeExports.jsx(Download, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "PWA" })] })), jsxRuntimeExports.jsx("button", { onClick: onToggleMute, title: isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', "aria-label": isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', className: "p-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-white transition", children: isMuted ? jsxRuntimeExports.jsx(VolumeX, { className: "w-4 h-4 text-rose-400" }) : jsxRuntimeExports.jsx(Volume2, { className: "w-4 h-4 text-cyan-400" }) }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, title: "Clinical Anatomical Reference & Technique Guide", "aria-label": "Clinical Guide", className: "p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-cyan-300 text-xs transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Guide" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReport, title: "View Surgical Efficiency & Report Card", "aria-label": "Post-Op Debrief", className: "p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-900/40 transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(FileText, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Debrief" })] })] })] }));
 };
 
 const INSTRUMENT_REGISTRY = [
@@ -22202,16 +22268,26 @@ const INSTRUMENT_REGISTRY = [
         modules: ['yag']
     }
 ];
-const InstrumentTray = ({ module, activeInstrument, onSelectInstrument, }) => {
+const InstrumentTray = ({ module, activeInstrument, onSelectInstrument, isOpenMobile = false, onCloseMobile, }) => {
     const availableInstruments = INSTRUMENT_REGISTRY.filter(tool => tool.modules.includes(module));
-    return (jsxRuntimeExports.jsxs("aside", { className: "w-64 bg-[#0a101d] border-r border-[#1b2b44] flex flex-col h-[calc(100vh-3.5rem)] select-none", children: [jsxRuntimeExports.jsx("div", { className: "p-3 border-b border-[#1b2b44] flex items-center justify-between", children: jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "Surgical Tray" }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#16253b] text-slate-300", children: [availableInstruments.length, " Available"] })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-400", children: "Select active sterile instrument" })] }) }), jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-2 space-y-1.5", children: availableInstruments.map(tool => {
-                    const isSelected = activeInstrument === tool.id;
-                    return (jsxRuntimeExports.jsxs("button", { onClick: () => onSelectInstrument(tool.id), className: `w-full text-left p-2.5 rounded-xl border transition flex items-start gap-3 ${isSelected
-                            ? 'bg-cyan-950/60 border-cyan-500 shadow-md shadow-cyan-950/40 text-white'
-                            : 'bg-[#0d1626]/80 hover:bg-[#132037] border-[#1b2c47] text-slate-300'}`, children: [jsxRuntimeExports.jsx("div", { className: `p-2 rounded-lg mt-0.5 border ${isSelected
-                                    ? 'bg-cyan-900/60 border-cyan-400'
-                                    : 'bg-[#101b2d] border-[#1e2f4a]'}`, children: tool.icon }), jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: `text-xs font-semibold truncate ${isSelected ? 'text-cyan-300' : 'text-slate-200'}`, children: tool.name }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase text-slate-500 px-1 rounded bg-[#09111e]", children: tool.category })] }), jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-400 leading-tight mt-0.5 line-clamp-2", children: tool.description })] })] }, tool.id));
-                }) }), jsxRuntimeExports.jsxs("div", { className: "p-3 border-t border-[#1b2b44] bg-[#070c17] text-[11px] text-slate-400 space-y-1 font-mono", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between", children: [jsxRuntimeExports.jsx("span", { children: "Active Tip:" }), jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-bold uppercase", children: activeInstrument.replace('_', ' ') })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500", children: "Click or drag in the ocular viewport to operate with selected tool." })] })] }));
+    const handleSelect = (toolId) => {
+        onSelectInstrument(toolId);
+        if (onCloseMobile) {
+            onCloseMobile();
+        }
+    };
+    return (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [isOpenMobile && (jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-black/75 backdrop-blur-sm z-40 lg:hidden transition-opacity", onClick: onCloseMobile, "aria-label": "Close instrument drawer backdrop" })), jsxRuntimeExports.jsxs("aside", { className: `bg-[#0a101d] border-r border-[#1b2b44] flex flex-col select-none transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl
+          ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
+          lg:relative lg:translate-x-0 lg:w-64 lg:h-full lg:z-auto lg:shadow-none
+        `, children: [jsxRuntimeExports.jsxs("div", { className: "p-3 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "Surgical Tray" }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#16253b] text-slate-300", children: [availableInstruments.length, " Available"] })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-400", children: "Select active sterile instrument" })] }), jsxRuntimeExports.jsx("button", { onClick: onCloseMobile, className: "p-1.5 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition lg:hidden", title: "Close Surgical Tray", children: jsxRuntimeExports.jsx(X, { className: "w-5 h-5" }) })] }), jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-2 space-y-1.5", children: availableInstruments.map(tool => {
+                            const isSelected = activeInstrument === tool.id;
+                            return (jsxRuntimeExports.jsxs("button", { onClick: () => handleSelect(tool.id), className: `w-full text-left p-2.5 rounded-xl border transition flex items-start gap-3 active:scale-[0.98] ${isSelected
+                                    ? 'bg-cyan-950/60 border-cyan-500 shadow-md shadow-cyan-950/40 text-white'
+                                    : 'bg-[#0d1626]/80 hover:bg-[#132037] border-[#1b2c47] text-slate-300'}`, children: [jsxRuntimeExports.jsx("div", { className: `p-2 rounded-lg mt-0.5 border ${isSelected
+                                            ? 'bg-cyan-900/60 border-cyan-400'
+                                            : 'bg-[#101b2d] border-[#1e2f4a]'}`, children: tool.icon }), jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: `text-xs font-semibold truncate ${isSelected ? 'text-cyan-300' : 'text-slate-200'}`, children: tool.name }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase text-slate-500 px-1 rounded bg-[#09111e]", children: tool.category })] }), jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-400 leading-tight mt-0.5 line-clamp-2", children: tool.description })] })] }, tool.id));
+                        }) }), jsxRuntimeExports.jsxs("div", { className: "p-3 border-t border-[#1b2b44] bg-[#070c17] text-[11px] text-slate-400 space-y-1 font-mono", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between", children: [jsxRuntimeExports.jsx("span", { children: "Active Tip:" }), jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-bold uppercase", children: activeInstrument.replace('_', ' ') })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500", children: "Click or drag in the ocular viewport to operate with selected tool." })] })] })] }));
 };
 
 const FootPedalControl = ({ pedalPosition, onPedalChange, disabled = false, }) => {
@@ -22255,15 +22331,15 @@ const FootPedalControl = ({ pedalPosition, onPedalChange, disabled = false, }) =
         onPedalChange(pos);
         audioEngine.playPedalClick(pos);
     };
-    return (jsxRuntimeExports.jsxs("div", { className: "bg-[#0a101d] border-t border-[#1b2b44] p-3 flex items-center justify-between text-xs select-none", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4", children: [jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [jsxRuntimeExports.jsxs("span", { className: "font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }), "SURGEON DUAL-PEDAL"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-400 font-mono", children: "Keys: [0] Idle | [1] Irrig | [2] Asp | [3] Phaco | [Space] Cycle" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setPos(0), className: `px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition ${pedalPosition === 0
+    return (jsxRuntimeExports.jsxs("div", { className: "bg-[#0a101d] border-t border-[#1b2b44] p-2 sm:p-3 flex items-center justify-between text-xs select-none gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-4 flex-1 sm:flex-initial", children: [jsxRuntimeExports.jsxs("div", { className: "hidden lg:flex flex-col", children: [jsxRuntimeExports.jsxs("span", { className: "font-bold text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }), "SURGEON DUAL-PEDAL"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-400 font-mono", children: "Keys: [0] Idle | [1] Irrig | [2] Asp | [3] Phaco | [Space] Cycle" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 sm:flex items-center gap-1 sm:gap-1.5 bg-[#070c16] p-1 rounded-xl border border-[#17253a] w-full sm:w-auto", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setPos(0), className: `px-1.5 py-2 sm:px-3 sm:py-1.5 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium transition text-center min-h-[44px] active:scale-95 ${pedalPosition === 0
                                     ? 'bg-slate-700 text-white shadow-inner font-bold'
-                                    : 'text-slate-400 hover:text-white hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Disc, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "0: Standby" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(1), className: `px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition ${pedalPosition === 1
+                                    : 'text-slate-400 hover:text-white hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Disc, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Standby" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(1), className: `px-1.5 py-2 sm:px-3 sm:py-1.5 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium transition text-center min-h-[44px] active:scale-95 ${pedalPosition === 1
                                     ? 'bg-sky-600 text-white shadow-md shadow-sky-900/50 font-bold'
-                                    : 'text-slate-400 hover:text-sky-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(WavesHorizontal, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "1: Irrigation" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(2), className: `px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition ${pedalPosition === 2
+                                    : 'text-slate-400 hover:text-sky-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(WavesHorizontal, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Irrig" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(2), className: `px-1.5 py-2 sm:px-3 sm:py-1.5 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium transition text-center min-h-[44px] active:scale-95 ${pedalPosition === 2
                                     ? 'bg-teal-600 text-white shadow-md shadow-teal-900/50 font-bold'
-                                    : 'text-slate-400 hover:text-teal-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Wind, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "2: Aspiration" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(3), className: `px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition ${pedalPosition === 3
+                                    : 'text-slate-400 hover:text-teal-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Wind, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Asp" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setPos(3), className: `px-1.5 py-2 sm:px-3 sm:py-1.5 rounded-lg flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium transition text-center min-h-[44px] active:scale-95 ${pedalPosition === 3
                                     ? 'bg-amber-600 text-white shadow-md shadow-amber-900/50 font-bold animate-pulse'
-                                    : 'text-slate-400 hover:text-amber-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Zap, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "3: Phaco Power" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsxs("div", { className: "text-right", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 font-mono", children: "PEDAL TRAVEL" }), jsxRuntimeExports.jsx("div", { className: "text-sm font-bold font-mono text-cyan-300", children: pedalPosition === 0 ? '0%' : pedalPosition === 1 ? '33%' : pedalPosition === 2 ? '66%' : '100%' })] }), jsxRuntimeExports.jsx("div", { className: "w-24 h-4 bg-[#070c16] rounded-full border border-[#17253a] p-0.5 relative overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: `h-full rounded-full transition-all duration-150 ${pedalPosition === 0
+                                    : 'text-slate-400 hover:text-amber-300 hover:bg-[#121f33]'}`, children: [jsxRuntimeExports.jsx(Zap, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Phaco" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "hidden sm:flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsxs("div", { className: "text-right", children: [jsxRuntimeExports.jsx("div", { className: "text-[9px] sm:text-[10px] text-slate-400 font-mono", children: "TRAVEL" }), jsxRuntimeExports.jsx("div", { className: "text-xs sm:text-sm font-bold font-mono text-cyan-300", children: pedalPosition === 0 ? '0%' : pedalPosition === 1 ? '33%' : pedalPosition === 2 ? '66%' : '100%' })] }), jsxRuntimeExports.jsx("div", { className: "w-16 sm:w-24 h-3.5 sm:h-4 bg-[#070c16] rounded-full border border-[#17253a] p-0.5 relative overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: `h-full rounded-full transition-all duration-150 ${pedalPosition === 0
                                 ? 'w-1 bg-slate-500'
                                 : pedalPosition === 1
                                     ? 'w-1/3 bg-sky-500'
@@ -68658,6 +68734,7 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
     const [coaxialLight, setCoaxialLight] = reactExports.useState(92); // 0 to 100%
     const [redReflexGain, setRedReflexGain] = reactExports.useState(88); // 0 to 100%
     const [laserDefocusZ, setLaserDefocusZ] = reactExports.useState(150); // µm offset for YAG focus
+    const [showOptics, setShowOptics] = reactExports.useState(false); // Collapsed on mobile by default to preserve eye view
     // Pre-loaded Real Eye Image Elements
     const cataractImgRef = reactExports.useRef(null);
     const iolImgRef = reactExports.useRef(null);
@@ -69373,14 +69450,15 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         coaxialLight,
         redReflexGain
     ]);
-    // Handle Mouse Interactions
-    const handleMouseDown = reactExports.useCallback((e) => {
+    // Unified Pointer (Mouse & Touch) Interactions
+    const handlePointerDownAction = reactExports.useCallback((clientX, clientY) => {
         setIsMouseDown(true);
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect)
             return;
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        setMousePos({ x, y });
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const eyeRadiusPx = (175 * magnification) / 12;
@@ -69439,19 +69517,19 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         onIolWashout,
         onYagFire
     ]);
-    const handleMouseMove = reactExports.useCallback((e) => {
+    const handlePointerMoveAction = reactExports.useCallback((clientX, clientY, isDown) => {
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect)
             return;
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
         setMousePos({ x, y });
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const eyeRadiusPx = (175 * magnification) / 12;
         const normX = (x - centerX) / (eyeRadiusPx * 0.65);
         const normY = (y - centerY) / (eyeRadiusPx * 0.65);
-        if (isMouseDown) {
+        if (isDown) {
             if (activeInstrument === 'utrata_forceps' || activeInstrument === 'cystotome') {
                 onCccDrag(normX, normY);
             }
@@ -69463,7 +69541,6 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             }
         }
     }, [
-        isMouseDown,
         activeInstrument,
         magnification,
         pedalPosition,
@@ -69471,16 +69548,42 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         onPhacoApply,
         onIaAspirate
     ]);
+    const handleMouseDown = reactExports.useCallback((e) => {
+        handlePointerDownAction(e.clientX, e.clientY);
+    }, [handlePointerDownAction]);
+    const handleMouseMove = reactExports.useCallback((e) => {
+        handlePointerMoveAction(e.clientX, e.clientY, isMouseDown);
+    }, [handlePointerMoveAction, isMouseDown]);
     const handleMouseUp = reactExports.useCallback(() => {
         setIsMouseDown(false);
     }, []);
-    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-4 right-4 z-20 flex flex-col gap-2 bg-[#0d1522]/90 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64", children: [jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-cyan-400", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "VIEWPORT MODE"] }), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "REAL PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
-                                            ? 'bg-cyan-600 text-white shadow-md'
-                                            : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Photo" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('hybrid'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'hybrid'
-                                            ? 'bg-cyan-600 text-white shadow-md'
-                                            : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Hybrid" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('shader'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'shader'
-                                            ? 'bg-cyan-600 text-white shadow-md'
-                                            : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "3D Mesh" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Microscope Zoom" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [magnification, "x"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx(ZoomOut, { className: "w-3 h-3 text-slate-400" }), jsxRuntimeExports.jsx("input", { type: "range", min: "6", max: "25", step: "1", value: magnification, onChange: (e) => setMagnification(Number(e.target.value)), className: "w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx(ZoomIn, { className: "w-3 h-3 text-slate-400" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Coaxial Illumination" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-amber-300", children: [coaxialLight, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: coaxialLight, onChange: (e) => setCoaxialLight(Number(e.target.value)), className: "w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Fundus Red Reflex" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400", children: [redReflexGain, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: redReflexGain, onChange: (e) => setRedReflexGain(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), module === 'yag' && (jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-rose-300", children: [jsxRuntimeExports.jsx("span", { children: "Focal Offset (Posterior)" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400", children: ["+", laserDefocusZ, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: laserDefocusZ, onChange: (e) => setLaserDefocusZ(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[9px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0 \u00B5m (Risk)" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "150-250 Safe" }), jsxRuntimeExports.jsx("span", { children: "350 \u00B5m" })] })] }))] }), jsxRuntimeExports.jsxs("div", { className: "absolute bottom-4 left-4 z-10 pointer-events-none text-slate-400 font-mono text-xs flex flex-col gap-0.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }), jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-semibold uppercase tracking-wider", children: module === 'phaco'
+    const handleTouchStart = reactExports.useCallback((e) => {
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            handlePointerDownAction(touch.clientX, touch.clientY);
+        }
+    }, [handlePointerDownAction]);
+    const handleTouchMove = reactExports.useCallback((e) => {
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            handlePointerMoveAction(touch.clientX, touch.clientY, true);
+        }
+    }, [handlePointerMoveAction]);
+    const handleTouchEnd = reactExports.useCallback(() => {
+        setIsMouseDown(false);
+    }, []);
+    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                            e.stopPropagation();
+                            setShowOptics(!showOptics);
+                        }, title: "Microscope Optics & Illumination Settings", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showOptics
+                            ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+                            : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [magnification, "x"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] hidden xs:inline uppercase text-slate-400", children: "Optics" })] }), showOptics && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-cyan-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "MICROSCOPE CONTROLS"] }), jsxRuntimeExports.jsx("button", { onClick: () => setShowOptics(false), className: "p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "View Mode" }), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "REAL PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
+                                                    ? 'bg-cyan-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Photo" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('hybrid'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'hybrid'
+                                                    ? 'bg-cyan-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Hybrid" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('shader'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'shader'
+                                                    ? 'bg-cyan-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "3D Mesh" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Microscope Zoom" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [magnification, "x"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx(ZoomOut, { className: "w-3 h-3 text-slate-400" }), jsxRuntimeExports.jsx("input", { type: "range", min: "6", max: "25", step: "1", value: magnification, onChange: (e) => setMagnification(Number(e.target.value)), className: "w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx(ZoomIn, { className: "w-3 h-3 text-slate-400" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Coaxial Light" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-amber-300", children: [coaxialLight, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: coaxialLight, onChange: (e) => setCoaxialLight(Number(e.target.value)), className: "w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Red Reflex" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400", children: [redReflexGain, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: redReflexGain, onChange: (e) => setRedReflexGain(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), module === 'yag' && (jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-rose-300", children: [jsxRuntimeExports.jsx("span", { children: "Focal Offset (Posterior)" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400", children: ["+", laserDefocusZ, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: laserDefocusZ, onChange: (e) => setLaserDefocusZ(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[9px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0 \u00B5m (Risk)" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "150-250 Safe" }), jsxRuntimeExports.jsx("span", { children: "350 \u00B5m" })] })] }))] }))] }), jsxRuntimeExports.jsxs("div", { className: "hidden md:flex absolute bottom-3 left-3 z-10 pointer-events-none text-slate-400 font-mono text-xs flex-col gap-0.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }), jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-semibold uppercase tracking-wider", children: module === 'phaco'
                                     ? 'Zeiss OPMI Lumera 700 Coaxial Medical Macro'
                                     : module === 'iol'
                                         ? 'High-Resolution Pseudophakic Capsular View'
@@ -69489,18 +69592,18 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                                     : 'ZONULAR DEHISCENCE / RADIAL RUNAWAY' })] })] }))] }));
 };
 
-const PhacoMachinePanel = ({ fluidics, settings, cataractGrade, onUpdateSettings, onUpdateFluidics, onGradeChange, }) => {
+const PhacoMachinePanel = ({ fluidics, settings, cataractGrade, onUpdateSettings, onUpdateFluidics, onGradeChange, onClose, }) => {
     const modes = ['continuous', 'pulse', 'burst'];
     const grades = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'NO6'];
-    return (jsxRuntimeExports.jsxs("div", { className: "w-80 bg-[#0a101d] border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto", children: [jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800 text-cyan-400", children: jsxRuntimeExports.jsx(Gauge, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "CENTURION\u00AE VISION" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 font-mono", children: "Active Fluidics\u2122 System" })] })] }), jsxRuntimeExports.jsx("span", { className: "font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800", children: "ONLINE" })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-slate-300", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Flame, { className: "w-3.5 h-3.5 text-amber-500" }), "LOCS III Nuclear Grade"] }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-amber-400", children: cataractGrade })] }), jsxRuntimeExports.jsx("div", { className: "grid grid-cols-6 gap-1", children: grades.map(g => (jsxRuntimeExports.jsx("button", { onClick: () => onGradeChange(g), className: `py-1 rounded text-center font-mono font-semibold transition ${cataractGrade === g
+    return (jsxRuntimeExports.jsxs("div", { className: "w-full lg:w-80 bg-[#0a101d] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full", children: [jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-800 text-cyan-400", children: jsxRuntimeExports.jsx(Gauge, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "CENTURION\u00AE VISION" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 font-mono", children: "Active Fluidics\u2122 System" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { className: "font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800", children: "ONLINE" }), onClose && (jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition lg:hidden", title: "Close Console", children: jsxRuntimeExports.jsx(X, { className: "w-4 h-4" }) }))] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-slate-300", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Flame, { className: "w-3.5 h-3.5 text-amber-500" }), "LOCS III Nuclear Grade"] }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-amber-400", children: cataractGrade })] }), jsxRuntimeExports.jsx("div", { className: "grid grid-cols-6 gap-1", children: grades.map(g => (jsxRuntimeExports.jsx("button", { onClick: () => onGradeChange(g), className: `py-1 rounded text-center font-mono font-semibold transition ${cataractGrade === g
                                 ? 'bg-amber-600 text-white shadow-md'
                                 : 'bg-[#0f1b2c] text-slate-400 hover:bg-[#15253e]'}`, children: g }, g))) })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-slate-400 text-[11px]", children: [jsxRuntimeExports.jsx("span", { children: "Vacuum" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400", children: [fluidics.vacuumTarget, " max"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-baseline gap-1", children: [jsxRuntimeExports.jsx("span", { className: "font-mono text-xl font-extrabold text-cyan-300", children: Math.round(fluidics.vacuumActual) }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500 font-mono", children: "mmHg" })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#101c2e] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: `h-full transition-all duration-75 ${fluidics.isOccluded ? 'bg-amber-400 animate-pulse' : 'bg-cyan-400'}`, style: { width: `${Math.min(100, (fluidics.vacuumActual / 600) * 100)}%` } }) }), fluidics.isOccluded && (jsxRuntimeExports.jsxs("span", { className: "text-[9px] font-bold text-amber-400 flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" }), "TIP OCCLUDED"] }))] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-slate-400 text-[11px]", children: [jsxRuntimeExports.jsx("span", { children: "Aspiration" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-teal-400", children: [fluidics.aspirationFlowTarget, " set"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-baseline gap-1", children: [jsxRuntimeExports.jsx("span", { className: "font-mono text-xl font-extrabold text-teal-300", children: fluidics.aspirationFlowActual.toFixed(1) }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500 font-mono", children: "cc/min" })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#101c2e] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-teal-400 transition-all duration-75", style: { width: `${Math.min(100, (fluidics.aspirationFlowActual / 50) * 100)}%` } }) }), fluidics.isSurgeOccurring && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-bold text-rose-400 flex items-center gap-1 animate-pulse", children: "SURGE DETECTED" }))] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-3.5 h-3.5 text-yellow-400" }), "Ultrasound Power"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-yellow-400 text-sm", children: [settings.powerPercent, "%"] })] }), jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-1", children: modes.map(m => (jsxRuntimeExports.jsx("button", { onClick: () => onUpdateSettings({ mode: m }), className: `py-1 rounded text-center font-mono capitalize transition ${settings.mode === m
                                 ? 'bg-yellow-600 text-white font-bold'
                                 : 'bg-[#0f1b2c] text-slate-400 hover:bg-[#15253e]'}`, children: m }, m))) }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: settings.powerPercent, onChange: (e) => onUpdateSettings({ powerPercent: Number(e.target.value) }), className: "w-full accent-yellow-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2.5", children: [jsxRuntimeExports.jsxs("div", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(SlidersVertical, { className: "w-3.5 h-3.5 text-cyan-400" }), "Infusion & Limits"] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Bottle Infusion Head" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300", children: [fluidics.bottleHeightCm, " cm H\u2082O"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "40", max: "110", value: fluidics.bottleHeightCm, onChange: (e) => onUpdateFluidics(Number(e.target.value), fluidics.vacuumTarget, fluidics.aspirationFlowTarget), className: "w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Vacuum Limit" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300", children: [fluidics.vacuumTarget, " mmHg"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "100", max: "600", step: "10", value: fluidics.vacuumTarget, onChange: (e) => onUpdateFluidics(fluidics.bottleHeightCm, Number(e.target.value), fluidics.aspirationFlowTarget), className: "w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Aspiration Flow Limit" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-teal-300", children: [fluidics.aspirationFlowTarget, " cc/min"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "15", max: "50", value: fluidics.aspirationFlowTarget, onChange: (e) => onUpdateFluidics(fluidics.bottleHeightCm, fluidics.vacuumTarget, Number(e.target.value)), className: "w-full accent-teal-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] })] }), fluidics.endothelialContactAlert && (jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-rose-950/80 border border-rose-600 text-rose-200 flex items-center gap-2 text-[11px]", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-4 h-4 text-rose-400 shrink-0" }), jsxRuntimeExports.jsx("span", { children: "WARNING: Instrument in contact with corneal endothelium!" })] })), fluidics.posteriorCapsuleContactAlert && (jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-red-950/90 border border-red-500 text-white flex items-center gap-2 text-[11px] animate-pulse", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-4 h-4 text-red-400 shrink-0" }), jsxRuntimeExports.jsx("span", { children: "DANGER: Active tip < 1mm from posterior capsule!" })] }))] }));
 };
 
-const YagConsolePanel = ({ settings, capsulotomy, onUpdateSettings, onResetLaser, }) => {
-    return (jsxRuntimeExports.jsxs("div", { className: "w-80 bg-[#0a101d] border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto", children: [jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-400", children: jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "ELLEX ULTRA Q: Nd:YAG" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 font-mono", children: "1064nm Q-Switched Photodisruptor" })] })] }), jsxRuntimeExports.jsx("span", { className: "font-mono text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold animate-pulse", children: "ARMED" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-400 text-[11px]", children: "Shots Fired" }), jsxRuntimeExports.jsx("div", { className: "text-xl font-bold font-mono text-white mt-0.5", children: settings.burstCount }), jsxRuntimeExports.jsxs("div", { className: "text-[10px] text-slate-500 font-mono", children: ["Cleared: ", capsulotomy.cruciateOpeningAreaMm2, " mm\u00B2"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-400 text-[11px]", children: "Total Energy" }), jsxRuntimeExports.jsxs("div", { className: "text-xl font-bold font-mono text-rose-400 mt-0.5", children: [settings.totalEnergyDeliveredMj.toFixed(1), " ", jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-400", children: "mJ" })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500 font-mono", children: "Threshold: ~0.8 mJ" })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-3.5 h-3.5 text-rose-400" }), "Burst Energy"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400 text-sm", children: [settings.energyMj.toFixed(1), " mJ"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "2.5", step: "0.1", value: settings.energyMj, onChange: (e) => onUpdateSettings({ energyMj: Number(e.target.value) }), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0.8 mJ (Low)" }), jsxRuntimeExports.jsx("span", { children: "1.5 mJ (Typical)" }), jsxRuntimeExports.jsx("span", { children: "2.5 mJ (High)" })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1.5", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-300 font-semibold", children: "Pulse Multiplier" }), jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-1.5", children: [1, 2, 3].map(p => (jsxRuntimeExports.jsx("button", { onClick: () => onUpdateSettings({ pulseMode: p }), className: `py-1.5 rounded-lg font-mono text-center transition ${settings.pulseMode === p
+const YagConsolePanel = ({ settings, capsulotomy, onUpdateSettings, onResetLaser, onClose, }) => {
+    return (jsxRuntimeExports.jsxs("div", { className: "w-full lg:w-80 bg-[#0a101d] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full", children: [jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-400", children: jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "ELLEX ULTRA Q: Nd:YAG" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 font-mono", children: "1064nm Q-Switched Photodisruptor" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { className: "font-mono text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold animate-pulse", children: "ARMED" }), onClose && (jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition lg:hidden", title: "Close Console", children: jsxRuntimeExports.jsx(X, { className: "w-4 h-4" }) }))] })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-400 text-[11px]", children: "Shots Fired" }), jsxRuntimeExports.jsx("div", { className: "text-xl font-bold font-mono text-white mt-0.5", children: settings.burstCount }), jsxRuntimeExports.jsxs("div", { className: "text-[10px] text-slate-500 font-mono", children: ["Cleared: ", capsulotomy.cruciateOpeningAreaMm2, " mm\u00B2"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-400 text-[11px]", children: "Total Energy" }), jsxRuntimeExports.jsxs("div", { className: "text-xl font-bold font-mono text-rose-400 mt-0.5", children: [settings.totalEnergyDeliveredMj.toFixed(1), " ", jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-400", children: "mJ" })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500 font-mono", children: "Threshold: ~0.8 mJ" })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-3.5 h-3.5 text-rose-400" }), "Burst Energy"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400 text-sm", children: [settings.energyMj.toFixed(1), " mJ"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "2.5", step: "0.1", value: settings.energyMj, onChange: (e) => onUpdateSettings({ energyMj: Number(e.target.value) }), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0.8 mJ (Low)" }), jsxRuntimeExports.jsx("span", { children: "1.5 mJ (Typical)" }), jsxRuntimeExports.jsx("span", { children: "2.5 mJ (High)" })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-1.5", children: [jsxRuntimeExports.jsx("div", { className: "text-slate-300 font-semibold", children: "Pulse Multiplier" }), jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-1.5", children: [1, 2, 3].map(p => (jsxRuntimeExports.jsx("button", { onClick: () => onUpdateSettings({ pulseMode: p }), className: `py-1.5 rounded-lg font-mono text-center transition ${settings.pulseMode === p
                                 ? 'bg-rose-600 text-white font-bold shadow-md shadow-rose-950/50'
                                 : 'bg-[#0f1b2c] text-slate-400 hover:bg-[#15253e]'}`, children: p === 1 ? '1: Single' : p === 2 ? '2: Double' : '3: Triple' }, p))) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5 text-rose-400" }), "Posterior Defocus Offset"] }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold text-sm ${settings.focalOffsetMicrons < 90 ? 'text-red-400' : 'text-emerald-400'}`, children: ["+", settings.focalOffsetMicrons, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: settings.focalOffsetMicrons, onChange: (e) => onUpdateSettings({ focalOffsetMicrons: Number(e.target.value) }), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] leading-tight text-slate-400", children: settings.focalOffsetMicrons < 90 ? (jsxRuntimeExports.jsx("span", { className: "text-rose-400 font-semibold", children: "\u26A0\uFE0F Inadequate offset! High risk of pitting the IOL optic." })) : settings.focalOffsetMicrons > 300 ? (jsxRuntimeExports.jsx("span", { className: "text-amber-400", children: "\u26A0\uFE0F Deep offset: shockwave may rupture anterior hyaloid face." })) : (jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "\u2713 Optimal defocus (+100 to +250 \u00B5m) protects IOL optic." })) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5 text-sky-400" }), "Slit-Lamp Beam Optics"] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Beam Width" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-300", children: [settings.slitBeamWidthMm.toFixed(1), " mm"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.5", max: "14.0", step: "0.5", value: settings.slitBeamWidthMm, onChange: (e) => onUpdateSettings({ slitBeamWidthMm: Number(e.target.value) }), className: "w-full accent-sky-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Beam Angle" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-300", children: [settings.slitBeamAngleDeg, "\u00B0"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "-60", max: "60", step: "5", value: settings.slitBeamAngleDeg, onChange: (e) => onUpdateSettings({ slitBeamAngleDeg: Number(e.target.value) }), className: "w-full accent-sky-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsx("button", { onClick: () => onUpdateSettings({ contactLensFitted: !settings.contactLensFitted }), className: `w-full py-1.5 rounded-lg border text-center font-medium transition ${settings.contactLensFitted
                             ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300'
@@ -69527,24 +69630,24 @@ const PostOpReportModal = ({ isOpen, onClose, report, onRestartModule, }) => {
                                         ? 'Outstanding anterior segment surgical execution with optimal tissue preservation.'
                                         : report.overallScore >= 70
                                             ? 'Acceptable clinical result. Review technique refinements below to optimize metrics.'
-                                            : 'Complications encountered requiring surgical management review.' })] }), jsxRuntimeExports.jsxs("div", { className: `w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center font-black ${getGradeColor(report.grade)}`, children: [jsxRuntimeExports.jsx("span", { className: "text-3xl leading-none", children: report.grade }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono tracking-wider mt-1", children: "Grade" })] })] }), jsxRuntimeExports.jsxs("div", { className: "p-6 grid grid-cols-2 gap-4", children: [report.module === 'phaco' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-cyan-400" }), "Capsulorhexis (CCC)"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [report.cccCircularity.value, "% Circularity"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cccCircularity.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-cyan-400", style: { width: `${report.cccCircularity.value}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-yellow-400 font-bold", children: [report.cdeScore.value.toFixed(2), " %-sec"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Target for LOCS ", report.cdeScore.expectedGrade, ":", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cdeScore.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-yellow-400", style: { width: `${Math.min(100, (report.cdeScore.value / 25) * 100)}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Activity, { className: "w-4 h-4 text-emerald-400" }), "Corneal Endothelium"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: ["-", report.endotheliumPreservation.estimatedLossPercent.toFixed(1), "% Loss"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Endothelial Status:", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.endotheliumPreservation.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-sky-400" }), "Posterior Capsule Integrity"] }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold text-xs ${report.posteriorCapsuleState === 'Intact' || report.posteriorCapsuleState === 'Polished'
+                                            : 'Complications encountered requiring surgical management review.' })] }), jsxRuntimeExports.jsxs("div", { className: `w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center font-black ${getGradeColor(report.grade)}`, children: [jsxRuntimeExports.jsx("span", { className: "text-3xl leading-none", children: report.grade }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono tracking-wider mt-1", children: "Grade" })] })] }), jsxRuntimeExports.jsxs("div", { className: "p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4", children: [report.module === 'phaco' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-cyan-400" }), "Capsulorhexis (CCC)"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [report.cccCircularity.value, "% Circularity"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cccCircularity.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-cyan-400", style: { width: `${report.cccCircularity.value}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-yellow-400 font-bold", children: [report.cdeScore.value.toFixed(2), " %-sec"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Target for LOCS ", report.cdeScore.expectedGrade, ":", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cdeScore.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-yellow-400", style: { width: `${Math.min(100, (report.cdeScore.value / 25) * 100)}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Activity, { className: "w-4 h-4 text-emerald-400" }), "Corneal Endothelium"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: ["-", report.endotheliumPreservation.estimatedLossPercent.toFixed(1), "% Loss"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Endothelial Status:", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.endotheliumPreservation.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-sky-400" }), "Posterior Capsule Integrity"] }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold text-xs ${report.posteriorCapsuleState === 'Intact' || report.posteriorCapsuleState === 'Polished'
                                                         ? 'text-emerald-400'
-                                                        : 'text-rose-400'}`, children: report.posteriorCapsuleState })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Capsule Thickness: 4-9 \u00B5m equatorial elastic reserve" })] })] })), report.module === 'iol' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Optic Centration" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [report.iolCentration.offsetMm.toFixed(2), " mm offset"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolCentration.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "360\u00B0 Rhexis Overlap" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400 font-bold", children: [report.rhexisOverlapScore.value, "%"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Status: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.rhexisOverlapScore.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Residual Viscoelastic in AC/Bag" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-400 font-bold", children: [report.viscoelasticRetention.value, "% Retained"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Risk of post-op IOP spike: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.viscoelasticRetention.rating })] })] })] })), report.module === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "Photodisruption Efficiency"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400 font-bold", children: [report.yagEfficiency.totalEnergyMj.toFixed(1), " mJ Total"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: [report.yagEfficiency.totalShots, " shots fired (", report.yagEfficiency.rating, ")"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "IOL Optic Pitting" }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold ${report.iolPittingScore.count === 0 ? 'text-emerald-400' : 'text-rose-400'}`, children: [report.iolPittingScore.count, " Pits"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Result: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolPittingScore.rating })] })] }), jsxRuntimeExports.jsx("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-2", children: jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Anterior Hyaloid Membrane" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold ${report.vitreousStatus === 'Preserved Hyaloid Face' ? 'text-emerald-400' : 'text-rose-400'}`, children: report.vitreousStatus })] }) })] }))] }), jsxRuntimeExports.jsxs("div", { className: "px-6 pb-6 space-y-2", children: [jsxRuntimeExports.jsx("div", { className: "text-xs font-bold text-slate-300 uppercase tracking-wider", children: "Clinical Consultant Review" }), jsxRuntimeExports.jsx("div", { className: "bg-[#070d18] p-4 rounded-xl border border-[#1c2e47] space-y-2 text-xs text-slate-300", children: report.clinicalSummary.map((item, idx) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-4 h-4 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsx("span", { children: item })] }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "p-5 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("button", { onClick: onRestartModule, className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111c2e] hover:bg-[#192b45] text-slate-300 hover:text-white border border-[#213554] text-xs font-semibold transition", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Reset Module" })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950/50 transition", children: "Continue Practice" })] })] }) }));
+                                                        : 'text-rose-400'}`, children: report.posteriorCapsuleState })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Capsule Thickness: 4-9 \u00B5m equatorial elastic reserve" })] })] })), report.module === 'iol' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Optic Centration" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [report.iolCentration.offsetMm.toFixed(2), " mm offset"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolCentration.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "360\u00B0 Rhexis Overlap" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400 font-bold", children: [report.rhexisOverlapScore.value, "%"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Status: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.rhexisOverlapScore.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Residual Viscoelastic in AC/Bag" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-400 font-bold", children: [report.viscoelasticRetention.value, "% Retained"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Risk of post-op IOP spike: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.viscoelasticRetention.rating })] })] })] })), report.module === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "Photodisruption Efficiency"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400 font-bold", children: [report.yagEfficiency.totalEnergyMj.toFixed(1), " mJ Total"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: [report.yagEfficiency.totalShots, " shots fired (", report.yagEfficiency.rating, ")"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "IOL Optic Pitting" }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold ${report.iolPittingScore.count === 0 ? 'text-emerald-400' : 'text-rose-400'}`, children: [report.iolPittingScore.count, " Pits"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Result: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolPittingScore.rating })] })] }), jsxRuntimeExports.jsx("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Anterior Hyaloid Membrane" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold ${report.vitreousStatus === 'Preserved Hyaloid Face' ? 'text-emerald-400' : 'text-rose-400'}`, children: report.vitreousStatus })] }) })] }))] }), jsxRuntimeExports.jsxs("div", { className: "px-6 pb-6 space-y-2", children: [jsxRuntimeExports.jsx("div", { className: "text-xs font-bold text-slate-300 uppercase tracking-wider", children: "Clinical Consultant Review" }), jsxRuntimeExports.jsx("div", { className: "bg-[#070d18] p-4 rounded-xl border border-[#1c2e47] space-y-2 text-xs text-slate-300", children: report.clinicalSummary.map((item, idx) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-4 h-4 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsx("span", { children: item })] }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "p-5 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("button", { onClick: onRestartModule, className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111c2e] hover:bg-[#192b45] text-slate-300 hover:text-white border border-[#213554] text-xs font-semibold transition", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Reset Module" })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950/50 transition", children: "Continue Practice" })] })] }) }));
 };
 
 const ClinicalReferenceModal = ({ isOpen, onClose, }) => {
     const [activeTab, setActiveTab] = reactExports.useState('phaco');
     if (!isOpen)
         return null;
-    return (jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-fadeIn", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1220] border border-[#1e2f4a] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col", children: [jsxRuntimeExports.jsxs("div", { className: "p-5 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-700 text-cyan-400", children: jsxRuntimeExports.jsx(BookOpen, { className: "w-5 h-5" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: "text-base font-bold text-white tracking-wide", children: "OPHTHALMIC SURGICAL CONSULTANT COMPENDIUM" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Biomedical Principles, Fluidics Equations, and Micro-Surgical Protocols" })] })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1.5 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-5 h-5" }) })] }), jsxRuntimeExports.jsx("div", { className: "flex border-b border-[#1b2b44] bg-[#080d18] px-4 gap-2 text-xs", children: [
-                        { id: 'phaco', label: 'Phaco Principles & CDE' },
-                        { id: 'ccc', label: 'Capsulorhexis & Little Rescue' },
-                        { id: 'fluidics', label: 'Fluidics & Surge Dynamics' },
-                        { id: 'iol', label: 'IOL Implantation & Washout' },
-                        { id: 'yag', label: 'Nd:YAG Laser Optical Physics' }
-                    ].map(tab => (jsxRuntimeExports.jsx("button", { onClick: () => setActiveTab(tab.id), className: `py-3 px-3 font-semibold transition border-b-2 ${activeTab === tab.id
+    return (jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-fadeIn", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1220] border border-[#1e2f4a] rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col", children: [jsxRuntimeExports.jsxs("div", { className: "p-5 border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-700 text-cyan-400", children: jsxRuntimeExports.jsx(BookOpen, { className: "w-5 h-5" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: "text-base font-bold text-white tracking-wide", children: "OPHTHALMIC SURGICAL CONSULTANT COMPENDIUM" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Biomedical Principles, Fluidics Equations, and Micro-Surgical Protocols" })] })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1.5 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-5 h-5" }) })] }), jsxRuntimeExports.jsx("div", { className: "flex border-b border-[#1b2b44] bg-[#080d18] px-2 sm:px-4 gap-1 sm:gap-2 text-xs overflow-x-auto whitespace-nowrap", children: [
+                        { id: 'phaco', label: 'Phaco & CDE' },
+                        { id: 'ccc', label: 'Capsulorhexis (CCC)' },
+                        { id: 'fluidics', label: 'Fluidics & Surge' },
+                        { id: 'iol', label: 'IOL Implantation' },
+                        { id: 'yag', label: 'Nd:YAG Laser' }
+                    ].map(tab => (jsxRuntimeExports.jsx("button", { onClick: () => setActiveTab(tab.id), className: `py-2.5 sm:py-3 px-3 font-semibold transition border-b-2 shrink-0 ${activeTab === tab.id
                             ? 'border-cyan-400 text-cyan-300 bg-[#0e1726]'
-                            : 'border-transparent text-slate-400 hover:text-slate-200'}`, children: tab.label }, tab.id))) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-300 leading-relaxed", children: [activeTab === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy (CDE) Formula"] }), jsxRuntimeExports.jsx("p", { children: "Cumulative Dissipated Energy quantifies total acoustic ultrasound energy delivered into the eye:" }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-yellow-300", children: "CDE = Phaco Time (sec) \u00D7 (Average US Power [%] / 100) \u00D7 Duty Cycle" }), jsxRuntimeExports.jsx("p", { className: "text-slate-400", children: "Excessive CDE (> 18 %-sec for LOCS III NO3) increases thermal endothelial apoptosis and post-op corneal edema." })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-white text-xs", children: "LOCS III Nuclear Opalescence (NO) Grading" }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-2 font-mono text-[11px]", children: [jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-300 font-bold", children: "NO1 - NO2" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Soft cataract; Low phaco power (20-40%), gentle aspiration." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-400 font-bold", children: "NO3 - NO4" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Moderate/dense nucleus; Stop & chop or quick-chop with burst mode." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-500 font-bold", children: "NO5 - NO6" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Brunescent / black rock cataract; High CDE risk, dispersive OVD recoating." })] })] })] })] })), activeTab === 'ccc' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-4 h-4 text-cyan-400" }), "Continuous Curvilinear Capsulorhexis (CCC) Biomechanics"] }), jsxRuntimeExports.jsx("p", { children: "The capsulorhexis tear vector is governed by a balance of two vectors:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 space-y-1 text-slate-400", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Shearing (Tangential) Force:" }), " Pulling parallel to the tear edge creates a controlled circumferential curve."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Stretching (Radial Outward) Force:" }), " Outward tension towards zonules increases if anterior chamber depth is lost or pull vector points outward."] })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-emerald-300 text-xs", children: "Little's Technique for Rescuing Runaway Rhexis" }), jsxRuntimeExports.jsx("p", { children: "When a tear begins extending radially toward the zonules:" }), jsxRuntimeExports.jsxs("ol", { className: "list-decimal pl-5 space-y-1 text-slate-300", children: [jsxRuntimeExports.jsx("li", { children: "Refill the anterior chamber with cohesive viscoelastic to eliminate positive vitreous upthrust and flatten the lens convexity." }), jsxRuntimeExports.jsx("li", { children: "Unfold the capsular flap so it lies completely flat against the anterior lens cortex." }), jsxRuntimeExports.jsx("li", { children: "Grasp the flap with micro-forceps just posterior to the apex of the tear." }), jsxRuntimeExports.jsxs("li", { children: ["Direct vector pull ", jsxRuntimeExports.jsx("strong", { children: "180 degrees directly back toward the center of the pupil" }), "."] }), jsxRuntimeExports.jsx("li", { children: "The tear will redirect centripetally, returning to the desired 5.0\u20135.5 mm circular trajectory." })] })] })] })), activeTab === 'fluidics' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Droplets, { className: "w-4 h-4 text-cyan-400" }), "Fluidics Balance & Surge Physics"] }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-cyan-300", children: "dV/dt = Inflow(Bottle Height / Forced Infusion) - Outflow(Aspiration + Incision Leak)" }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Post-Occlusion Surge:" }), " While the tip is occluded by a dense nuclear fragment, vacuum ramps up to the preset limit (e.g. 450 mmHg). Compliance in the tubing causes elastic expansion. When the fragment clears, this stored potential energy instantaneously evacuates fluid from the anterior chamber at high speed (>60 cc/min), causing rapid chamber collapse unless compensated by active fluidics."] })] }) })), activeTab === 'iol' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h3", { className: "font-bold text-cyan-300 text-sm", children: "Foldable Hydrophobic Acrylic IOL Mechanics" }), jsxRuntimeExports.jsx("p", { children: "Modern single-piece acrylic lenses feature open C-loop haptics. The leading haptic must enter the capsular bag directly from the injector nozzle. The trailing haptic is dialed into the equator using a Sinskey hook with clockwise rotation." }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "360-Degree Optic Overlap:" }), " Complete capsular overlap (0.5 mm anterior rim around the 6.0 mm optic) acts as a mechanical barrier preventing lens epithelial cell migration and posterior capsular opacification (PCO)."] }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Viscoelastic Washout:" }), " Retained cohesive OVD in the capsular bag blocks the trabecular meshwork postoperatively, causing severe IOP spikes (>45 mmHg). Thorough bimanual / retro-lens aspiration is required."] })] }) })), activeTab === 'yag' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-rose-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "1064nm Nd:YAG Laser Photodisruption & Focal Offset"] }), jsxRuntimeExports.jsx("p", { children: "The Nd:YAG laser delivers a sub-nanosecond pulse creating an electric field exceeding the optical dielectric breakdown threshold of aqueous humor (~0.8 mJ). This produces plasma, accompanied by a supersonic shockwave and cavitation micro-bubble." }), jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#070c16] rounded-lg border border-[#17253a] space-y-1", children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "Crucial Defocus Offset Rules:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 text-slate-300 space-y-1", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-red-400", children: "Zero or Anterior Offset:" }), " Plasma shockwave occurs directly on the posterior IOL surface, producing pitting and crack defects."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-emerald-400", children: "+100 to +250 \u00B5m Posterior Offset:" }), " Safe clinical zone. The acoustic shockwave propagates forward to cleave the opacified capsule without contacting the acrylic optic."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-amber-400", children: "> +320 \u00B5m Posterior Offset:" }), " Plasma breakdown disrupts the anterior hyaloid face, leading to vitreous prolapse and floaters."] })] })] })] }) }))] }), jsxRuntimeExports.jsx("div", { className: "p-4 border-t border-[#1b2b44] flex justify-end bg-[#080d19]", children: jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition", children: "Close Guide" }) })] }) }));
+                            : 'border-transparent text-slate-400 hover:text-slate-200'}`, children: tab.label }, tab.id))) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed", children: [activeTab === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy (CDE) Formula"] }), jsxRuntimeExports.jsx("p", { children: "Cumulative Dissipated Energy quantifies total acoustic ultrasound energy delivered into the eye:" }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-yellow-300", children: "CDE = Phaco Time (sec) \u00D7 (Average US Power [%] / 100) \u00D7 Duty Cycle" }), jsxRuntimeExports.jsx("p", { className: "text-slate-400", children: "Excessive CDE (> 18 %-sec for LOCS III NO3) increases thermal endothelial apoptosis and post-op corneal edema." })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-white text-xs", children: "LOCS III Nuclear Opalescence (NO) Grading" }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-2 font-mono text-[11px]", children: [jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-300 font-bold", children: "NO1 - NO2" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Soft cataract; Low phaco power (20-40%), gentle aspiration." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-400 font-bold", children: "NO3 - NO4" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Moderate/dense nucleus; Stop & chop or quick-chop with burst mode." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-500 font-bold", children: "NO5 - NO6" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Brunescent / black rock cataract; High CDE risk, dispersive OVD recoating." })] })] })] })] })), activeTab === 'ccc' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-4 h-4 text-cyan-400" }), "Continuous Curvilinear Capsulorhexis (CCC) Biomechanics"] }), jsxRuntimeExports.jsx("p", { children: "The capsulorhexis tear vector is governed by a balance of two vectors:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 space-y-1 text-slate-400", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Shearing (Tangential) Force:" }), " Pulling parallel to the tear edge creates a controlled circumferential curve."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Stretching (Radial Outward) Force:" }), " Outward tension towards zonules increases if anterior chamber depth is lost or pull vector points outward."] })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-emerald-300 text-xs", children: "Little's Technique for Rescuing Runaway Rhexis" }), jsxRuntimeExports.jsx("p", { children: "When a tear begins extending radially toward the zonules:" }), jsxRuntimeExports.jsxs("ol", { className: "list-decimal pl-5 space-y-1 text-slate-300", children: [jsxRuntimeExports.jsx("li", { children: "Refill the anterior chamber with cohesive viscoelastic to eliminate positive vitreous upthrust and flatten the lens convexity." }), jsxRuntimeExports.jsx("li", { children: "Unfold the capsular flap so it lies completely flat against the anterior lens cortex." }), jsxRuntimeExports.jsx("li", { children: "Grasp the flap with micro-forceps just posterior to the apex of the tear." }), jsxRuntimeExports.jsxs("li", { children: ["Direct vector pull ", jsxRuntimeExports.jsx("strong", { children: "180 degrees directly back toward the center of the pupil" }), "."] }), jsxRuntimeExports.jsx("li", { children: "The tear will redirect centripetally, returning to the desired 5.0\u20135.5 mm circular trajectory." })] })] })] })), activeTab === 'fluidics' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Droplets, { className: "w-4 h-4 text-cyan-400" }), "Fluidics Balance & Surge Physics"] }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-cyan-300", children: "dV/dt = Inflow(Bottle Height / Forced Infusion) - Outflow(Aspiration + Incision Leak)" }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Post-Occlusion Surge:" }), " While the tip is occluded by a dense nuclear fragment, vacuum ramps up to the preset limit (e.g. 450 mmHg). Compliance in the tubing causes elastic expansion. When the fragment clears, this stored potential energy instantaneously evacuates fluid from the anterior chamber at high speed (>60 cc/min), causing rapid chamber collapse unless compensated by active fluidics."] })] }) })), activeTab === 'iol' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h3", { className: "font-bold text-cyan-300 text-sm", children: "Foldable Hydrophobic Acrylic IOL Mechanics" }), jsxRuntimeExports.jsx("p", { children: "Modern single-piece acrylic lenses feature open C-loop haptics. The leading haptic must enter the capsular bag directly from the injector nozzle. The trailing haptic is dialed into the equator using a Sinskey hook with clockwise rotation." }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "360-Degree Optic Overlap:" }), " Complete capsular overlap (0.5 mm anterior rim around the 6.0 mm optic) acts as a mechanical barrier preventing lens epithelial cell migration and posterior capsular opacification (PCO)."] }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Viscoelastic Washout:" }), " Retained cohesive OVD in the capsular bag blocks the trabecular meshwork postoperatively, causing severe IOP spikes (>45 mmHg). Thorough bimanual / retro-lens aspiration is required."] })] }) })), activeTab === 'yag' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-rose-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "1064nm Nd:YAG Laser Photodisruption & Focal Offset"] }), jsxRuntimeExports.jsx("p", { children: "The Nd:YAG laser delivers a sub-nanosecond pulse creating an electric field exceeding the optical dielectric breakdown threshold of aqueous humor (~0.8 mJ). This produces plasma, accompanied by a supersonic shockwave and cavitation micro-bubble." }), jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#070c16] rounded-lg border border-[#17253a] space-y-1", children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "Crucial Defocus Offset Rules:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 text-slate-300 space-y-1", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-red-400", children: "Zero or Anterior Offset:" }), " Plasma shockwave occurs directly on the posterior IOL surface, producing pitting and crack defects."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-emerald-400", children: "+100 to +250 \u00B5m Posterior Offset:" }), " Safe clinical zone. The acoustic shockwave propagates forward to cleave the opacified capsule without contacting the acrylic optic."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-amber-400", children: "> +320 \u00B5m Posterior Offset:" }), " Plasma breakdown disrupts the anterior hyaloid face, leading to vitreous prolapse and floaters."] })] })] })] }) }))] }), jsxRuntimeExports.jsx("div", { className: "p-4 border-t border-[#1b2b44] flex justify-end bg-[#080d19]", children: jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition", children: "Close Guide" }) })] }) }));
 };
 
 // Web Speech API - Ophthalmic Surgical Consultant Text-To-Speech (TTS) Engine
@@ -69676,6 +69779,7 @@ const SurgicalInstructionBanner = ({ currentInstruction, }) => {
     const [isSpeaking, setIsSpeaking] = reactExports.useState(false);
     const [autoNarrate, setAutoNarrate] = reactExports.useState(true);
     const [isExpanded, setIsExpanded] = reactExports.useState(false);
+    const [isMinimized, setIsMinimized] = reactExports.useState(false);
     const [speechRate, setSpeechRate] = reactExports.useState(0.95);
     // Subscribe to TTS speaking state
     reactExports.useEffect(() => {
@@ -69706,17 +69810,17 @@ const SurgicalInstructionBanner = ({ currentInstruction, }) => {
         setSpeechRate(rate);
         ttsEngine.setRate(rate);
     };
-    return (jsxRuntimeExports.jsxs("div", { className: "absolute top-4 left-4 z-20 max-w-xl w-full bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-[#1e2f4a] shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: [jsxRuntimeExports.jsxs("div", { className: "p-3.5 flex items-center justify-between gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: `p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
-                                    ? 'bg-cyan-950 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-900/50'
-                                    : 'bg-[#101b2e] border-[#1c2c44] text-slate-400'}`, children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-4 h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "text-[11px] text-cyan-300/80 font-medium truncate mt-0.5", children: ["Target: ", currentInstruction.clinicalObjective] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: toggleSpeak, title: isSpeaking ? 'Stop Voice Narration' : 'Read Instruction Aloud (TTS)', className: `px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition text-xs shadow-md ${isSpeaking
-                                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 animate-pulse'
-                                    : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/50'}`, children: [isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }), jsxRuntimeExports.jsx("span", { children: isSpeaking ? 'Stop Voice' : 'Read Aloud' })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
-                                    const next = !autoNarrate;
-                                    setAutoNarrate(next);
-                                    ttsEngine.setAutoNarrate(next);
-                                }, title: autoNarrate ? 'Auto-Voice Enabled: Automatically reads each step' : 'Auto-Voice Disabled', className: `px-2.5 py-1.5 rounded-xl border text-[11px] font-medium transition flex items-center gap-1 ${autoNarrate
-                                    ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
-                                    : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, children: [jsxRuntimeExports.jsx(Radio, { className: `w-3 h-3 ${autoNarrate ? 'text-emerald-400' : 'text-slate-500'}` }), jsxRuntimeExports.jsxs("span", { children: ["Auto: ", autoNarrate ? 'ON' : 'OFF'] })] }), jsxRuntimeExports.jsx("button", { onClick: () => setIsExpanded(!isExpanded), className: "p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Clinical Pearls & Hazards", children: isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-4 h-4" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-4 h-4" }) })] })] }), jsxRuntimeExports.jsx("div", { className: "p-3 bg-[#080f1c]/90 text-[11px] text-slate-300 leading-relaxed font-sans border-b border-[#162338]", children: jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("p", { className: "italic text-slate-200", children: ["\"", currentInstruction.spokenScript, "\""] })] }) }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3.5 bg-[#060c17] space-y-2.5 text-[11px] border-t border-[#162338] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-cyan-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-cyan-300" }), "Surgical Technique & Vector Pearls:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#132034]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-amber-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-amber-400" }), "Hazards to Avoid:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-400", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { className: "text-amber-200/90", children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("span", { children: "Voice Cadence:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [speechRate.toFixed(2), "x"] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "1.25", step: "0.05", value: speechRate, onChange: (e) => handleRateChange(Number(e.target.value)), className: "w-24 accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer" })] })] })] }))] }));
+    return (jsxRuntimeExports.jsx("div", { className: "absolute top-2 left-2 right-2 sm:right-auto sm:top-3 sm:left-3 sm:max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-[#1e2f4a] shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-cyan-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3.5 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
+                                        ? 'bg-cyan-950 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-900/50'
+                                        : 'bg-[#101b2e] border-[#1c2c44] text-slate-400'}`, children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3.5 sm:h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-2.5 sm:h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-3.5 sm:h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "text-[10px] sm:text-[11px] text-cyan-300/80 font-medium truncate mt-0.5 hidden xs:block", children: ["Target: ", currentInstruction.clinicalObjective] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-1.5 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: toggleSpeak, title: isSpeaking ? 'Stop Voice Narration' : 'Read Instruction Aloud (TTS)', className: `px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl font-bold flex items-center gap-1 sm:gap-1.5 transition text-xs shadow-md ${isSpeaking
+                                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 animate-pulse'
+                                        : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/50'}`, children: [isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: isSpeaking ? 'Stop' : 'Voice' })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        const next = !autoNarrate;
+                                        setAutoNarrate(next);
+                                        ttsEngine.setAutoNarrate(next);
+                                    }, title: autoNarrate ? 'Auto-Voice Enabled: Automatically reads each step' : 'Auto-Voice Disabled', className: `px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border text-[10px] sm:text-[11px] font-medium transition items-center gap-1 hidden xs:flex ${autoNarrate
+                                        ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
+                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, children: [jsxRuntimeExports.jsx(Radio, { className: `w-3 h-3 ${autoNarrate ? 'text-emerald-400' : 'text-slate-500'}` }), jsxRuntimeExports.jsx("span", { children: autoNarrate ? 'Auto' : 'Off' })] }), jsxRuntimeExports.jsx("button", { onClick: () => setIsExpanded(!isExpanded), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Clinical Pearls & Hazards", children: isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(true), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Minimize Banner to Pill (Saves space)", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) })] })] }), jsxRuntimeExports.jsx("div", { className: "p-3 bg-[#080f1c]/90 text-[11px] text-slate-300 leading-relaxed font-sans border-b border-[#162338]", children: jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("p", { className: "italic text-slate-200", children: ["\"", currentInstruction.spokenScript, "\""] })] }) }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3.5 bg-[#060c17] space-y-2.5 text-[11px] border-t border-[#162338] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-cyan-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-cyan-300" }), "Surgical Technique & Vector Pearls:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#132034]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-amber-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-amber-400" }), "Hazards to Avoid:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-400", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { className: "text-amber-200/90", children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("span", { children: "Voice Cadence:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [speechRate.toFixed(2), "x"] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "1.25", step: "0.05", value: speechRate, onChange: (e) => handleRateChange(Number(e.target.value)), className: "w-24 accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer" })] })] })] }))] })) }));
 };
 
 const SURGICAL_INSTRUCTIONS = {
@@ -70050,6 +70154,9 @@ const App = () => {
     const [activeInstrument, setActiveInstrument] = reactExports.useState('mvr_blade');
     const [pedalPosition, setPedalPosition] = reactExports.useState(0);
     const [isMuted, setIsMuted] = reactExports.useState(false);
+    // Mobile Drawer State
+    const [isToolsOpen, setIsToolsOpen] = reactExports.useState(false);
+    const [isConsoleOpen, setIsConsoleOpen] = reactExports.useState(false);
     // Modals
     const [isReportOpen, setIsReportOpen] = reactExports.useState(false);
     const [isReferenceOpen, setIsReferenceOpen] = reactExports.useState(false);
@@ -70442,36 +70549,56 @@ const App = () => {
     return (jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-screen w-screen bg-[#060a12] text-slate-200 select-none overflow-hidden font-sans", children: [jsxRuntimeExports.jsx(TopVitalsBar, { module: module, phacoStep: phacoStep, iolStep: iolStep, yagStep: yagStep, fluidics: fluidics, cde: cataractEngineRef.current.totalCde, vitals: vitals, elapsedSeconds: elapsedSeconds, onOpenReport: () => setIsReportOpen(true), onOpenReference: () => setIsReferenceOpen(true), isMuted: isMuted, onToggleMute: () => {
                     setIsMuted(!isMuted);
                     audioEngine.setMuted(!isMuted);
-                } }), jsxRuntimeExports.jsxs("div", { className: "bg-[#09101e] border-b border-[#1b2b44] px-4 py-2 flex items-center justify-between text-xs", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium", children: "Workflows:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('phaco'); }, className: `px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${module === 'phaco'
+                }, onToggleTools: () => setIsToolsOpen(!isToolsOpen), isToolsOpen: isToolsOpen, onToggleConsole: () => setIsConsoleOpen(!isConsoleOpen), isConsoleOpen: isConsoleOpen, activeInstrument: activeInstrument }), jsxRuntimeExports.jsxs("div", { className: "bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium hidden md:inline", children: "Workflows:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('phaco'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'phaco'
                                             ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "1. Phacoemulsification" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('iol'); }, className: `px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${module === 'iol'
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "1. Phacoemulsification" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "1. Phaco" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('iol'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'iol'
                                             ? 'bg-sky-600 text-white shadow-md shadow-sky-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Disc, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "2. Foldable IOL" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('yag'); }, className: `px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${module === 'yag'
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Disc, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "2. Foldable IOL" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "2. IOL" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('yag'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'yag'
                                             ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "3. Nd:YAG Laser" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] px-2 py-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("button", { onClick: handlePrevStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Previous Surgical Step", children: jsxRuntimeExports.jsx(ChevronLeft, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-mono text-cyan-300 px-1 font-semibold", children: ["Step ", getCurrentInstruction().stepNumber, " / ", module === 'phaco' ? 7 : 5] }), jsxRuntimeExports.jsx("button", { onClick: handleNextStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Next Surgical Step", children: jsxRuntimeExports.jsx(ChevronRight, { className: "w-3.5 h-3.5" }) })] })] }), jsxRuntimeExports.jsxs("button", { onClick: handleRestartModule, className: "flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-3 h-3" }), jsxRuntimeExports.jsx("span", { children: "Reset Eye" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex overflow-hidden relative", children: [jsxRuntimeExports.jsx(InstrumentTray, { module: module, activeInstrument: activeInstrument, onSelectInstrument: (inst) => setActiveInstrument(inst) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col relative overflow-hidden", children: [jsxRuntimeExports.jsx(SurgicalInstructionBanner, { currentInstruction: getCurrentInstruction(), onSelectInstrument: (tool) => setActiveInstrument(tool) }), jsxRuntimeExports.jsx(SurgicalViewport, { module: module, activeInstrument: activeInstrument, pedalPosition: pedalPosition, fluidics: fluidics, cccState: cataractEngineRef.current.ccc, hydroState: cataractEngineRef.current.hydro, nucleusState: cataractEngineRef.current.nucleus, iolState: iolEngineRef.current.state, yagState: yagEngineRef.current.capsulotomy, yagSettings: yagEngineRef.current.settings, incisions: cataractEngineRef.current.incisions, ovdCoverage: {
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "3. Nd:YAG Laser" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "3. YAG" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("button", { onClick: handlePrevStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Previous Surgical Step", children: jsxRuntimeExports.jsx(ChevronLeft, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] sm:text-[11px] font-mono text-cyan-300 px-1 font-semibold whitespace-nowrap", children: ["Step ", getCurrentInstruction().stepNumber, " / ", module === 'phaco' ? 7 : 5] }), jsxRuntimeExports.jsx("button", { onClick: handleNextStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Next Surgical Step", children: jsxRuntimeExports.jsx(ChevronRight, { className: "w-3.5 h-3.5" }) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setIsToolsOpen(true), className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-cyan-800/60 text-cyan-300 transition text-[11px] font-mono shadow-sm active:scale-95", title: "Click to Open Tools Menu (Hamburger Drawer)", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-500 hidden sm:inline", children: "Tool:" }), jsxRuntimeExports.jsx("span", { className: "font-bold uppercase text-white truncate max-w-[85px] xs:max-w-[120px] sm:max-w-none", children: activeInstrument.replace('_', ' ') })] }), jsxRuntimeExports.jsxs("button", { onClick: handleRestartModule, className: "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition active:scale-95", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-3 h-3" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "Reset Eye" }), jsxRuntimeExports.jsx("span", { className: "xs:hidden", children: "Reset" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex overflow-hidden relative", children: [jsxRuntimeExports.jsx(InstrumentTray, { module: module, activeInstrument: activeInstrument, onSelectInstrument: (inst) => setActiveInstrument(inst), isOpenMobile: isToolsOpen, onCloseMobile: () => setIsToolsOpen(false) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col relative overflow-hidden h-full", children: [jsxRuntimeExports.jsx(SurgicalInstructionBanner, { currentInstruction: getCurrentInstruction(), onSelectInstrument: (tool) => setActiveInstrument(tool) }), jsxRuntimeExports.jsx(SurgicalViewport, { module: module, activeInstrument: activeInstrument, pedalPosition: pedalPosition, fluidics: fluidics, cccState: cataractEngineRef.current.ccc, hydroState: cataractEngineRef.current.hydro, nucleusState: cataractEngineRef.current.nucleus, iolState: iolEngineRef.current.state, yagState: yagEngineRef.current.capsulotomy, yagSettings: yagEngineRef.current.settings, incisions: cataractEngineRef.current.incisions, ovdCoverage: {
                                     dispersive: cataractEngineRef.current.ovdDispersiveCoverage,
                                     cohesive: cataractEngineRef.current.ovdCohesiveDepth
-                                }, onIncisionAdvance: handleIncisionAdvance, onOvdInject: handleOvdInject, onCccPuncture: handleCccPuncture, onCccDrag: handleCccDrag, onHydroPulse: handleHydroPulse, onHydroRotate: (deg) => cataractEngineRef.current.testNucleusRotation(deg), onPhacoApply: handlePhacoApply, onIaAspirate: handleIaAspirate, onIolAdvance: handleIolAdvance, onIolDial: handleIolDial, onIolWashout: handleIolWashout, onYagFire: handleYagFire }), jsxRuntimeExports.jsx(FootPedalControl, { pedalPosition: pedalPosition, onPedalChange: (pos) => setPedalPosition(pos), disabled: module === 'yag' })] }), module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
-                            Object.assign(yagEngineRef.current.settings, newSet);
-                            setTick(t => t + 1);
-                        }, onResetLaser: () => {
-                            yagEngineRef.current.capsulotomy.shots = [];
-                            yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
-                            yagEngineRef.current.capsulotomy.iolPitsCount = 0;
-                            yagEngineRef.current.settings.burstCount = 0;
-                            yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
-                            setTick(t => t + 1);
-                        } })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
-                            setPhacoSettings(prev => ({ ...prev, ...newSet }));
-                        }, onUpdateFluidics: (bottle, vac, flow) => {
-                            fluidicsEngineRef.current.setBottleHeight(bottle);
-                            fluidicsEngineRef.current.setVacuumTarget(vac);
-                            fluidicsEngineRef.current.setAspirationFlowTarget(flow);
-                            setFluidics(fluidicsEngineRef.current.getState());
-                        }, onGradeChange: (g) => {
-                            setCataractGrade(g);
-                            cataractEngineRef.current.cataractGrade = g;
-                        } }))] }), jsxRuntimeExports.jsx(PostOpReportModal, { isOpen: isReportOpen, onClose: () => setIsReportOpen(false), report: generateReportCard(), onRestartModule: handleRestartModule }), jsxRuntimeExports.jsx(ClinicalReferenceModal, { isOpen: isReferenceOpen, onClose: () => setIsReferenceOpen(false) })] }));
+                                }, onIncisionAdvance: handleIncisionAdvance, onOvdInject: handleOvdInject, onCccPuncture: handleCccPuncture, onCccDrag: handleCccDrag, onHydroPulse: handleHydroPulse, onHydroRotate: (deg) => cataractEngineRef.current.testNucleusRotation(deg), onPhacoApply: handlePhacoApply, onIaAspirate: handleIaAspirate, onIolAdvance: handleIolAdvance, onIolDial: handleIolDial, onIolWashout: handleIolWashout, onYagFire: handleYagFire }), jsxRuntimeExports.jsx(FootPedalControl, { pedalPosition: pedalPosition, onPedalChange: (pos) => setPedalPosition(pos), disabled: module === 'yag' })] }), jsxRuntimeExports.jsx("div", { className: "hidden lg:flex h-full", children: module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
+                                Object.assign(yagEngineRef.current.settings, newSet);
+                                setTick(t => t + 1);
+                            }, onResetLaser: () => {
+                                yagEngineRef.current.capsulotomy.shots = [];
+                                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
+                                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
+                                yagEngineRef.current.settings.burstCount = 0;
+                                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                                setTick(t => t + 1);
+                            } })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
+                                setPhacoSettings(prev => ({ ...prev, ...newSet }));
+                            }, onUpdateFluidics: (bottle, vac, flow) => {
+                                fluidicsEngineRef.current.setBottleHeight(bottle);
+                                fluidicsEngineRef.current.setVacuumTarget(vac);
+                                fluidicsEngineRef.current.setAspirationFlowTarget(flow);
+                                setFluidics(fluidicsEngineRef.current.getState());
+                            }, onGradeChange: (g) => {
+                                setCataractGrade(g);
+                                cataractEngineRef.current.cataractGrade = g;
+                            } })) }), isConsoleOpen && (jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-black/75 backdrop-blur-sm z-40 lg:hidden transition-opacity", onClick: () => setIsConsoleOpen(false), "aria-label": "Close machine console backdrop" })), jsxRuntimeExports.jsx("div", { className: `fixed top-0 right-0 bottom-0 z-50 w-80 max-w-[85vw] h-full bg-[#0a101d] shadow-2xl flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${isConsoleOpen ? 'translate-x-0' : 'translate-x-full'}`, children: module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
+                                Object.assign(yagEngineRef.current.settings, newSet);
+                                setTick(t => t + 1);
+                            }, onResetLaser: () => {
+                                yagEngineRef.current.capsulotomy.shots = [];
+                                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
+                                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
+                                yagEngineRef.current.settings.burstCount = 0;
+                                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                                setTick(t => t + 1);
+                            }, onClose: () => setIsConsoleOpen(false) })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
+                                setPhacoSettings(prev => ({ ...prev, ...newSet }));
+                            }, onUpdateFluidics: (bottle, vac, flow) => {
+                                fluidicsEngineRef.current.setBottleHeight(bottle);
+                                fluidicsEngineRef.current.setVacuumTarget(vac);
+                                fluidicsEngineRef.current.setAspirationFlowTarget(flow);
+                                setFluidics(fluidicsEngineRef.current.getState());
+                            }, onGradeChange: (g) => {
+                                setCataractGrade(g);
+                                cataractEngineRef.current.cataractGrade = g;
+                            }, onClose: () => setIsConsoleOpen(false) })) })] }), jsxRuntimeExports.jsx(PostOpReportModal, { isOpen: isReportOpen, onClose: () => setIsReportOpen(false), report: generateReportCard(), onRestartModule: handleRestartModule }), jsxRuntimeExports.jsx(ClinicalReferenceModal, { isOpen: isReferenceOpen, onClose: () => setIsReferenceOpen(false) })] }));
 };
 
 clientExports.createRoot(document.getElementById('root')).render(jsxRuntimeExports.jsx(reactExports.StrictMode, { children: jsxRuntimeExports.jsx(App, {}) }));

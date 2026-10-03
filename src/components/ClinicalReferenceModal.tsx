@@ -52,18 +52,18 @@ export const ClinicalReferenceModal: React.FC<ClinicalReferenceModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#1b2b44] bg-[#080d18] px-4 gap-2 text-xs">
+        <div className="flex border-b border-[#1b2b44] bg-[#080d18] px-2 sm:px-4 gap-1 sm:gap-2 text-xs overflow-x-auto whitespace-nowrap">
           {[
-            { id: 'phaco', label: 'Phaco Principles & CDE' },
-            { id: 'ccc', label: 'Capsulorhexis & Little Rescue' },
-            { id: 'fluidics', label: 'Fluidics & Surge Dynamics' },
-            { id: 'iol', label: 'IOL Implantation & Washout' },
-            { id: 'yag', label: 'Nd:YAG Laser Optical Physics' }
+            { id: 'phaco', label: 'Phaco & CDE' },
+            { id: 'ccc', label: 'Capsulorhexis (CCC)' },
+            { id: 'fluidics', label: 'Fluidics & Surge' },
+            { id: 'iol', label: 'IOL Implantation' },
+            { id: 'yag', label: 'Nd:YAG Laser' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`py-3 px-3 font-semibold transition border-b-2 ${
+              className={`py-2.5 sm:py-3 px-3 font-semibold transition border-b-2 shrink-0 ${
                 activeTab === tab.id
                   ? 'border-cyan-400 text-cyan-300 bg-[#0e1726]'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -75,7 +75,7 @@ export const ClinicalReferenceModal: React.FC<ClinicalReferenceModalProps> = ({
         </div>
 
         {/* Tab Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed">
           {activeTab === 'phaco' && (
             <div className="space-y-4">
               <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2">

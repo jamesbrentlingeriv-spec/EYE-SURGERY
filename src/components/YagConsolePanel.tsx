@@ -9,7 +9,8 @@ import {
   Sun,
   Eye,
   RotateCw,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 interface YagConsolePanelProps {
@@ -17,6 +18,7 @@ interface YagConsolePanelProps {
   capsulotomy: YagCapsulotomyState;
   onUpdateSettings: (newSettings: Partial<YagLaserSettings>) => void;
   onResetLaser: () => void;
+  onClose?: () => void;
 }
 
 export const YagConsolePanel: React.FC<YagConsolePanelProps> = ({
@@ -24,9 +26,10 @@ export const YagConsolePanel: React.FC<YagConsolePanelProps> = ({
   capsulotomy,
   onUpdateSettings,
   onResetLaser,
+  onClose,
 }) => {
   return (
-    <div className="w-80 bg-[#0a101d] border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto">
+    <div className="w-full lg:w-80 bg-[#0a101d] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full">
       {/* Console Header */}
       <div className="pb-2 border-b border-[#1b2b44] flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -38,9 +41,20 @@ export const YagConsolePanel: React.FC<YagConsolePanelProps> = ({
             <div className="text-[10px] text-slate-400 font-mono">1064nm Q-Switched Photodisruptor</div>
           </div>
         </div>
-        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold animate-pulse">
-          ARMED
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold animate-pulse">
+            ARMED
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition lg:hidden"
+              title="Close Console"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Laser Telemetry & Counters */}

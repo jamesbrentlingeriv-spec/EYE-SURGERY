@@ -99,7 +99,7 @@ export const PostOpReportModal: React.FC<PostOpReportModalProps> = ({
         </div>
 
         {/* Detailed Metrics Grid */}
-        <div className="p-6 grid grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {/* Module A: Phaco Metrics */}
           {report.module === 'phaco' && (
             <>
@@ -221,7 +221,7 @@ export const PostOpReportModal: React.FC<PostOpReportModalProps> = ({
               </div>
 
               {/* Viscoelastic Retention */}
-              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-2">
+              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300">Residual Viscoelastic in AC/Bag</span>
                   <span className="font-mono text-sky-400 font-bold">
@@ -272,7 +272,7 @@ export const PostOpReportModal: React.FC<PostOpReportModalProps> = ({
               </div>
 
               {/* Vitreous Status */}
-              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-2">
+              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300">Anterior Hyaloid Membrane</span>
                   <span
