@@ -22909,6 +22909,22 @@ const FootPedalControl = ({ pedalPosition, onPedalChange, disabled = false, }) =
 const REVISION = '186';
 
 /**
+ * Represents mouse buttons and interaction types in context of controls.
+ *
+ * @type {ConstantsMouse}
+ * @constant
+ */
+const MOUSE = { ROTATE: 0, DOLLY: 1, PAN: 2 };
+
+/**
+ * Represents touch interaction types in context of controls.
+ *
+ * @type {ConstantsTouch}
+ * @constant
+ */
+const TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
+
+/**
  * Disables face culling.
  *
  * @type {number}
@@ -24762,6 +24778,14 @@ function normalize( value, array ) {
 	}
 
 }
+
+/**
+ * @class
+ * @classdesc A collection of math utility functions.
+ * @hideconstructor
+ */
+const MathUtils = {
+	DEG2RAD: DEG2RAD};
 
 /**
  * Class representing a 2D vector. A 2D vector is an ordered pair of numbers
@@ -44243,6 +44267,933 @@ class Frustum {
 }
 
 /**
+ * A material for rendering line primitives.
+ *
+ * Materials define the appearance of renderable 3D objects.
+ *
+ * ```js
+ * const material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+ * ```
+ *
+ * @augments Material
+ */
+class LineBasicMaterial extends Material {
+
+	/**
+	 * Constructs a new line basic material.
+	 *
+	 * @param {Object} [parameters] - An object with one or more properties
+	 * defining the material's appearance. Any property of the material
+	 * (including any property from inherited materials) can be passed
+	 * in here. Color values can be passed any type of value accepted
+	 * by {@link Color#set}.
+	 */
+	constructor( parameters ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineBasicMaterial = true;
+
+		this.type = 'LineBasicMaterial';
+
+		/**
+		 * Color of the material.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.color = new Color( 0xffffff );
+
+		/**
+		 * Sets the color of the lines using data from a texture. The texture map
+		 * color is modulated by the diffuse `color`.
+		 *
+		 * `map` represents color data, and the texture must be assigned a
+		 * {@link Texture#colorSpace}. Most `map` textures set
+		 * `texture.colorSpace = SRGBColorSpace`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.map = null;
+
+		/**
+		 * Controls line thickness or lines.
+		 *
+		 * Can only be used with {@link SVGRenderer}. WebGL and WebGPU
+		 * ignore this setting and always render line primitives with a
+		 * width of one pixel.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.linewidth = 1;
+
+		/**
+		 * Defines appearance of line ends.
+		 *
+		 * Can only be used with {@link SVGRenderer}.
+		 *
+		 * @type {('butt'|'round'|'square')}
+		 * @default 'round'
+		 */
+		this.linecap = 'round';
+
+		/**
+		 * Defines appearance of line joints.
+		 *
+		 * Can only be used with {@link SVGRenderer}.
+		 *
+		 * @type {('round'|'bevel'|'miter')}
+		 * @default 'round'
+		 */
+		this.linejoin = 'round';
+
+		/**
+		 * Whether the material is affected by fog or not.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.fog = true;
+
+		this.setValues( parameters );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.color.copy( source.color );
+
+		this.map = source.map;
+
+		this.linewidth = source.linewidth;
+		this.linecap = source.linecap;
+		this.linejoin = source.linejoin;
+
+		this.fog = source.fog;
+
+		return this;
+
+	}
+
+}
+
+const _vStart = /*@__PURE__*/ new Vector3();
+const _vEnd = /*@__PURE__*/ new Vector3();
+
+const _inverseMatrix$1 = /*@__PURE__*/ new Matrix4();
+const _ray$1 = /*@__PURE__*/ new Ray();
+const _sphere$1 = /*@__PURE__*/ new Sphere();
+
+const _intersectPointOnRay = /*@__PURE__*/ new Vector3();
+const _intersectPointOnSegment = /*@__PURE__*/ new Vector3();
+
+/**
+ * A continuous line. The line are rendered by connecting consecutive
+ * vertices with straight lines.
+ *
+ * ```js
+ * const material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+ *
+ * const points = [];
+ * points.push( new THREE.Vector3( - 10, 0, 0 ) );
+ * points.push( new THREE.Vector3( 0, 10, 0 ) );
+ * points.push( new THREE.Vector3( 10, 0, 0 ) );
+ *
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const line = new THREE.Line( geometry, material );
+ * scene.add( line );
+ * ```
+ *
+ * @augments Object3D
+ */
+class Line extends Object3D {
+
+	/**
+	 * Constructs a new line.
+	 *
+	 * @param {BufferGeometry} [geometry] - The line geometry.
+	 * @param {Material|Array<Material>} [material] - The line material.
+	 */
+	constructor( geometry = new BufferGeometry(), material = new LineBasicMaterial() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLine = true;
+
+		this.type = 'Line';
+
+		/**
+		 * The line geometry.
+		 *
+		 * @type {BufferGeometry}
+		 */
+		this.geometry = geometry;
+
+		/**
+		 * The line material.
+		 *
+		 * @type {Material|Array<Material>}
+		 * @default LineBasicMaterial
+		 */
+		this.material = material;
+
+		/**
+		 * A dictionary representing the morph targets in the geometry. The key is the
+		 * morph targets name, the value its attribute index. This member is `undefined`
+		 * by default and only set when morph targets are detected in the geometry.
+		 *
+		 * @type {Object<string,number>|undefined}
+		 * @default undefined
+		 */
+		this.morphTargetDictionary = undefined;
+
+		/**
+		 * An array of weights typically in the range `[0,1]` that specify how much of the morph
+		 * is applied. This member is `undefined` by default and only set when morph targets are
+		 * detected in the geometry.
+		 *
+		 * @type {Array<number>|undefined}
+		 * @default undefined
+		 */
+		this.morphTargetInfluences = undefined;
+
+		this.updateMorphTargets();
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.material = Array.isArray( source.material ) ? source.material.slice() : source.material;
+		this.geometry = source.geometry;
+
+		return this;
+
+	}
+
+	/**
+	 * Computes an array of distance values which are necessary for rendering dashed lines.
+	 * For each vertex in the geometry, the method calculates the cumulative length from the
+	 * current point to the very beginning of the line.
+	 *
+	 * @return {Line} A reference to this line.
+	 */
+	computeLineDistances() {
+
+		const geometry = this.geometry;
+
+		// we assume non-indexed geometry
+
+		if ( geometry.index === null ) {
+
+			const positionAttribute = geometry.attributes.position;
+			const lineDistances = [ 0 ];
+
+			for ( let i = 1, l = positionAttribute.count; i < l; i ++ ) {
+
+				_vStart.fromBufferAttribute( positionAttribute, i - 1 );
+				_vEnd.fromBufferAttribute( positionAttribute, i );
+
+				lineDistances[ i ] = lineDistances[ i - 1 ];
+				lineDistances[ i ] += _vStart.distanceTo( _vEnd );
+
+			}
+
+			geometry.setAttribute( 'lineDistance', new Float32BufferAttribute( lineDistances, 1 ) );
+
+		} else {
+
+			warn( 'Line.computeLineDistances(): Computation only possible with non-indexed BufferGeometry.' );
+
+		}
+
+		return this;
+
+	}
+
+	/**
+	 * Returns `true` if this line intersects the given frustum.
+	 *
+	 * @param {Frustum|FrustumArray} frustum - The frustum to test.
+	 * @return {boolean} Whether this line intersects the given frustum or not.
+	 */
+	intersectsFrustum( frustum ) {
+
+		return frustum.intersectsObject( this );
+
+	}
+
+	/**
+	 * Computes intersection points between a casted ray and this line.
+	 *
+	 * @param {Raycaster} raycaster - The raycaster.
+	 * @param {Array<Object>} intersects - The target array that holds the intersection points.
+	 */
+	raycast( raycaster, intersects ) {
+
+		const geometry = this.geometry;
+		const matrixWorld = this.matrixWorld;
+		const threshold = raycaster.params.Line.threshold;
+		const drawRange = geometry.drawRange;
+
+		// Checking boundingSphere distance to ray
+
+		if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
+
+		_sphere$1.copy( geometry.boundingSphere );
+		_sphere$1.applyMatrix4( matrixWorld );
+		_sphere$1.radius += threshold;
+
+		if ( raycaster.ray.intersectsSphere( _sphere$1 ) === false ) return;
+
+		//
+
+		_inverseMatrix$1.copy( matrixWorld ).invert();
+		_ray$1.copy( raycaster.ray ).applyMatrix4( _inverseMatrix$1 );
+
+		const localThreshold = threshold / ( ( this.scale.x + this.scale.y + this.scale.z ) / 3 );
+		const localThresholdSq = localThreshold * localThreshold;
+
+		const step = this.isLineSegments ? 2 : 1;
+
+		const index = geometry.index;
+		const attributes = geometry.attributes;
+		const positionAttribute = attributes.position;
+
+		if ( index !== null ) {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( index.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, l = end - 1; i < l; i += step ) {
+
+				const a = index.getX( i );
+				const b = index.getX( i + 1 );
+
+				const intersect = checkIntersection( this, raycaster, _ray$1, localThresholdSq, a, b, i );
+
+				if ( intersect ) {
+
+					intersects.push( intersect );
+
+				}
+
+			}
+
+			if ( this.isLineLoop ) {
+
+				const a = index.getX( end - 1 );
+				const b = index.getX( start );
+
+				const intersect = checkIntersection( this, raycaster, _ray$1, localThresholdSq, a, b, end - 1 );
+
+				if ( intersect ) {
+
+					intersects.push( intersect );
+
+				}
+
+			}
+
+		} else {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( positionAttribute.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, l = end - 1; i < l; i += step ) {
+
+				const intersect = checkIntersection( this, raycaster, _ray$1, localThresholdSq, i, i + 1, i );
+
+				if ( intersect ) {
+
+					intersects.push( intersect );
+
+				}
+
+			}
+
+			if ( this.isLineLoop ) {
+
+				const intersect = checkIntersection( this, raycaster, _ray$1, localThresholdSq, end - 1, start, end - 1 );
+
+				if ( intersect ) {
+
+					intersects.push( intersect );
+
+				}
+
+			}
+
+		}
+
+	}
+
+	/**
+	 * Sets the values of {@link Line#morphTargetDictionary} and {@link Line#morphTargetInfluences}
+	 * to make sure existing morph targets can influence this 3D object.
+	 */
+	updateMorphTargets() {
+
+		const geometry = this.geometry;
+
+		const morphAttributes = geometry.morphAttributes;
+		const keys = Object.keys( morphAttributes );
+
+		if ( keys.length > 0 ) {
+
+			const morphAttribute = morphAttributes[ keys[ 0 ] ];
+
+			if ( morphAttribute !== undefined ) {
+
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( let m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+
+					const name = morphAttribute[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+function checkIntersection( object, raycaster, ray, thresholdSq, a, b, i ) {
+
+	const positionAttribute = object.geometry.attributes.position;
+
+	_vStart.fromBufferAttribute( positionAttribute, a );
+	_vEnd.fromBufferAttribute( positionAttribute, b );
+
+	const distSq = ray.distanceSqToSegment( _vStart, _vEnd, _intersectPointOnRay, _intersectPointOnSegment );
+
+	if ( distSq > thresholdSq ) return;
+
+	_intersectPointOnRay.applyMatrix4( object.matrixWorld ); // Move back to world space for distance calculation
+
+	const distance = raycaster.ray.origin.distanceTo( _intersectPointOnRay );
+
+	if ( distance < raycaster.near || distance > raycaster.far ) return;
+
+	return {
+
+		distance: distance,
+		// What do we want? intersection point on the ray or on the segment??
+		// point: raycaster.ray.at( distance ),
+		point: _intersectPointOnSegment.clone().applyMatrix4( object.matrixWorld ),
+		index: i,
+		face: null,
+		faceIndex: null,
+		barycoord: null,
+		object: object
+
+	};
+
+}
+
+const _start = /*@__PURE__*/ new Vector3();
+const _end = /*@__PURE__*/ new Vector3();
+
+/**
+ * A series of lines drawn between pairs of vertices.
+ *
+ * @augments Line
+ */
+class LineSegments extends Line {
+
+	/**
+	 * Constructs a new line segments.
+	 *
+	 * @param {BufferGeometry} [geometry] - The line geometry.
+	 * @param {Material|Array<Material>} [material] - The line material.
+	 */
+	constructor( geometry, material ) {
+
+		super( geometry, material );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineSegments = true;
+
+		this.type = 'LineSegments';
+
+	}
+
+	computeLineDistances() {
+
+		const geometry = this.geometry;
+
+		// we assume non-indexed geometry
+
+		if ( geometry.index === null ) {
+
+			const positionAttribute = geometry.attributes.position;
+			const lineDistances = [];
+
+			for ( let i = 0, l = positionAttribute.count; i < l; i += 2 ) {
+
+				_start.fromBufferAttribute( positionAttribute, i );
+				_end.fromBufferAttribute( positionAttribute, i + 1 );
+
+				lineDistances[ i ] = ( i === 0 ) ? 0 : lineDistances[ i - 1 ];
+				lineDistances[ i + 1 ] = lineDistances[ i ] + _start.distanceTo( _end );
+
+			}
+
+			geometry.setAttribute( 'lineDistance', new Float32BufferAttribute( lineDistances, 1 ) );
+
+		} else {
+
+			warn( 'LineSegments.computeLineDistances(): Computation only possible with non-indexed BufferGeometry.' );
+
+		}
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A continuous line. This is nearly the same as {@link Line} the only difference
+ * is that the last vertex is connected with the first vertex in order to close
+ * the line to form a loop.
+ *
+ * @augments Line
+ */
+class LineLoop extends Line {
+
+	/**
+	 * Constructs a new line loop.
+	 *
+	 * @param {BufferGeometry} [geometry] - The line geometry.
+	 * @param {Material|Array<Material>} [material] - The line material.
+	 */
+	constructor( geometry, material ) {
+
+		super( geometry, material );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineLoop = true;
+
+		this.type = 'LineLoop';
+
+	}
+
+}
+
+/**
+ * A material for rendering point primitives.
+ *
+ * Materials define the appearance of renderable 3D objects.
+ *
+ * ```js
+ * const vertices = [];
+ *
+ * for ( let i = 0; i < 10000; i ++ ) {
+ * 	const x = THREE.MathUtils.randFloatSpread( 2000 );
+ * 	const y = THREE.MathUtils.randFloatSpread( 2000 );
+ * 	const z = THREE.MathUtils.randFloatSpread( 2000 );
+ *
+ * 	vertices.push( x, y, z );
+ * }
+ *
+ * const geometry = new THREE.BufferGeometry();
+ * geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+ * const material = new THREE.PointsMaterial( { color: 0x888888 } );
+ * const points = new THREE.Points( geometry, material );
+ * scene.add( points );
+ * ```
+ *
+ * @augments Material
+ */
+class PointsMaterial extends Material {
+
+	/**
+	 * Constructs a new points material.
+	 *
+	 * @param {Object} [parameters] - An object with one or more properties
+	 * defining the material's appearance. Any property of the material
+	 * (including any property from inherited materials) can be passed
+	 * in here. Color values can be passed any type of value accepted
+	 * by {@link Color#set}.
+	 */
+	constructor( parameters ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isPointsMaterial = true;
+
+		this.type = 'PointsMaterial';
+
+		/**
+		 * Color of the material.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.color = new Color( 0xffffff );
+
+		/**
+		 * The color map. May optionally include an alpha channel, typically combined
+		 * with {@link Material#transparent} or {@link Material#alphaTest}. The texture map
+		 * color is modulated by the diffuse `color`.
+		 *
+		 * `map` represents color data, and the texture must be assigned a
+		 * {@link Texture#colorSpace}. Most `map` textures set
+		 * `texture.colorSpace = SRGBColorSpace`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.map = null;
+
+		/**
+		 * The alpha map is a grayscale texture that controls the opacity across the
+		 * surface (black: fully transparent; white: fully opaque).
+		 *
+		 * Only the color of the texture is used, ignoring the alpha channel if one
+		 * exists. For RGB and RGBA textures, the renderer will use the green channel
+		 * when sampling this texture due to the extra bit of precision provided for
+		 * green in DXT-compressed and uncompressed RGB 565 formats. Luminance-only and
+		 * luminance/alpha textures will also still work as expected.
+		 *
+		 * `alphaMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.alphaMap = null;
+
+		/**
+		 * Defines the size of the points in pixels.
+		 *
+		 * Might be capped if the value exceeds hardware dependent parameters like [gl.ALIASED_POINT_SIZE_RANGE](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getParamete).
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.size = 1;
+
+		/**
+		 * Specifies whether size of individual points is attenuated by the camera depth (perspective camera only).
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.sizeAttenuation = true;
+
+		/**
+		 * Whether the material is affected by fog or not.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.fog = true;
+
+		this.setValues( parameters );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.color.copy( source.color );
+
+		this.map = source.map;
+
+		this.alphaMap = source.alphaMap;
+
+		this.size = source.size;
+		this.sizeAttenuation = source.sizeAttenuation;
+
+		this.fog = source.fog;
+
+		return this;
+
+	}
+
+}
+
+const _inverseMatrix = /*@__PURE__*/ new Matrix4();
+const _ray$2 = /*@__PURE__*/ new Ray();
+const _sphere = /*@__PURE__*/ new Sphere();
+const _position$3 = /*@__PURE__*/ new Vector3();
+
+/**
+ * A class for displaying points or point clouds.
+ *
+ * @augments Object3D
+ */
+class Points extends Object3D {
+
+	/**
+	 * Constructs a new point cloud.
+	 *
+	 * @param {BufferGeometry} [geometry] - The points geometry.
+	 * @param {Material|Array<Material>} [material] - The points material.
+	 */
+	constructor( geometry = new BufferGeometry(), material = new PointsMaterial() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isPoints = true;
+
+		this.type = 'Points';
+
+		/**
+		 * The points geometry.
+		 *
+		 * @type {BufferGeometry}
+		 */
+		this.geometry = geometry;
+
+		/**
+		 * The line material.
+		 *
+		 * @type {Material|Array<Material>}
+		 * @default PointsMaterial
+		 */
+		this.material = material;
+
+		/**
+		 * A dictionary representing the morph targets in the geometry. The key is the
+		 * morph targets name, the value its attribute index. This member is `undefined`
+		 * by default and only set when morph targets are detected in the geometry.
+		 *
+		 * @type {Object<string,number>|undefined}
+		 * @default undefined
+		 */
+		this.morphTargetDictionary = undefined;
+
+		/**
+		 * An array of weights typically in the range `[0,1]` that specify how much of the morph
+		 * is applied. This member is `undefined` by default and only set when morph targets are
+		 * detected in the geometry.
+		 *
+		 * @type {Array<number>|undefined}
+		 * @default undefined
+		 */
+		this.morphTargetInfluences = undefined;
+
+		this.updateMorphTargets();
+
+	}
+
+	copy( source, recursive ) {
+
+		super.copy( source, recursive );
+
+		this.material = Array.isArray( source.material ) ? source.material.slice() : source.material;
+		this.geometry = source.geometry;
+
+		return this;
+
+	}
+
+	/**
+	 * Returns `true` if this point cloud intersects the given frustum.
+	 *
+	 * @param {Frustum|FrustumArray} frustum - The frustum to test.
+	 * @return {boolean} Whether this point cloud intersects the given frustum or not.
+	 */
+	intersectsFrustum( frustum ) {
+
+		return frustum.intersectsObject( this );
+
+	}
+
+	/**
+	 * Computes intersection points between a casted ray and this point cloud.
+	 *
+	 * @param {Raycaster} raycaster - The raycaster.
+	 * @param {Array<Object>} intersects - The target array that holds the intersection points.
+	 */
+	raycast( raycaster, intersects ) {
+
+		const geometry = this.geometry;
+		const matrixWorld = this.matrixWorld;
+		const threshold = raycaster.params.Points.threshold;
+		const drawRange = geometry.drawRange;
+
+		// Checking boundingSphere distance to ray
+
+		if ( geometry.boundingSphere === null ) geometry.computeBoundingSphere();
+
+		_sphere.copy( geometry.boundingSphere );
+		_sphere.applyMatrix4( matrixWorld );
+		_sphere.radius += threshold;
+
+		if ( raycaster.ray.intersectsSphere( _sphere ) === false ) return;
+
+		//
+
+		_inverseMatrix.copy( matrixWorld ).invert();
+		_ray$2.copy( raycaster.ray ).applyMatrix4( _inverseMatrix );
+
+		const localThreshold = threshold / ( ( this.scale.x + this.scale.y + this.scale.z ) / 3 );
+		const localThresholdSq = localThreshold * localThreshold;
+
+		const index = geometry.index;
+		const attributes = geometry.attributes;
+		const positionAttribute = attributes.position;
+
+		if ( index !== null ) {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( index.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, il = end; i < il; i ++ ) {
+
+				const a = index.getX( i );
+
+				_position$3.fromBufferAttribute( positionAttribute, a );
+
+				testPoint( _position$3, a, localThresholdSq, matrixWorld, raycaster, intersects, this );
+
+			}
+
+		} else {
+
+			const start = Math.max( 0, drawRange.start );
+			const end = Math.min( positionAttribute.count, ( drawRange.start + drawRange.count ) );
+
+			for ( let i = start, l = end; i < l; i ++ ) {
+
+				_position$3.fromBufferAttribute( positionAttribute, i );
+
+				testPoint( _position$3, i, localThresholdSq, matrixWorld, raycaster, intersects, this );
+
+			}
+
+		}
+
+	}
+
+	/**
+	 * Sets the values of {@link Points#morphTargetDictionary} and {@link Points#morphTargetInfluences}
+	 * to make sure existing morph targets can influence this 3D object.
+	 */
+	updateMorphTargets() {
+
+		const geometry = this.geometry;
+
+		const morphAttributes = geometry.morphAttributes;
+		const keys = Object.keys( morphAttributes );
+
+		if ( keys.length > 0 ) {
+
+			const morphAttribute = morphAttributes[ keys[ 0 ] ];
+
+			if ( morphAttribute !== undefined ) {
+
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( let m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+
+					const name = morphAttribute[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+function testPoint( point, index, localThresholdSq, matrixWorld, raycaster, intersects, object ) {
+
+	const rayPointDistanceSq = _ray$2.distanceSqToPoint( point );
+
+	if ( rayPointDistanceSq < localThresholdSq ) {
+
+		const intersectPoint = new Vector3();
+
+		_ray$2.closestPointToPoint( point, intersectPoint );
+		intersectPoint.applyMatrix4( matrixWorld );
+
+		const distance = raycaster.ray.origin.distanceTo( intersectPoint );
+
+		if ( distance < raycaster.near || distance > raycaster.far ) return;
+
+		intersects.push( {
+
+			distance: distance,
+			distanceToRay: Math.sqrt( rayPointDistanceSq ),
+			point: intersectPoint,
+			index: index,
+			face: null,
+			faceIndex: null,
+			barycoord: null,
+			object: object
+
+		} );
+
+	}
+
+}
+
+/**
  * Creates a cube texture made up of six images.
  *
  * ```js
@@ -44932,6 +45883,2538 @@ class CircleGeometry extends BufferGeometry {
 }
 
 /**
+ * A geometry class for representing a cylinder.
+ *
+ * ```js
+ * const geometry = new THREE.CylinderGeometry( 5, 5, 20, 32 );
+ * const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+ * const cylinder = new THREE.Mesh( geometry, material );
+ * scene.add( cylinder );
+ * ```
+ *
+ * @augments BufferGeometry
+ * @demo scenes/geometry-browser.html#CylinderGeometry
+ */
+class CylinderGeometry extends BufferGeometry {
+
+	/**
+	 * Constructs a new cylinder geometry.
+	 *
+	 * @param {number} [radiusTop=1] - Radius of the cylinder at the top.
+	 * @param {number} [radiusBottom=1] - Radius of the cylinder at the bottom.
+	 * @param {number} [height=1] - Height of the cylinder.
+	 * @param {number} [radialSegments=32] - Number of segmented faces around the circumference of the cylinder.
+	 * @param {number} [heightSegments=1] - Number of rows of faces along the height of the cylinder.
+	 * @param {boolean} [openEnded=false] - Whether the base of the cylinder is open or capped.
+	 * @param {number} [thetaStart=0] - Start angle for first segment, in radians.
+	 * @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta, of the circular sector, in radians.
+	 * The default value results in a complete cylinder.
+	 */
+	constructor( radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2 ) {
+
+		super();
+
+		this.type = 'CylinderGeometry';
+
+		/**
+		 * Holds the constructor parameters that have been
+		 * used to generate the geometry. Any modification
+		 * after instantiation does not change the geometry.
+		 *
+		 * @type {Object}
+		 */
+		this.parameters = {
+			radiusTop: radiusTop,
+			radiusBottom: radiusBottom,
+			height: height,
+			radialSegments: radialSegments,
+			heightSegments: heightSegments,
+			openEnded: openEnded,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength
+		};
+
+		const scope = this;
+
+		radialSegments = Math.floor( radialSegments );
+		heightSegments = Math.floor( heightSegments );
+
+		// buffers
+
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+
+		// helper variables
+
+		let index = 0;
+		const indexArray = [];
+		const halfHeight = height / 2;
+		let groupStart = 0;
+
+		// generate geometry
+
+		generateTorso();
+
+		if ( openEnded === false ) {
+
+			if ( radiusTop > 0 ) generateCap( true );
+			if ( radiusBottom > 0 ) generateCap( false );
+
+		}
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+		function generateTorso() {
+
+			const normal = new Vector3();
+			const vertex = new Vector3();
+
+			let groupCount = 0;
+
+			// this will be used to calculate the normal
+			const slope = ( radiusBottom - radiusTop ) / height;
+
+			// generate vertices, normals and uvs
+
+			for ( let y = 0; y <= heightSegments; y ++ ) {
+
+				const indexRow = [];
+
+				const v = y / heightSegments;
+
+				// calculate the radius of the current row
+
+				const radius = v * ( radiusBottom - radiusTop ) + radiusTop;
+
+				for ( let x = 0; x <= radialSegments; x ++ ) {
+
+					const u = x / radialSegments;
+
+					const theta = u * thetaLength + thetaStart;
+
+					const sinTheta = Math.sin( theta );
+					const cosTheta = Math.cos( theta );
+
+					// vertex
+
+					vertex.x = radius * sinTheta;
+					vertex.y = - v * height + halfHeight;
+					vertex.z = radius * cosTheta;
+					vertices.push( vertex.x, vertex.y, vertex.z );
+
+					// normal
+
+					normal.set( sinTheta, slope, cosTheta ).normalize();
+					normals.push( normal.x, normal.y, normal.z );
+
+					// uv
+
+					uvs.push( u, 1 - v );
+
+					// save index of vertex in respective row
+
+					indexRow.push( index ++ );
+
+				}
+
+				// now save vertices of the row in our index array
+
+				indexArray.push( indexRow );
+
+			}
+
+			// generate indices
+
+			for ( let x = 0; x < radialSegments; x ++ ) {
+
+				for ( let y = 0; y < heightSegments; y ++ ) {
+
+					// we use the index array to access the correct indices
+
+					const a = indexArray[ y ][ x ];
+					const b = indexArray[ y + 1 ][ x ];
+					const c = indexArray[ y + 1 ][ x + 1 ];
+					const d = indexArray[ y ][ x + 1 ];
+
+					// faces
+
+					if ( radiusTop > 0 || y !== 0 ) {
+
+						indices.push( a, b, d );
+						groupCount += 3;
+
+					}
+
+					if ( radiusBottom > 0 || y !== heightSegments - 1 ) {
+
+						indices.push( b, c, d );
+						groupCount += 3;
+
+					}
+
+				}
+
+			}
+
+			// add a group to the geometry. this will ensure multi material support
+
+			scope.addGroup( groupStart, groupCount, 0 );
+
+			// calculate new start value for groups
+
+			groupStart += groupCount;
+
+		}
+
+		function generateCap( top ) {
+
+			// save the index of the first center vertex
+			const centerIndexStart = index;
+
+			const uv = new Vector2();
+			const vertex = new Vector3();
+
+			let groupCount = 0;
+
+			const radius = ( top === true ) ? radiusTop : radiusBottom;
+			const sign = ( top === true ) ? 1 : -1;
+
+			// first we generate the center vertex data of the cap.
+			// because the geometry needs one set of uvs per face,
+			// we must generate a center vertex per face/segment
+
+			for ( let x = 1; x <= radialSegments; x ++ ) {
+
+				// vertex
+
+				vertices.push( 0, halfHeight * sign, 0 );
+
+				// normal
+
+				normals.push( 0, sign, 0 );
+
+				// uv
+
+				uvs.push( 0.5, 0.5 );
+
+				// increase index
+
+				index ++;
+
+			}
+
+			// save the index of the last center vertex
+			const centerIndexEnd = index;
+
+			// now we generate the surrounding vertices, normals and uvs
+
+			for ( let x = 0; x <= radialSegments; x ++ ) {
+
+				const u = x / radialSegments;
+				const theta = u * thetaLength + thetaStart;
+
+				const cosTheta = Math.cos( theta );
+				const sinTheta = Math.sin( theta );
+
+				// vertex
+
+				vertex.x = radius * sinTheta;
+				vertex.y = halfHeight * sign;
+				vertex.z = radius * cosTheta;
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+				// normal
+
+				normals.push( 0, sign, 0 );
+
+				// uv
+
+				uv.x = ( cosTheta * 0.5 ) + 0.5;
+				uv.y = ( sinTheta * 0.5 * sign ) + 0.5;
+				uvs.push( uv.x, uv.y );
+
+				// increase index
+
+				index ++;
+
+			}
+
+			// generate indices
+
+			for ( let x = 0; x < radialSegments; x ++ ) {
+
+				const c = centerIndexStart + x;
+				const i = centerIndexEnd + x;
+
+				if ( top === true ) {
+
+					// face top
+
+					indices.push( i, i + 1, c );
+
+				} else {
+
+					// face bottom
+
+					indices.push( i + 1, i, c );
+
+				}
+
+				groupCount += 3;
+
+			}
+
+			// add a group to the geometry. this will ensure multi material support
+
+			scope.addGroup( groupStart, groupCount, top === true ? 1 : 2 );
+
+			// calculate new start value for groups
+
+			groupStart += groupCount;
+
+		}
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+	/**
+	 * Factory method for creating an instance of this class from the given
+	 * JSON object.
+	 *
+	 * @param {Object} data - A JSON object representing the serialized geometry.
+	 * @return {CylinderGeometry} A new instance.
+	 */
+	static fromJSON( data ) {
+
+		return new CylinderGeometry( data.radiusTop, data.radiusBottom, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
+/**
+ * A geometry class for representing a cone.
+ *
+ * ```js
+ * const geometry = new THREE.ConeGeometry( 5, 20, 32 );
+ * const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+ * const cone = new THREE.Mesh(geometry, material );
+ * scene.add( cone );
+ * ```
+ *
+ * @augments CylinderGeometry
+ * @demo scenes/geometry-browser.html#ConeGeometry
+ */
+class ConeGeometry extends CylinderGeometry {
+
+	/**
+	 * Constructs a new cone geometry.
+	 *
+	 * @param {number} [radius=1] - Radius of the cone base.
+	 * @param {number} [height=1] - Height of the cone.
+	 * @param {number} [radialSegments=32] - Number of segmented faces around the circumference of the cone.
+	 * @param {number} [heightSegments=1] - Number of rows of faces along the height of the cone.
+	 * @param {boolean} [openEnded=false] - Whether the base of the cone is open or capped.
+	 * @param {number} [thetaStart=0] - Start angle for first segment, in radians.
+	 * @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta, of the circular sector, in radians.
+	 * The default value results in a complete cone.
+	 */
+	constructor( radius = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2 ) {
+
+		super( 0, radius, height, radialSegments, heightSegments, openEnded, thetaStart, thetaLength );
+
+		this.type = 'ConeGeometry';
+
+		/**
+		 * Holds the constructor parameters that have been
+		 * used to generate the geometry. Any modification
+		 * after instantiation does not change the geometry.
+		 *
+		 * @type {Object}
+		 */
+		this.parameters = {
+			radius: radius,
+			height: height,
+			radialSegments: radialSegments,
+			heightSegments: heightSegments,
+			openEnded: openEnded,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength
+		};
+
+	}
+
+	/**
+	 * Factory method for creating an instance of this class from the given
+	 * JSON object.
+	 *
+	 * @param {Object} data - A JSON object representing the serialized geometry.
+	 * @return {ConeGeometry} A new instance.
+	 */
+	static fromJSON( data ) {
+
+		return new ConeGeometry( data.radius, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
+/**
+ * An abstract base class for creating an analytic curve object that contains methods
+ * for interpolation.
+ *
+ * @abstract
+ */
+class Curve {
+
+	/**
+	 * Constructs a new curve.
+	 */
+	constructor() {
+
+		/**
+		 * The type property is used for detecting the object type
+		 * in context of serialization/deserialization.
+		 *
+		 * @type {string}
+		 * @readonly
+		 */
+		this.type = 'Curve';
+
+		/**
+		 * This value determines the amount of divisions when calculating the
+		 * cumulative segment lengths of a curve via {@link Curve#getLengths}. To ensure
+		 * precision when using methods like {@link Curve#getSpacedPoints}, it is
+		 * recommended to increase the value of this property if the curve is very large.
+		 *
+		 * @type {number}
+		 * @default 200
+		 */
+		this.arcLengthDivisions = 200;
+
+		/**
+		 * Must be set to `true` if the curve parameters have changed.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.needsUpdate = false;
+
+		/**
+		 * An internal cache that holds precomputed curve length values.
+		 *
+		 * @private
+		 * @type {?Array<number>}
+		 * @default null
+		 */
+		this.cacheArcLengths = null;
+
+	}
+
+	/**
+	 * This method returns a vector in 2D or 3D space (depending on the curve definition)
+	 * for the given interpolation factor.
+	 *
+	 * @abstract
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {(Vector2|Vector3)} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {(Vector2|Vector3)} The position on the curve. It can be a 2D or 3D vector depending on the curve definition.
+	 */
+	getPoint( /* t, optionalTarget */ ) {
+
+		warn( 'Curve: .getPoint() not implemented.' );
+
+	}
+
+	/**
+	 * This method returns a vector in 2D or 3D space (depending on the curve definition)
+	 * for the given interpolation factor. Unlike {@link Curve#getPoint}, this method honors the length
+	 * of the curve which equidistant samples.
+	 *
+	 * @param {number} u - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {(Vector2|Vector3)} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {(Vector2|Vector3)} The position on the curve. It can be a 2D or 3D vector depending on the curve definition.
+	 */
+	getPointAt( u, optionalTarget ) {
+
+		const t = this.getUtoTmapping( u );
+		return this.getPoint( t, optionalTarget );
+
+	}
+
+	/**
+	 * This method samples the curve via {@link Curve#getPoint} and returns an array of points representing
+	 * the curve shape.
+	 *
+	 * @param {number} [divisions=5] - The number of divisions.
+	 * @return {Array<(Vector2|Vector3)>} An array holding the sampled curve values. The number of points is `divisions + 1`.
+	 */
+	getPoints( divisions = 5 ) {
+
+		const points = [];
+
+		for ( let d = 0; d <= divisions; d ++ ) {
+
+			points.push( this.getPoint( d / divisions ) );
+
+		}
+
+		return points;
+
+	}
+
+	// Get sequence of points using getPointAt( u )
+
+	/**
+	 * This method samples the curve via {@link Curve#getPointAt} and returns an array of points representing
+	 * the curve shape. Unlike {@link Curve#getPoints}, this method returns equi-spaced points across the entire
+	 * curve.
+	 *
+	 * @param {number} [divisions=5] - The number of divisions.
+	 * @return {Array<(Vector2|Vector3)>} An array holding the sampled curve values. The number of points is `divisions + 1`.
+	 */
+	getSpacedPoints( divisions = 5 ) {
+
+		const points = [];
+
+		for ( let d = 0; d <= divisions; d ++ ) {
+
+			points.push( this.getPointAt( d / divisions ) );
+
+		}
+
+		return points;
+
+	}
+
+	/**
+	 * Returns the total arc length of the curve.
+	 *
+	 * @return {number} The length of the curve.
+	 */
+	getLength() {
+
+		const lengths = this.getLengths();
+		return lengths[ lengths.length - 1 ];
+
+	}
+
+	/**
+	 * Returns an array of cumulative segment lengths of the curve.
+	 *
+	 * @param {number} [divisions=this.arcLengthDivisions] - The number of divisions.
+	 * @return {Array<number>} An array holding the cumulative segment lengths.
+	 */
+	getLengths( divisions = this.arcLengthDivisions ) {
+
+		if ( this.cacheArcLengths &&
+			( this.cacheArcLengths.length === divisions + 1 ) &&
+			! this.needsUpdate ) {
+
+			return this.cacheArcLengths;
+
+		}
+
+		this.needsUpdate = false;
+
+		const cache = [];
+		let current, last = this.getPoint( 0 );
+		let sum = 0;
+
+		cache.push( 0 );
+
+		for ( let p = 1; p <= divisions; p ++ ) {
+
+			current = this.getPoint( p / divisions );
+			sum += current.distanceTo( last );
+			cache.push( sum );
+			last = current;
+
+		}
+
+		this.cacheArcLengths = cache;
+
+		return cache; // { sums: cache, sum: sum }; Sum is in the last element.
+
+	}
+
+	/**
+	 * Update the cumulative segment distance cache. The method must be called
+	 * every time curve parameters are changed. If an updated curve is part of a
+	 * composed curve like {@link CurvePath}, this method must be called on the
+	 * composed curve, too.
+	 */
+	updateArcLengths() {
+
+		this.needsUpdate = true;
+		this.getLengths();
+
+	}
+
+	/**
+	 * Given an interpolation factor in the range `[0,1]`, this method returns an updated
+	 * interpolation factor in the same range that can be ued to sample equidistant points
+	 * from a curve.
+	 *
+	 * @param {number} u - The interpolation factor.
+	 * @param {?number} distance - An optional distance on the curve.
+	 * @return {number} The updated interpolation factor.
+	 */
+	getUtoTmapping( u, distance = null ) {
+
+		const arcLengths = this.getLengths();
+
+		let i = 0;
+		const il = arcLengths.length;
+
+		let targetArcLength; // The targeted u distance value to get
+
+		if ( distance ) {
+
+			targetArcLength = distance;
+
+		} else {
+
+			targetArcLength = u * arcLengths[ il - 1 ];
+
+		}
+
+		// binary search for the index with largest value smaller than target u distance
+
+		let low = 0, high = il - 1, comparison;
+
+		while ( low <= high ) {
+
+			i = Math.floor( low + ( high - low ) / 2 ); // less likely to overflow, though probably not issue here, JS doesn't really have integers, all numbers are floats
+
+			comparison = arcLengths[ i ] - targetArcLength;
+
+			if ( comparison < 0 ) {
+
+				low = i + 1;
+
+			} else if ( comparison > 0 ) {
+
+				high = i - 1;
+
+			} else {
+
+				high = i;
+				break;
+
+				// DONE
+
+			}
+
+		}
+
+		i = high;
+
+		if ( arcLengths[ i ] === targetArcLength ) {
+
+			return i / ( il - 1 );
+
+		}
+
+		// we could get finer grain at lengths, or use simple interpolation between two points
+
+		const lengthBefore = arcLengths[ i ];
+		const lengthAfter = arcLengths[ i + 1 ];
+
+		const segmentLength = lengthAfter - lengthBefore;
+
+		// determine where we are between the 'before' and 'after' points
+
+		const segmentFraction = ( targetArcLength - lengthBefore ) / segmentLength;
+
+		// add that fractional amount to t
+
+		const t = ( i + segmentFraction ) / ( il - 1 );
+
+		return t;
+
+	}
+
+	/**
+	 * Returns a unit vector tangent for the given interpolation factor.
+	 * If the derived curve does not implement its tangent derivation,
+	 * two points a small delta apart will be used to find its gradient
+	 * which seems to give a reasonable approximation.
+	 *
+	 * @param {number} t - The interpolation factor.
+	 * @param {(Vector2|Vector3)} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {(Vector2|Vector3)} The tangent vector.
+	 */
+	getTangent( t, optionalTarget ) {
+
+		const delta = 0.0001;
+		let t1 = t - delta;
+		let t2 = t + delta;
+
+		// Capping in case of danger
+
+		if ( t1 < 0 ) t1 = 0;
+		if ( t2 > 1 ) t2 = 1;
+
+		const pt1 = this.getPoint( t1 );
+		const pt2 = this.getPoint( t2 );
+
+		const tangent = optionalTarget || ( ( pt1.isVector2 ) ? new Vector2() : new Vector3() );
+
+		tangent.copy( pt2 ).sub( pt1 ).normalize();
+
+		return tangent;
+
+	}
+
+	/**
+	 * Same as {@link Curve#getTangent} but with equidistant samples.
+	 *
+	 * @param {number} u - The interpolation factor.
+	 * @param {(Vector2|Vector3)} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {(Vector2|Vector3)} The tangent vector.
+	 * @see {@link Curve#getPointAt}
+	 */
+	getTangentAt( u, optionalTarget ) {
+
+		const t = this.getUtoTmapping( u );
+		return this.getTangent( t, optionalTarget );
+
+	}
+
+	/**
+	 * Generates the Frenet Frames. Requires a curve definition in 3D space. Used
+	 * in geometries like {@link TubeGeometry} or {@link ExtrudeGeometry}.
+	 *
+	 * @param {number} segments - The number of segments.
+	 * @param {boolean} [closed=false] - Whether the curve is closed or not.
+	 * @return {{tangents: Array<Vector3>, normals: Array<Vector3>, binormals: Array<Vector3>}} The Frenet Frames.
+	 */
+	computeFrenetFrames( segments, closed = false ) {
+
+		// see http://www.cs.indiana.edu/pub/techreports/TR425.pdf
+
+		const normal = new Vector3();
+
+		const tangents = [];
+		const normals = [];
+		const binormals = [];
+
+		const vec = new Vector3();
+		const mat = new Matrix4();
+
+		// compute the tangent vectors for each segment on the curve
+
+		for ( let i = 0; i <= segments; i ++ ) {
+
+			const u = i / segments;
+
+			tangents[ i ] = this.getTangentAt( u, new Vector3() );
+
+		}
+
+		// select an initial normal vector perpendicular to the first tangent vector,
+		// and in the direction of the minimum tangent xyz component
+
+		normals[ 0 ] = new Vector3();
+		binormals[ 0 ] = new Vector3();
+		let min = Number.MAX_VALUE;
+		const tx = Math.abs( tangents[ 0 ].x );
+		const ty = Math.abs( tangents[ 0 ].y );
+		const tz = Math.abs( tangents[ 0 ].z );
+
+		if ( tx <= min ) {
+
+			min = tx;
+			normal.set( 1, 0, 0 );
+
+		}
+
+		if ( ty <= min ) {
+
+			min = ty;
+			normal.set( 0, 1, 0 );
+
+		}
+
+		if ( tz <= min ) {
+
+			normal.set( 0, 0, 1 );
+
+		}
+
+		vec.crossVectors( tangents[ 0 ], normal ).normalize();
+
+		normals[ 0 ].crossVectors( tangents[ 0 ], vec );
+		binormals[ 0 ].crossVectors( tangents[ 0 ], normals[ 0 ] );
+
+
+		// compute the slowly-varying normal and binormal vectors for each segment on the curve
+
+		for ( let i = 1; i <= segments; i ++ ) {
+
+			normals[ i ] = normals[ i - 1 ].clone();
+
+			binormals[ i ] = binormals[ i - 1 ].clone();
+
+			vec.crossVectors( tangents[ i - 1 ], tangents[ i ] );
+
+			if ( vec.length() > Number.EPSILON ) {
+
+				vec.normalize();
+
+				const theta = Math.acos( clamp( tangents[ i - 1 ].dot( tangents[ i ] ), -1, 1 ) ); // clamp for floating pt errors
+
+				normals[ i ].applyMatrix4( mat.makeRotationAxis( vec, theta ) );
+
+			}
+
+			binormals[ i ].crossVectors( tangents[ i ], normals[ i ] );
+
+		}
+
+		// if the curve is closed, postprocess the vectors so the first and last normal vectors are the same
+
+		if ( closed === true ) {
+
+			let theta = Math.acos( clamp( normals[ 0 ].dot( normals[ segments ] ), -1, 1 ) );
+			theta /= segments;
+
+			if ( tangents[ 0 ].dot( vec.crossVectors( normals[ 0 ], normals[ segments ] ) ) > 0 ) {
+
+				theta = - theta;
+
+			}
+
+			for ( let i = 1; i <= segments; i ++ ) {
+
+				// twist a little...
+				normals[ i ].applyMatrix4( mat.makeRotationAxis( tangents[ i ], theta * i ) );
+				binormals[ i ].crossVectors( tangents[ i ], normals[ i ] );
+
+			}
+
+		}
+
+		return {
+			tangents: tangents,
+			normals: normals,
+			binormals: binormals
+		};
+
+	}
+
+	/**
+	 * Returns a new curve with copied values from this instance.
+	 *
+	 * @return {Curve} A clone of this instance.
+	 */
+	clone() {
+
+		return new this.constructor().copy( this );
+
+	}
+
+	/**
+	 * Copies the values of the given curve to this instance.
+	 *
+	 * @param {Curve} source - The curve to copy.
+	 * @return {Curve} A reference to this curve.
+	 */
+	copy( source ) {
+
+		this.arcLengthDivisions = source.arcLengthDivisions;
+
+		return this;
+
+	}
+
+	/**
+	 * Serializes the curve into JSON.
+	 *
+	 * @return {Object} A JSON object representing the serialized curve.
+	 * @see {@link ObjectLoader#parse}
+	 */
+	toJSON() {
+
+		const data = {
+			metadata: {
+				version: 4.7,
+				type: 'Curve',
+				generator: 'Curve.toJSON'
+			}
+		};
+
+		data.arcLengthDivisions = this.arcLengthDivisions;
+		data.type = this.type;
+
+		return data;
+
+	}
+
+	/**
+	 * Deserializes the curve from the given JSON.
+	 *
+	 * @param {Object} json - The JSON holding the serialized curve.
+	 * @return {Curve} A reference to this curve.
+	 */
+	fromJSON( json ) {
+
+		this.arcLengthDivisions = json.arcLengthDivisions;
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing an ellipse.
+ *
+ * ```js
+ * const curve = new THREE.EllipseCurve(
+ * 	0, 0,
+ * 	10, 10,
+ * 	0, 2 * Math.PI,
+ * 	false,
+ * 	0
+ * );
+ *
+ * const points = curve.getPoints( 50 );
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+ *
+ * // Create the final object to add to the scene
+ * const ellipse = new THREE.Line( geometry, material );
+ * ```
+ *
+ * @augments Curve
+ */
+class EllipseCurve extends Curve {
+
+	/**
+	 * Constructs a new ellipse curve.
+	 *
+	 * @param {number} [aX=0] - The X center of the ellipse.
+	 * @param {number} [aY=0] - The Y center of the ellipse.
+	 * @param {number} [xRadius=1] - The radius of the ellipse in the x direction.
+	 * @param {number} [yRadius=1] - The radius of the ellipse in the y direction.
+	 * @param {number} [aStartAngle=0] - The start angle of the curve in radians starting from the positive X axis.
+	 * @param {number} [aEndAngle=Math.PI*2] - The end angle of the curve in radians starting from the positive X axis.
+	 * @param {boolean} [aClockwise=false] - Whether the ellipse is drawn clockwise or not.
+	 * @param {number} [aRotation=0] - The rotation angle of the ellipse in radians, counterclockwise from the positive X axis.
+	 */
+	constructor( aX = 0, aY = 0, xRadius = 1, yRadius = 1, aStartAngle = 0, aEndAngle = Math.PI * 2, aClockwise = false, aRotation = 0 ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isEllipseCurve = true;
+
+		this.type = 'EllipseCurve';
+
+		/**
+		 * The X center of the ellipse.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.aX = aX;
+
+		/**
+		 * The Y center of the ellipse.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.aY = aY;
+
+		/**
+		 * The radius of the ellipse in the x direction.
+		 * Setting the this value equal to the {@link EllipseCurve#yRadius} will result in a circle.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.xRadius = xRadius;
+
+		/**
+		 * The radius of the ellipse in the y direction.
+		 * Setting the this value equal to the {@link EllipseCurve#xRadius} will result in a circle.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.yRadius = yRadius;
+
+		/**
+		 * The start angle of the curve in radians starting from the positive X axis.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.aStartAngle = aStartAngle;
+
+		/**
+		 * The end angle of the curve in radians starting from the positive X axis.
+		 *
+		 * @type {number}
+		 * @default Math.PI*2
+		 */
+		this.aEndAngle = aEndAngle;
+
+		/**
+		 * Whether the ellipse is drawn clockwise or not.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.aClockwise = aClockwise;
+
+		/**
+		 * The rotation angle of the ellipse in radians, counterclockwise from the positive X axis.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.aRotation = aRotation;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector2} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector2} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector2() ) {
+
+		const point = optionalTarget;
+
+		const twoPi = Math.PI * 2;
+		let deltaAngle = this.aEndAngle - this.aStartAngle;
+		const samePoints = Math.abs( deltaAngle ) < Number.EPSILON;
+
+		// ensures that deltaAngle is 0 .. 2 PI
+		while ( deltaAngle < 0 ) deltaAngle += twoPi;
+		while ( deltaAngle > twoPi ) deltaAngle -= twoPi;
+
+		if ( deltaAngle < Number.EPSILON ) {
+
+			if ( samePoints ) {
+
+				deltaAngle = 0;
+
+			} else {
+
+				deltaAngle = twoPi;
+
+			}
+
+		}
+
+		if ( this.aClockwise === true && ! samePoints ) {
+
+			if ( deltaAngle === twoPi ) {
+
+				deltaAngle = - twoPi;
+
+			} else {
+
+				deltaAngle = deltaAngle - twoPi;
+
+			}
+
+		}
+
+		const angle = this.aStartAngle + t * deltaAngle;
+		let x = this.aX + this.xRadius * Math.cos( angle );
+		let y = this.aY + this.yRadius * Math.sin( angle );
+
+		if ( this.aRotation !== 0 ) {
+
+			const cos = Math.cos( this.aRotation );
+			const sin = Math.sin( this.aRotation );
+
+			const tx = x - this.aX;
+			const ty = y - this.aY;
+
+			// Rotate the point about the center of the ellipse.
+			x = tx * cos - ty * sin + this.aX;
+			y = tx * sin + ty * cos + this.aY;
+
+		}
+
+		return point.set( x, y );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.aX = source.aX;
+		this.aY = source.aY;
+
+		this.xRadius = source.xRadius;
+		this.yRadius = source.yRadius;
+
+		this.aStartAngle = source.aStartAngle;
+		this.aEndAngle = source.aEndAngle;
+
+		this.aClockwise = source.aClockwise;
+
+		this.aRotation = source.aRotation;
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.aX = this.aX;
+		data.aY = this.aY;
+
+		data.xRadius = this.xRadius;
+		data.yRadius = this.yRadius;
+
+		data.aStartAngle = this.aStartAngle;
+		data.aEndAngle = this.aEndAngle;
+
+		data.aClockwise = this.aClockwise;
+
+		data.aRotation = this.aRotation;
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.aX = json.aX;
+		this.aY = json.aY;
+
+		this.xRadius = json.xRadius;
+		this.yRadius = json.yRadius;
+
+		this.aStartAngle = json.aStartAngle;
+		this.aEndAngle = json.aEndAngle;
+
+		this.aClockwise = json.aClockwise;
+
+		this.aRotation = json.aRotation;
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing an arc.
+ *
+ * @augments EllipseCurve
+ */
+class ArcCurve extends EllipseCurve {
+
+	/**
+	 * Constructs a new arc curve.
+	 *
+	 * @param {number} [aX=0] - The X center of the ellipse.
+	 * @param {number} [aY=0] - The Y center of the ellipse.
+	 * @param {number} [aRadius=1] - The radius of the ellipse in the x direction.
+	 * @param {number} [aStartAngle=0] - The start angle of the curve in radians starting from the positive X axis.
+	 * @param {number} [aEndAngle=Math.PI*2] - The end angle of the curve in radians starting from the positive X axis.
+	 * @param {boolean} [aClockwise=false] - Whether the ellipse is drawn clockwise or not.
+	 */
+	constructor( aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise ) {
+
+		super( aX, aY, aRadius, aRadius, aStartAngle, aEndAngle, aClockwise );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isArcCurve = true;
+
+		this.type = 'ArcCurve';
+
+	}
+
+}
+
+function CubicPoly() {
+
+	/**
+	 * Centripetal CatmullRom Curve - which is useful for avoiding
+	* cusps and self-intersections in non-uniform catmull rom curves.
+	* http://www.cemyuksel.com/research/catmullrom_param/catmullrom.pdf
+	*
+	* curve.type accepts centripetal(default), chordal and catmullrom
+	* curve.tension is used for catmullrom which defaults to 0.5
+	*/
+
+	/*
+	Based on an optimized c++ solution in
+	- http://stackoverflow.com/questions/9489736/catmull-rom-curve-with-no-cusps-and-no-self-intersections/
+	- http://ideone.com/NoEbVM
+
+	This CubicPoly class could be used for reusing some variables and calculations,
+	but for three.js curve use, it could be possible inlined and flatten into a single function call
+	which can be placed in CurveUtils.
+	*/
+
+	let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
+
+	/*
+	 * Compute coefficients for a cubic polynomial
+	 *   p(s) = c0 + c1*s + c2*s^2 + c3*s^3
+	 * such that
+	 *   p(0) = x0, p(1) = x1
+	 *  and
+	 *   p'(0) = t0, p'(1) = t1.
+	 */
+	function init( x0, x1, t0, t1 ) {
+
+		c0 = x0;
+		c1 = t0;
+		c2 = -3 * x0 + 3 * x1 - 2 * t0 - t1;
+		c3 = 2 * x0 - 2 * x1 + t0 + t1;
+
+	}
+
+	return {
+
+		initCatmullRom: function ( x0, x1, x2, x3, tension ) {
+
+			init( x1, x2, tension * ( x2 - x0 ), tension * ( x3 - x1 ) );
+
+		},
+
+		initNonuniformCatmullRom: function ( x0, x1, x2, x3, dt0, dt1, dt2 ) {
+
+			// compute tangents when parameterized in [t1,t2]
+			let t1 = ( x1 - x0 ) / dt0 - ( x2 - x0 ) / ( dt0 + dt1 ) + ( x2 - x1 ) / dt1;
+			let t2 = ( x2 - x1 ) / dt1 - ( x3 - x1 ) / ( dt1 + dt2 ) + ( x3 - x2 ) / dt2;
+
+			// rescale tangents for parametrization in [0,1]
+			t1 *= dt1;
+			t2 *= dt1;
+
+			init( x1, x2, t1, t2 );
+
+		},
+
+		calc: function ( t ) {
+
+			const t2 = t * t;
+			const t3 = t2 * t;
+			return c0 + c1 * t + c2 * t2 + c3 * t3;
+
+		}
+
+	};
+
+}
+
+//
+
+const tmp = /*@__PURE__*/ new Vector3();
+const tmp2 = /*@__PURE__*/ new Vector3();
+const px = /*@__PURE__*/ new CubicPoly();
+const py = /*@__PURE__*/ new CubicPoly();
+const pz = /*@__PURE__*/ new CubicPoly();
+
+/**
+ * A curve representing a Catmull-Rom spline.
+ *
+ * ```js
+ * //Create a closed wavey loop
+ * const curve = new THREE.CatmullRomCurve3( [
+ * 	new THREE.Vector3( -10, 0, 10 ),
+ * 	new THREE.Vector3( -5, 5, 5 ),
+ * 	new THREE.Vector3( 0, 0, 0 ),
+ * 	new THREE.Vector3( 5, -5, 5 ),
+ * 	new THREE.Vector3( 10, 0, 10 )
+ * ] );
+ *
+ * const points = curve.getPoints( 50 );
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+ *
+ * // Create the final object to add to the scene
+ * const curveObject = new THREE.Line( geometry, material );
+ * ```
+ *
+ * @augments Curve
+ */
+class CatmullRomCurve3 extends Curve {
+
+	/**
+	 * Constructs a new Catmull-Rom curve.
+	 *
+	 * @param {Array<Vector3>} [points] - An array of 3D points defining the curve.
+	 * @param {boolean} [closed=false] - Whether the curve is closed or not.
+	 * @param {('centripetal'|'chordal'|'catmullrom')} [curveType='centripetal'] - The curve type.
+	 * @param {number} [tension=0.5] - Tension of the curve.
+	 */
+	constructor( points = [], closed = false, curveType = 'centripetal', tension = 0.5 ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCatmullRomCurve3 = true;
+
+		this.type = 'CatmullRomCurve3';
+
+		/**
+		 * An array of 3D points defining the curve.
+		 *
+		 * @type {Array<Vector3>}
+		 */
+		this.points = points;
+
+		/**
+		 * Whether the curve is closed or not.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.closed = closed;
+
+		/**
+		 * The curve type.
+		 *
+		 * @type {('centripetal'|'chordal'|'catmullrom')}
+		 * @default 'centripetal'
+		 */
+		this.curveType = curveType;
+
+		/**
+		 * Tension of the curve.
+		 *
+		 * @type {number}
+		 * @default 0.5
+		 */
+		this.tension = tension;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector3() ) {
+
+		const point = optionalTarget;
+
+		const points = this.points;
+		const l = points.length;
+
+		const p = ( l - ( this.closed ? 0 : 1 ) ) * t;
+		let intPoint = Math.floor( p );
+		let weight = p - intPoint;
+
+		if ( this.closed ) {
+
+			intPoint += intPoint > 0 ? 0 : ( Math.floor( Math.abs( intPoint ) / l ) + 1 ) * l;
+
+		} else if ( weight === 0 && intPoint === l - 1 ) {
+
+			intPoint = l - 2;
+			weight = 1;
+
+		}
+
+		let p0, p3; // 4 points (p1 & p2 defined below)
+
+		if ( this.closed || intPoint > 0 ) {
+
+			p0 = points[ ( intPoint - 1 ) % l ];
+
+		} else {
+
+			// extrapolate first point
+			tmp2.subVectors( points[ 0 ], points[ 1 ] ).add( points[ 0 ] );
+			p0 = tmp2;
+
+		}
+
+		const p1 = points[ intPoint % l ];
+		const p2 = points[ ( intPoint + 1 ) % l ];
+
+		if ( this.closed || intPoint + 2 < l ) {
+
+			p3 = points[ ( intPoint + 2 ) % l ];
+
+		} else {
+
+			// extrapolate last point
+			tmp.subVectors( points[ l - 1 ], points[ l - 2 ] ).add( points[ l - 1 ] );
+			p3 = tmp;
+
+		}
+
+		if ( this.curveType === 'centripetal' || this.curveType === 'chordal' ) {
+
+			// init Centripetal / Chordal Catmull-Rom
+			const pow = this.curveType === 'chordal' ? 0.5 : 0.25;
+			let dt0 = Math.pow( p0.distanceToSquared( p1 ), pow );
+			let dt1 = Math.pow( p1.distanceToSquared( p2 ), pow );
+			let dt2 = Math.pow( p2.distanceToSquared( p3 ), pow );
+
+			// safety check for repeated points
+			if ( dt1 < 1e-4 ) dt1 = 1.0;
+			if ( dt0 < 1e-4 ) dt0 = dt1;
+			if ( dt2 < 1e-4 ) dt2 = dt1;
+
+			px.initNonuniformCatmullRom( p0.x, p1.x, p2.x, p3.x, dt0, dt1, dt2 );
+			py.initNonuniformCatmullRom( p0.y, p1.y, p2.y, p3.y, dt0, dt1, dt2 );
+			pz.initNonuniformCatmullRom( p0.z, p1.z, p2.z, p3.z, dt0, dt1, dt2 );
+
+		} else if ( this.curveType === 'catmullrom' ) {
+
+			px.initCatmullRom( p0.x, p1.x, p2.x, p3.x, this.tension );
+			py.initCatmullRom( p0.y, p1.y, p2.y, p3.y, this.tension );
+			pz.initCatmullRom( p0.z, p1.z, p2.z, p3.z, this.tension );
+
+		}
+
+		point.set(
+			px.calc( weight ),
+			py.calc( weight ),
+			pz.calc( weight )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.points = [];
+
+		for ( let i = 0, l = source.points.length; i < l; i ++ ) {
+
+			const point = source.points[ i ];
+
+			this.points.push( point.clone() );
+
+		}
+
+		this.closed = source.closed;
+		this.curveType = source.curveType;
+		this.tension = source.tension;
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.points = [];
+
+		for ( let i = 0, l = this.points.length; i < l; i ++ ) {
+
+			const point = this.points[ i ];
+			data.points.push( point.toArray() );
+
+		}
+
+		data.closed = this.closed;
+		data.curveType = this.curveType;
+		data.tension = this.tension;
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.points = [];
+
+		for ( let i = 0, l = json.points.length; i < l; i ++ ) {
+
+			const point = json.points[ i ];
+			this.points.push( new Vector3().fromArray( point ) );
+
+		}
+
+		this.closed = json.closed;
+		this.curveType = json.curveType;
+		this.tension = json.tension;
+
+		return this;
+
+	}
+
+}
+
+/**
+ * Interpolations contains spline and Bézier functions internally used by concrete curve classes.
+ *
+ * Bezier Curves formulas obtained from: https://en.wikipedia.org/wiki/B%C3%A9zier_curve
+ *
+ * @module Interpolations
+ */
+
+/**
+ * Computes a point on a Catmull-Rom spline.
+ *
+ * @param {number} t - The interpolation factor.
+ * @param {number} p0 - The first control point.
+ * @param {number} p1 - The second control point.
+ * @param {number} p2 - The third control point.
+ * @param {number} p3 - The fourth control point.
+ * @return {number} The calculated point on a Catmull-Rom spline.
+ */
+function CatmullRom( t, p0, p1, p2, p3 ) {
+
+	const v0 = ( p2 - p0 ) * 0.5;
+	const v1 = ( p3 - p1 ) * 0.5;
+	const t2 = t * t;
+	const t3 = t * t2;
+	return ( 2 * p1 - 2 * p2 + v0 + v1 ) * t3 + ( -3 * p1 + 3 * p2 - 2 * v0 - v1 ) * t2 + v0 * t + p1;
+
+}
+
+//
+
+function QuadraticBezierP0( t, p ) {
+
+	const k = 1 - t;
+	return k * k * p;
+
+}
+
+function QuadraticBezierP1( t, p ) {
+
+	return 2 * ( 1 - t ) * t * p;
+
+}
+
+function QuadraticBezierP2( t, p ) {
+
+	return t * t * p;
+
+}
+
+/**
+ * Computes a point on a Quadratic Bezier curve.
+ *
+ * @param {number} t - The interpolation factor.
+ * @param {number} p0 - The first control point.
+ * @param {number} p1 - The second control point.
+ * @param {number} p2 - The third control point.
+ * @return {number} The calculated point on a Quadratic Bezier curve.
+ */
+function QuadraticBezier( t, p0, p1, p2 ) {
+
+	return QuadraticBezierP0( t, p0 ) + QuadraticBezierP1( t, p1 ) +
+		QuadraticBezierP2( t, p2 );
+
+}
+
+//
+
+function CubicBezierP0( t, p ) {
+
+	const k = 1 - t;
+	return k * k * k * p;
+
+}
+
+function CubicBezierP1( t, p ) {
+
+	const k = 1 - t;
+	return 3 * k * k * t * p;
+
+}
+
+function CubicBezierP2( t, p ) {
+
+	return 3 * ( 1 - t ) * t * t * p;
+
+}
+
+function CubicBezierP3( t, p ) {
+
+	return t * t * t * p;
+
+}
+
+/**
+ * Computes a point on a Cubic Bezier curve.
+ *
+ * @param {number} t - The interpolation factor.
+ * @param {number} p0 - The first control point.
+ * @param {number} p1 - The second control point.
+ * @param {number} p2 - The third control point.
+ * @param {number} p3 - The fourth control point.
+ * @return {number} The calculated point on a Cubic Bezier curve.
+ */
+function CubicBezier( t, p0, p1, p2, p3 ) {
+
+	return CubicBezierP0( t, p0 ) + CubicBezierP1( t, p1 ) + CubicBezierP2( t, p2 ) +
+		CubicBezierP3( t, p3 );
+
+}
+
+/**
+ * A curve representing a 2D Cubic Bezier curve.
+ *
+ * ```js
+ * const curve = new THREE.CubicBezierCurve(
+ * 	new THREE.Vector2( - 0, 0 ),
+ * 	new THREE.Vector2( - 5, 15 ),
+ * 	new THREE.Vector2( 20, 15 ),
+ * 	new THREE.Vector2( 10, 0 )
+ * );
+ *
+ * const points = curve.getPoints( 50 );
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+ *
+ * // Create the final object to add to the scene
+ * const curveObject = new THREE.Line( geometry, material );
+ * ```
+ *
+ * @augments Curve
+ */
+class CubicBezierCurve extends Curve {
+
+	/**
+	 * Constructs a new Cubic Bezier curve.
+	 *
+	 * @param {Vector2} [v0] - The start point.
+	 * @param {Vector2} [v1] - The first control point.
+	 * @param {Vector2} [v2] - The second control point.
+	 * @param {Vector2} [v3] - The end point.
+	 */
+	constructor( v0 = new Vector2(), v1 = new Vector2(), v2 = new Vector2(), v3 = new Vector2() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCubicBezierCurve = true;
+
+		this.type = 'CubicBezierCurve';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v0 = v0;
+
+		/**
+		 * The first control point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The second control point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v2 = v2;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v3 = v3;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector2} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector2} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector2() ) {
+
+		const point = optionalTarget;
+
+		const v0 = this.v0, v1 = this.v1, v2 = this.v2, v3 = this.v3;
+
+		point.set(
+			CubicBezier( t, v0.x, v1.x, v2.x, v3.x ),
+			CubicBezier( t, v0.y, v1.y, v2.y, v3.y )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v0.copy( source.v0 );
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+		this.v3.copy( source.v3 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v0 = this.v0.toArray();
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+		data.v3 = this.v3.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v0.fromArray( json.v0 );
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+		this.v3.fromArray( json.v3 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 3D Cubic Bezier curve.
+ *
+ * @augments Curve
+ */
+class CubicBezierCurve3 extends Curve {
+
+	/**
+	 * Constructs a new Cubic Bezier curve.
+	 *
+	 * @param {Vector3} [v0] - The start point.
+	 * @param {Vector3} [v1] - The first control point.
+	 * @param {Vector3} [v2] - The second control point.
+	 * @param {Vector3} [v3] - The end point.
+	 */
+	constructor( v0 = new Vector3(), v1 = new Vector3(), v2 = new Vector3(), v3 = new Vector3() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCubicBezierCurve3 = true;
+
+		this.type = 'CubicBezierCurve3';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v0 = v0;
+
+		/**
+		 * The first control point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The second control point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v2 = v2;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v3 = v3;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector3() ) {
+
+		const point = optionalTarget;
+
+		const v0 = this.v0, v1 = this.v1, v2 = this.v2, v3 = this.v3;
+
+		point.set(
+			CubicBezier( t, v0.x, v1.x, v2.x, v3.x ),
+			CubicBezier( t, v0.y, v1.y, v2.y, v3.y ),
+			CubicBezier( t, v0.z, v1.z, v2.z, v3.z )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v0.copy( source.v0 );
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+		this.v3.copy( source.v3 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v0 = this.v0.toArray();
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+		data.v3 = this.v3.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v0.fromArray( json.v0 );
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+		this.v3.fromArray( json.v3 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 2D line segment.
+ *
+ * @augments Curve
+ */
+class LineCurve extends Curve {
+
+	/**
+	 * Constructs a new line curve.
+	 *
+	 * @param {Vector2} [v1] - The start point.
+	 * @param {Vector2} [v2] - The end point.
+	 */
+	constructor( v1 = new Vector2(), v2 = new Vector2() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineCurve = true;
+
+		this.type = 'LineCurve';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v2 = v2;
+
+	}
+
+	/**
+	 * Returns a point on the line.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the line. Must be in the range `[0,1]`.
+	 * @param {Vector2} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector2} The position on the line.
+	 */
+	getPoint( t, optionalTarget = new Vector2() ) {
+
+		const point = optionalTarget;
+
+		if ( t === 1 ) {
+
+			point.copy( this.v2 );
+
+		} else {
+
+			point.copy( this.v2 ).sub( this.v1 );
+			point.multiplyScalar( t ).add( this.v1 );
+
+		}
+
+		return point;
+
+	}
+
+	// Line curve is linear, so we can overwrite default getPointAt
+	getPointAt( u, optionalTarget ) {
+
+		return this.getPoint( u, optionalTarget );
+
+	}
+
+	getTangent( t, optionalTarget = new Vector2() ) {
+
+		return optionalTarget.subVectors( this.v2, this.v1 ).normalize();
+
+	}
+
+	getTangentAt( u, optionalTarget ) {
+
+		return this.getTangent( u, optionalTarget );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 3D line segment.
+ *
+ * @augments Curve
+ */
+class LineCurve3 extends Curve {
+
+	/**
+	 * Constructs a new line curve.
+	 *
+	 * @param {Vector3} [v1] - The start point.
+	 * @param {Vector3} [v2] - The end point.
+	 */
+	constructor( v1 = new Vector3(), v2 = new Vector3() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineCurve3 = true;
+
+		this.type = 'LineCurve3';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v2 = v2;
+
+	}
+
+	/**
+	 * Returns a point on the line.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the line. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the line.
+	 */
+	getPoint( t, optionalTarget = new Vector3() ) {
+
+		const point = optionalTarget;
+
+		if ( t === 1 ) {
+
+			point.copy( this.v2 );
+
+		} else {
+
+			point.copy( this.v2 ).sub( this.v1 );
+			point.multiplyScalar( t ).add( this.v1 );
+
+		}
+
+		return point;
+
+	}
+
+	// Line curve is linear, so we can overwrite default getPointAt
+	getPointAt( u, optionalTarget ) {
+
+		return this.getPoint( u, optionalTarget );
+
+	}
+
+	getTangent( t, optionalTarget = new Vector3() ) {
+
+		return optionalTarget.subVectors( this.v2, this.v1 ).normalize();
+
+	}
+
+	getTangentAt( u, optionalTarget ) {
+
+		return this.getTangent( u, optionalTarget );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 2D Quadratic Bezier curve.
+ *
+ * ```js
+ * const curve = new THREE.QuadraticBezierCurve(
+ * 	new THREE.Vector2( - 10, 0 ),
+ * 	new THREE.Vector2( 20, 15 ),
+ * 	new THREE.Vector2( 10, 0 )
+ * )
+ *
+ * const points = curve.getPoints( 50 );
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+ *
+ * // Create the final object to add to the scene
+ * const curveObject = new THREE.Line( geometry, material );
+ * ```
+ *
+ * @augments Curve
+ */
+class QuadraticBezierCurve extends Curve {
+
+	/**
+	 * Constructs a new Quadratic Bezier curve.
+	 *
+	 * @param {Vector2} [v0] - The start point.
+	 * @param {Vector2} [v1] - The control point.
+	 * @param {Vector2} [v2] - The end point.
+	 */
+	constructor( v0 = new Vector2(), v1 = new Vector2(), v2 = new Vector2() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isQuadraticBezierCurve = true;
+
+		this.type = 'QuadraticBezierCurve';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v0 = v0;
+
+		/**
+		 * The control point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector2}
+		 */
+		this.v2 = v2;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector2} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector2} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector2() ) {
+
+		const point = optionalTarget;
+
+		const v0 = this.v0, v1 = this.v1, v2 = this.v2;
+
+		point.set(
+			QuadraticBezier( t, v0.x, v1.x, v2.x ),
+			QuadraticBezier( t, v0.y, v1.y, v2.y )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v0.copy( source.v0 );
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v0 = this.v0.toArray();
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v0.fromArray( json.v0 );
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 3D Quadratic Bezier curve.
+ *
+ * @augments Curve
+ */
+class QuadraticBezierCurve3 extends Curve {
+
+	/**
+	 * Constructs a new Quadratic Bezier curve.
+	 *
+	 * @param {Vector3} [v0] - The start point.
+	 * @param {Vector3} [v1] - The control point.
+	 * @param {Vector3} [v2] - The end point.
+	 */
+	constructor( v0 = new Vector3(), v1 = new Vector3(), v2 = new Vector3() ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isQuadraticBezierCurve3 = true;
+
+		this.type = 'QuadraticBezierCurve3';
+
+		/**
+		 * The start point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v0 = v0;
+
+		/**
+		 * The control point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v1 = v1;
+
+		/**
+		 * The end point.
+		 *
+		 * @type {Vector3}
+		 */
+		this.v2 = v2;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector3() ) {
+
+		const point = optionalTarget;
+
+		const v0 = this.v0, v1 = this.v1, v2 = this.v2;
+
+		point.set(
+			QuadraticBezier( t, v0.x, v1.x, v2.x ),
+			QuadraticBezier( t, v0.y, v1.y, v2.y ),
+			QuadraticBezier( t, v0.z, v1.z, v2.z )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.v0.copy( source.v0 );
+		this.v1.copy( source.v1 );
+		this.v2.copy( source.v2 );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.v0 = this.v0.toArray();
+		data.v1 = this.v1.toArray();
+		data.v2 = this.v2.toArray();
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.v0.fromArray( json.v0 );
+		this.v1.fromArray( json.v1 );
+		this.v2.fromArray( json.v2 );
+
+		return this;
+
+	}
+
+}
+
+/**
+ * A curve representing a 2D spline curve.
+ *
+ * ```js
+ * // Create a sine-like wave
+ * const curve = new THREE.SplineCurve( [
+ * 	new THREE.Vector2( -10, 0 ),
+ * 	new THREE.Vector2( -5, 5 ),
+ * 	new THREE.Vector2( 0, 0 ),
+ * 	new THREE.Vector2( 5, -5 ),
+ * 	new THREE.Vector2( 10, 0 )
+ * ] );
+ *
+ * const points = curve.getPoints( 50 );
+ * const geometry = new THREE.BufferGeometry().setFromPoints( points );
+ *
+ * const material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+ *
+ * // Create the final object to add to the scene
+ * const splineObject = new THREE.Line( geometry, material );
+ * ```
+ *
+ * @augments Curve
+ */
+class SplineCurve extends Curve {
+
+	/**
+	 * Constructs a new 2D spline curve.
+	 *
+	 * @param {Array<Vector2>} [points] -  An array of 2D points defining the curve.
+	 */
+	constructor( points = [] ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isSplineCurve = true;
+
+		this.type = 'SplineCurve';
+
+		/**
+		 * An array of 2D points defining the curve.
+		 *
+		 * @type {Array<Vector2>}
+		 */
+		this.points = points;
+
+	}
+
+	/**
+	 * Returns a point on the curve.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector2} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector2} The position on the curve.
+	 */
+	getPoint( t, optionalTarget = new Vector2() ) {
+
+		const point = optionalTarget;
+
+		const points = this.points;
+		const p = ( points.length - 1 ) * t;
+
+		const intPoint = Math.floor( p );
+		const weight = p - intPoint;
+
+		const p0 = points[ intPoint === 0 ? intPoint : intPoint - 1 ];
+		const p1 = points[ intPoint ];
+		const p2 = points[ intPoint > points.length - 2 ? points.length - 1 : intPoint + 1 ];
+		const p3 = points[ intPoint > points.length - 3 ? points.length - 1 : intPoint + 2 ];
+
+		point.set(
+			CatmullRom( weight, p0.x, p1.x, p2.x, p3.x ),
+			CatmullRom( weight, p0.y, p1.y, p2.y, p3.y )
+		);
+
+		return point;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.points = [];
+
+		for ( let i = 0, l = source.points.length; i < l; i ++ ) {
+
+			const point = source.points[ i ];
+
+			this.points.push( point.clone() );
+
+		}
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.points = [];
+
+		for ( let i = 0, l = this.points.length; i < l; i ++ ) {
+
+			const point = this.points[ i ];
+			data.points.push( point.toArray() );
+
+		}
+
+		return data;
+
+	}
+
+	fromJSON( json ) {
+
+		super.fromJSON( json );
+
+		this.points = [];
+
+		for ( let i = 0, l = json.points.length; i < l; i ++ ) {
+
+			const point = json.points[ i ];
+			this.points.push( new Vector2().fromArray( point ) );
+
+		}
+
+		return this;
+
+	}
+
+}
+
+var Curves = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	ArcCurve: ArcCurve,
+	CatmullRomCurve3: CatmullRomCurve3,
+	CubicBezierCurve: CubicBezierCurve,
+	CubicBezierCurve3: CubicBezierCurve3,
+	EllipseCurve: EllipseCurve,
+	LineCurve: LineCurve,
+	LineCurve3: LineCurve3,
+	QuadraticBezierCurve: QuadraticBezierCurve,
+	QuadraticBezierCurve3: QuadraticBezierCurve3,
+	SplineCurve: SplineCurve
+});
+
+/**
  * A geometry class for representing a plane.
  *
  * ```js
@@ -45388,6 +48871,407 @@ class SphereGeometry extends BufferGeometry {
 	static fromJSON( data ) {
 
 		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
+/**
+ * A geometry class for representing an torus.
+ *
+ * ```js
+ * const geometry = new THREE.TorusGeometry( 10, 3, 16, 100 );
+ * const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+ * const torus = new THREE.Mesh( geometry, material );
+ * scene.add( torus );
+ * ```
+ *
+ * @augments BufferGeometry
+ * @demo scenes/geometry-browser.html#TorusGeometry
+ */
+class TorusGeometry extends BufferGeometry {
+
+	/**
+	 * Constructs a new torus geometry.
+	 *
+	 * @param {number} [radius=1] - Radius of the torus, from the center of the torus to the center of the tube.
+	 * @param {number} [tube=0.4] - Radius of the tube. Must be smaller than `radius`.
+	 * @param {number} [radialSegments=12] - The number of radial segments.
+	 * @param {number} [tubularSegments=48] - The number of tubular segments.
+	 * @param {number} [arc=Math.PI*2] - Central angle in radians.
+	 * @param {number} [thetaStart=0] - Start of the tubular sweep in radians.
+	 * @param {number} [thetaLength=Math.PI*2] - Length of the tubular sweep in radians.
+	 */
+	constructor( radius = 1, tube = 0.4, radialSegments = 12, tubularSegments = 48, arc = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI * 2 ) {
+
+		super();
+
+		this.type = 'TorusGeometry';
+
+		/**
+		 * Holds the constructor parameters that have been
+		 * used to generate the geometry. Any modification
+		 * after instantiation does not change the geometry.
+		 *
+		 * @type {Object}
+		 */
+		this.parameters = {
+			radius: radius,
+			tube: tube,
+			radialSegments: radialSegments,
+			tubularSegments: tubularSegments,
+			arc: arc,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength,
+		};
+
+		radialSegments = Math.floor( radialSegments );
+		tubularSegments = Math.floor( tubularSegments );
+
+		// buffers
+
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+
+		// helper variables
+
+		const center = new Vector3();
+		const vertex = new Vector3();
+		const normal = new Vector3();
+
+		// generate vertices, normals and uvs
+
+		for ( let j = 0; j <= radialSegments; j ++ ) {
+
+			const v = thetaStart + ( j / radialSegments ) * thetaLength;
+
+			for ( let i = 0; i <= tubularSegments; i ++ ) {
+
+				const u = i / tubularSegments * arc;
+
+				// vertex
+
+				vertex.x = ( radius + tube * Math.cos( v ) ) * Math.cos( u );
+				vertex.y = ( radius + tube * Math.cos( v ) ) * Math.sin( u );
+				vertex.z = tube * Math.sin( v );
+
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+				// normal
+
+				center.x = radius * Math.cos( u );
+				center.y = radius * Math.sin( u );
+				normal.subVectors( vertex, center ).normalize();
+
+				normals.push( normal.x, normal.y, normal.z );
+
+				// uv
+
+				uvs.push( i / tubularSegments );
+				uvs.push( j / radialSegments );
+
+			}
+
+		}
+
+		// generate indices
+
+		for ( let j = 1; j <= radialSegments; j ++ ) {
+
+			for ( let i = 1; i <= tubularSegments; i ++ ) {
+
+				// indices
+
+				const a = ( tubularSegments + 1 ) * j + i - 1;
+				const b = ( tubularSegments + 1 ) * ( j - 1 ) + i - 1;
+				const c = ( tubularSegments + 1 ) * ( j - 1 ) + i;
+				const d = ( tubularSegments + 1 ) * j + i;
+
+				// faces
+
+				indices.push( a, b, d );
+				indices.push( b, c, d );
+
+			}
+
+		}
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+	/**
+	 * Factory method for creating an instance of this class from the given
+	 * JSON object.
+	 *
+	 * @param {Object} data - A JSON object representing the serialized geometry.
+	 * @return {TorusGeometry} A new instance.
+	 */
+	static fromJSON( data ) {
+
+		return new TorusGeometry( data.radius, data.tube, data.radialSegments, data.tubularSegments, data.arc, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
+/**
+ * Creates a tube that extrudes along a 3D curve.
+ *
+ * ```js
+ * class CustomSinCurve extends THREE.Curve {
+ *
+ * 	getPoint( t, optionalTarget = new THREE.Vector3() ) {
+ *
+ * 		const tx = t * 3 - 1.5;
+ * 		const ty = Math.sin( 2 * Math.PI * t );
+ * 		const tz = 0;
+ *
+ * 		return optionalTarget.set( tx, ty, tz );
+ * 	}
+ *
+ * }
+ *
+ * const path = new CustomSinCurve( 10 );
+ * const geometry = new THREE.TubeGeometry( path, 20, 2, 8, false );
+ * const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+ * const mesh = new THREE.Mesh( geometry, material );
+ * scene.add( mesh );
+ * ```
+ *
+ * @augments BufferGeometry
+ * @demo scenes/geometry-browser.html#TubeGeometry
+ */
+class TubeGeometry extends BufferGeometry {
+
+	/**
+	 * Constructs a new tube geometry.
+	 *
+	 * @param {Curve} [path=QuadraticBezierCurve3] - A 3D curve defining the path of the tube.
+	 * @param {number} [tubularSegments=64] - The number of segments that make up the tube.
+	 * @param {number} [radius=1] -The radius of the tube.
+	 * @param {number} [radialSegments=8] - The number of segments that make up the cross-section.
+	 * @param {boolean} [closed=false] - Whether the tube is closed or not.
+	 */
+	constructor( path = new QuadraticBezierCurve3( new Vector3( -1, -1, 0 ), new Vector3( -1, 1, 0 ), new Vector3( 1, 1, 0 ) ), tubularSegments = 64, radius = 1, radialSegments = 8, closed = false ) {
+
+		super();
+
+		this.type = 'TubeGeometry';
+
+		/**
+		 * Holds the constructor parameters that have been
+		 * used to generate the geometry. Any modification
+		 * after instantiation does not change the geometry.
+		 *
+		 * @type {Object}
+		 */
+		this.parameters = {
+			path: path,
+			tubularSegments: tubularSegments,
+			radius: radius,
+			radialSegments: radialSegments,
+			closed: closed
+		};
+
+		const frames = path.computeFrenetFrames( tubularSegments, closed );
+
+		// expose internals
+
+		this.tangents = frames.tangents;
+		this.normals = frames.normals;
+		this.binormals = frames.binormals;
+
+		// helper variables
+
+		const vertex = new Vector3();
+		const normal = new Vector3();
+		const uv = new Vector2();
+		let P = new Vector3();
+
+		// buffer
+
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+		const indices = [];
+
+		// create buffer data
+
+		generateBufferData();
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+		// functions
+
+		function generateBufferData() {
+
+			for ( let i = 0; i < tubularSegments; i ++ ) {
+
+				generateSegment( i );
+
+			}
+
+			// if the geometry is not closed, generate the last row of vertices and normals
+			// at the regular position on the given path
+			//
+			// if the geometry is closed, duplicate the first row of vertices and normals (uvs will differ)
+
+			generateSegment( ( closed === false ) ? tubularSegments : 0 );
+
+			// uvs are generated in a separate function.
+			// this makes it easy compute correct values for closed geometries
+
+			generateUVs();
+
+			// finally create faces
+
+			generateIndices();
+
+		}
+
+		function generateSegment( i ) {
+
+			// we use getPointAt to sample evenly distributed points from the given path
+
+			P = path.getPointAt( i / tubularSegments, P );
+
+			// retrieve corresponding normal and binormal
+
+			const N = frames.normals[ i ];
+			const B = frames.binormals[ i ];
+
+			// generate normals and vertices for the current segment
+
+			for ( let j = 0; j <= radialSegments; j ++ ) {
+
+				const v = j / radialSegments * Math.PI * 2;
+
+				const sin = Math.sin( v );
+				const cos = - Math.cos( v );
+
+				// normal
+
+				normal.x = ( cos * N.x + sin * B.x );
+				normal.y = ( cos * N.y + sin * B.y );
+				normal.z = ( cos * N.z + sin * B.z );
+				normal.normalize();
+
+				normals.push( normal.x, normal.y, normal.z );
+
+				// vertex
+
+				vertex.x = P.x + radius * normal.x;
+				vertex.y = P.y + radius * normal.y;
+				vertex.z = P.z + radius * normal.z;
+
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+			}
+
+		}
+
+		function generateIndices() {
+
+			for ( let j = 1; j <= tubularSegments; j ++ ) {
+
+				for ( let i = 1; i <= radialSegments; i ++ ) {
+
+					const a = ( radialSegments + 1 ) * ( j - 1 ) + ( i - 1 );
+					const b = ( radialSegments + 1 ) * j + ( i - 1 );
+					const c = ( radialSegments + 1 ) * j + i;
+					const d = ( radialSegments + 1 ) * ( j - 1 ) + i;
+
+					// faces
+
+					indices.push( a, b, d );
+					indices.push( b, c, d );
+
+				}
+
+			}
+
+		}
+
+		function generateUVs() {
+
+			for ( let i = 0; i <= tubularSegments; i ++ ) {
+
+				for ( let j = 0; j <= radialSegments; j ++ ) {
+
+					uv.x = i / tubularSegments;
+					uv.y = j / radialSegments;
+
+					uvs.push( uv.x, uv.y );
+
+				}
+
+			}
+
+		}
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+	toJSON() {
+
+		const data = super.toJSON();
+
+		data.path = this.parameters.path.toJSON();
+
+		return data;
+
+	}
+
+	/**
+	 * Factory method for creating an instance of this class from the given
+	 * JSON object.
+	 *
+	 * @param {Object} data - A JSON object representing the serialized geometry.
+	 * @return {TubeGeometry} A new instance.
+	 */
+	static fromJSON( data ) {
+
+		// This only works for built-in curves (e.g. CatmullRomCurve3).
+		// User defined curves or instances of CurvePath will not be deserialized.
+		return new TubeGeometry(
+			new Curves[ data.path.type ]().fromJSON( data.path ),
+			data.tubularSegments,
+			data.radius,
+			data.radialSegments,
+			data.closed
+		);
 
 	}
 
@@ -49271,6 +53155,150 @@ class ArrayCamera extends PerspectiveCamera {
 }
 
 /**
+ * This class can be used to represent points in 3D space as
+ * [Spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
+ */
+class Spherical {
+
+	/**
+	 * Constructs a new spherical.
+	 *
+	 * @param {number} [radius=1] - The radius, or the Euclidean distance (straight-line distance) from the point to the origin.
+	 * @param {number} [phi=0] - The polar angle in radians from the y (up) axis.
+	 * @param {number} [theta=0] - The equator/azimuthal angle in radians around the y (up) axis.
+	 */
+	constructor( radius = 1, phi = 0, theta = 0 ) {
+
+		/**
+		 * The radius, or the Euclidean distance (straight-line distance) from the point to the origin.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.radius = radius;
+
+		/**
+		 * The polar angle in radians from the y (up) axis.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.phi = phi;
+
+		/**
+		 * The equator/azimuthal angle in radians around the y (up) axis.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.theta = theta;
+
+	}
+
+	/**
+	 * Sets the spherical components by copying the given values.
+	 *
+	 * @param {number} radius - The radius.
+	 * @param {number} phi - The polar angle.
+	 * @param {number} theta - The azimuthal angle.
+	 * @return {Spherical} A reference to this spherical.
+	 */
+	set( radius, phi, theta ) {
+
+		this.radius = radius;
+		this.phi = phi;
+		this.theta = theta;
+
+		return this;
+
+	}
+
+	/**
+	 * Copies the values of the given spherical to this instance.
+	 *
+	 * @param {Spherical} other - The spherical to copy.
+	 * @return {Spherical} A reference to this spherical.
+	 */
+	copy( other ) {
+
+		this.radius = other.radius;
+		this.phi = other.phi;
+		this.theta = other.theta;
+
+		return this;
+
+	}
+
+	/**
+	 * Restricts the polar angle [page:.phi phi] to be between `0.000001` and pi -
+	 * `0.000001`.
+	 *
+	 * @return {Spherical} A reference to this spherical.
+	 */
+	makeSafe() {
+
+		const EPS = 0.000001;
+		this.phi = clamp( this.phi, EPS, Math.PI - EPS );
+
+		return this;
+
+	}
+
+	/**
+	 * Sets the spherical components from the given vector which is assumed to hold
+	 * Cartesian coordinates.
+	 *
+	 * @param {Vector3} v - The vector to set.
+	 * @return {Spherical} A reference to this spherical.
+	 */
+	setFromVector3( v ) {
+
+		return this.setFromCartesianCoords( v.x, v.y, v.z );
+
+	}
+
+	/**
+	 * Sets the spherical components from the given Cartesian coordinates.
+	 *
+	 * @param {number} x - The x value.
+	 * @param {number} y - The y value.
+	 * @param {number} z - The z value.
+	 * @return {Spherical} A reference to this spherical.
+	 */
+	setFromCartesianCoords( x, y, z ) {
+
+		this.radius = Math.sqrt( x * x + y * y + z * z );
+
+		if ( this.radius === 0 ) {
+
+			this.theta = 0;
+			this.phi = 0;
+
+		} else {
+
+			this.theta = Math.atan2( x, z );
+			this.phi = Math.acos( clamp( y / this.radius, -1, 1 ) );
+
+		}
+
+		return this;
+
+	}
+
+	/**
+	 * Returns a new spherical with copied values from this instance.
+	 *
+	 * @return {Spherical} A clone of this instance.
+	 */
+	clone() {
+
+		return new this.constructor().copy( this );
+
+	}
+
+}
+
+/**
  * Represents a 2x2 matrix.
  *
  * A Note on Row-Major and Column-Major Ordering:
@@ -49396,6 +53424,115 @@ class Matrix2 {
 		return this;
 
 	}
+
+}
+
+/**
+ * Abstract base class for controls.
+ *
+ * @abstract
+ * @augments EventDispatcher
+ */
+class Controls extends EventDispatcher {
+
+	/**
+	 * Constructs a new controls instance.
+	 *
+	 * @param {Object3D} object - The object that is managed by the controls.
+	 * @param {?HTMLElement} domElement - The HTML element used for event listeners.
+	 */
+	constructor( object, domElement = null ) {
+
+		super();
+
+		/**
+		 * The object that is managed by the controls.
+		 *
+		 * @type {Object3D}
+		 */
+		this.object = object;
+
+		/**
+		 * The HTML element used for event listeners.
+		 *
+		 * @type {?HTMLElement}
+		 * @default null
+		 */
+		this.domElement = domElement;
+
+		/**
+		 * Whether the controls responds to user input or not.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.enabled = true;
+
+		/**
+		 * The internal state of the controls.
+		 *
+		 * @type {number}
+		 * @default -1
+		 */
+		this.state = -1;
+
+		/**
+		 * This object defines the keyboard input of the controls.
+		 *
+		 * @type {Object}
+		 */
+		this.keys = {};
+
+		/**
+		 * This object defines what type of actions are assigned to the available mouse buttons.
+		 * It depends on the control implementation what kind of mouse buttons and actions are supported.
+		 *
+		 * @type {{LEFT: ?number, MIDDLE: ?number, RIGHT: ?number}}
+		 */
+		this.mouseButtons = { LEFT: null, MIDDLE: null, RIGHT: null };
+
+		/**
+		 * This object defines what type of actions are assigned to what kind of touch interaction.
+		 * It depends on the control implementation what kind of touch interaction and actions are supported.
+		 *
+		 * @type {{ONE: ?number, TWO: ?number}}
+		 */
+		this.touches = { ONE: null, TWO: null };
+
+	}
+
+	/**
+	 * Connects the controls to the DOM. This method has so called "side effects" since
+	 * it adds the module's event listeners to the DOM.
+	 *
+	 * @param {HTMLElement} element - The DOM element to connect to.
+	 */
+	connect( element ) {
+
+		if ( this.domElement !== null ) this.disconnect();
+
+		this.domElement = element;
+
+	}
+
+	/**
+	 * Disconnects the controls from the DOM.
+	 */
+	disconnect() {}
+
+	/**
+	 * Call this method if you no longer want use to the controls. It frees all internal
+	 * resources and removes all event listeners.
+	 */
+	dispose() {}
+
+	/**
+	 * Controls should implement this method if they have to update their internal state
+	 * per simulation step.
+	 *
+	 * @param {number} [delta] - The time delta in seconds.
+	 */
+	update( /* delta */ ) {}
 
 }
 
@@ -69277,17 +73414,2880 @@ class WebGLRenderer {
 
 }
 
+/**
+ * Fires when the camera has been transformed by the controls.
+ *
+ * @event OrbitControls#change
+ * @type {Object}
+ */
+const _changeEvent = { type: 'change' };
+
+/**
+ * Fires when an interaction was initiated.
+ *
+ * @event OrbitControls#start
+ * @type {Object}
+ */
+const _startEvent = { type: 'start' };
+
+/**
+ * Fires when an interaction has finished.
+ *
+ * @event OrbitControls#end
+ * @type {Object}
+ */
+const _endEvent = { type: 'end' };
+
+const _ray = new Ray();
+const _plane = new Plane();
+const _TILT_LIMIT = Math.cos( 70 * MathUtils.DEG2RAD );
+
+const _v = new Vector3();
+const _twoPI = 2 * Math.PI;
+
+const _STATE = {
+	NONE: -1,
+	ROTATE: 0,
+	DOLLY: 1,
+	PAN: 2,
+	TOUCH_ROTATE: 3,
+	TOUCH_PAN: 4,
+	TOUCH_DOLLY_PAN: 5,
+	TOUCH_DOLLY_ROTATE: 6
+};
+const _EPS = 0.000001;
+
+
+/**
+ * Orbit controls allow the camera to orbit around a target.
+ *
+ * OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
+ * it maintains the "up" direction `object.up` (+Y by default).
+ *
+ * - Orbit: Left mouse / touch: one-finger move.
+ * - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
+ * - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
+ *
+ * ```js
+ * const controls = new OrbitControls( camera, renderer.domElement );
+ *
+ * // controls.update() must be called after any manual changes to the camera's transform
+ * camera.position.set( 0, 20, 100 );
+ * controls.update();
+ *
+ * function animate() {
+ *
+ * 	// required if controls.enableDamping or controls.autoRotate are set to true
+ * 	controls.update();
+ *
+ * 	renderer.render( scene, camera );
+ *
+ * }
+ * ```
+ *
+ * @augments Controls
+ * @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+ */
+class OrbitControls extends Controls {
+
+	/**
+	 * Constructs a new controls instance.
+	 *
+	 * @param {Object3D} object - The object that is managed by the controls.
+	 * @param {?HTMLElement} domElement - The HTML element used for event listeners.
+	 */
+	constructor( object, domElement = null ) {
+
+		super( object, domElement );
+
+		this.state = _STATE.NONE;
+
+		/**
+		 * The focus point of the controls, the `object` orbits around this.
+		 * It can be updated manually at any point to change the focus of the controls.
+		 *
+		 * @type {Vector3}
+		 */
+		this.target = new Vector3();
+
+		/**
+		 * The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
+		 * It can be updated manually at any point to change the center of interest
+		 * for the `target`.
+		 *
+		 * @type {Vector3}
+		 */
+		this.cursor = new Vector3();
+
+		/**
+		 * How far you can dolly in (perspective camera only).
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.minDistance = 0;
+
+		/**
+		 * How far you can dolly out (perspective camera only).
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.maxDistance = Infinity;
+
+		/**
+		 * How far you can zoom in (orthographic camera only).
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.minZoom = 0;
+
+		/**
+		 * How far you can zoom out (orthographic camera only).
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.maxZoom = Infinity;
+
+		/**
+		 * How close you can get the target to the 3D `cursor`.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.minTargetRadius = 0;
+
+		/**
+		 * How far you can move the target from the 3D `cursor`.
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.maxTargetRadius = Infinity;
+
+		/**
+		 * How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.minPolarAngle = 0;
+
+		/**
+		 * How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
+		 *
+		 * @type {number}
+		 * @default Math.PI
+		 */
+		this.maxPolarAngle = Math.PI;
+
+		/**
+		 * How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
+		 * must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+		 *
+		 * @type {number}
+		 * @default -Infinity
+		 */
+		this.minAzimuthAngle = - Infinity;
+
+		/**
+		 * How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
+		 * must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+		 *
+		 * @type {number}
+		 * @default -Infinity
+		 */
+		this.maxAzimuthAngle = Infinity;
+
+		/**
+		 * Set to `true` to enable damping (inertia), which can be used to give a sense of weight
+		 * to the controls. Note that if this is enabled, you must call `update()` in your animation
+		 * loop.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.enableDamping = false;
+
+		/**
+		 * The damping inertia used if `enableDamping` is set to `true`.
+		 *
+		 * Note that for this to work, you must call `update()` in your animation loop.
+		 *
+		 * @type {number}
+		 * @default 0.05
+		 */
+		this.dampingFactor = 0.05;
+
+		/**
+		 * Enable or disable zooming (dollying) of the camera.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.enableZoom = true;
+
+		/**
+		 * Speed of zooming / dollying.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.zoomSpeed = 1.0;
+
+		/**
+		 * Enable or disable horizontal and vertical rotation of the camera.
+		 *
+		 * Note that it is possible to disable a single axis by setting the min and max of the
+		 * `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
+		 * or horizontal rotation to be fixed at that value.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.enableRotate = true;
+
+		/**
+		 * Speed of rotation.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.rotateSpeed = 1.0;
+
+		/**
+		 * How fast to rotate the camera when the keyboard is used.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.keyRotateSpeed = 1.0;
+
+		/**
+		 * Enable or disable camera panning.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.enablePan = true;
+
+		/**
+		 * Speed of panning.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.panSpeed = 1.0;
+
+		/**
+		 * Defines how the camera's position is translated when panning. If `true`, the camera pans
+		 * in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
+		 * direction.
+		 *
+		 * @type {boolean}
+		 * @default true
+		 */
+		this.screenSpacePanning = true;
+
+		/**
+		 * How fast to pan the camera when the keyboard is used in
+		 * pixels per keypress.
+		 *
+		 * @type {number}
+		 * @default 7
+		 */
+		this.keyPanSpeed = 7.0;
+
+		/**
+		 * Setting this property to `true` allows to zoom to the cursor's position.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.zoomToCursor = false;
+
+		/**
+		 * Set to true to automatically rotate around the target
+		 *
+		 * Note that if this is enabled, you must call `update()` in your animation loop.
+		 * If you want the auto-rotate speed to be independent of the frame rate (the refresh
+		 * rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
+		 *
+		 * @type {boolean}
+		 * @default false
+		 */
+		this.autoRotate = false;
+
+		/**
+		 * How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
+		 * per orbit at 60fps.
+		 *
+		 * Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
+		 *
+		 * @type {number}
+		 * @default 2
+		 */
+		this.autoRotateSpeed = 2.0;
+
+		/**
+		 * This object contains references to the keycodes for controlling camera panning.
+		 *
+		 * ```js
+		 * controls.keys = {
+		 * 	LEFT: 'ArrowLeft', //left arrow
+		 * 	UP: 'ArrowUp', // up arrow
+		 * 	RIGHT: 'ArrowRight', // right arrow
+		 * 	BOTTOM: 'ArrowDown' // down arrow
+		 * }
+		 * ```
+		 * @type {Object}
+		 */
+		this.keys = { LEFT: 'ArrowLeft', UP: 'ArrowUp', RIGHT: 'ArrowRight', BOTTOM: 'ArrowDown' };
+
+		/**
+		 * This object contains references to the mouse actions used by the controls.
+		 *
+		 * ```js
+		 * controls.mouseButtons = {
+		 * 	LEFT: THREE.MOUSE.ROTATE,
+		 * 	MIDDLE: THREE.MOUSE.DOLLY,
+		 * 	RIGHT: THREE.MOUSE.PAN
+		 * }
+		 * ```
+		 * @type {Object}
+		 */
+		this.mouseButtons = { LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN };
+
+		/**
+		 * This object contains references to the touch actions used by the controls.
+		 *
+		 * ```js
+		 * controls.mouseButtons = {
+		 * 	ONE: THREE.TOUCH.ROTATE,
+		 * 	TWO: THREE.TOUCH.DOLLY_PAN
+		 * }
+		 * ```
+		 * @type {Object}
+		 */
+		this.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
+
+		/**
+		 * Used internally by `saveState()` and `reset()`.
+		 *
+		 * @type {Vector3}
+		 */
+		this.target0 = this.target.clone();
+
+		/**
+		 * Used internally by `saveState()` and `reset()`.
+		 *
+		 * @type {Vector3}
+		 */
+		this.position0 = this.object.position.clone();
+
+		/**
+		 * Used internally by `saveState()` and `reset()`.
+		 *
+		 * @type {number}
+		 */
+		this.zoom0 = this.object.zoom;
+
+		this._cursorStyle = 'auto';
+
+		// the target DOM element for key events
+		this._domElementKeyEvents = null;
+
+		// internals
+
+		this._lastPosition = new Vector3();
+		this._lastQuaternion = new Quaternion();
+		this._lastTargetPosition = new Vector3();
+
+		// so camera.up is the orbit axis
+		this._quat = new Quaternion().setFromUnitVectors( object.up, new Vector3( 0, 1, 0 ) );
+		this._quatInverse = this._quat.clone().invert();
+
+		// current position in spherical coordinates
+		this._spherical = new Spherical();
+		this._sphericalDelta = new Spherical();
+
+		this._scale = 1;
+		this._panOffset = new Vector3();
+
+		this._rotateStart = new Vector2();
+		this._rotateEnd = new Vector2();
+		this._rotateDelta = new Vector2();
+
+		this._panStart = new Vector2();
+		this._panEnd = new Vector2();
+		this._panDelta = new Vector2();
+
+		this._dollyStart = new Vector2();
+		this._dollyEnd = new Vector2();
+		this._dollyDelta = new Vector2();
+
+		this._dollyDirection = new Vector3();
+		this._mouse = new Vector2();
+		this._performCursorZoom = false;
+
+		this._pointers = [];
+		this._pointerPositions = {};
+
+		this._controlActive = false;
+
+		// event listeners
+
+		this._onPointerMove = onPointerMove.bind( this );
+		this._onPointerDown = onPointerDown.bind( this );
+		this._onPointerUp = onPointerUp.bind( this );
+		this._onContextMenu = onContextMenu.bind( this );
+		this._onMouseWheel = onMouseWheel.bind( this );
+		this._onKeyDown = onKeyDown.bind( this );
+
+		this._onTouchStart = onTouchStart.bind( this );
+		this._onTouchMove = onTouchMove.bind( this );
+
+		this._onMouseDown = onMouseDown.bind( this );
+		this._onMouseMove = onMouseMove.bind( this );
+
+		this._interceptControlDown = interceptControlDown.bind( this );
+		this._interceptControlUp = interceptControlUp.bind( this );
+
+		//
+
+		if ( this.domElement !== null ) {
+
+			this.connect( this.domElement );
+
+		}
+
+		this.update();
+
+	}
+
+	/**
+	 * Defines the visual representation of the cursor.
+	 *
+	 * @type {('auto'|'grab')}
+	 * @default 'auto'
+	 */
+	set cursorStyle( type ) {
+
+		this._cursorStyle = type;
+
+		if ( type === 'grab' ) {
+
+			this.domElement.style.cursor = 'grab';
+
+		} else {
+
+			this.domElement.style.cursor = 'auto';
+
+		}
+
+	}
+
+	get cursorStyle() {
+
+		return this._cursorStyle;
+
+	}
+
+	connect( element ) {
+
+		super.connect( element );
+
+		this.domElement.addEventListener( 'pointerdown', this._onPointerDown );
+		this.domElement.addEventListener( 'pointercancel', this._onPointerUp );
+
+		this.domElement.addEventListener( 'contextmenu', this._onContextMenu );
+		this.domElement.addEventListener( 'wheel', this._onMouseWheel, { passive: false } );
+
+		const document = this.domElement.getRootNode(); // offscreen canvas compatibility
+		document.addEventListener( 'keydown', this._interceptControlDown, { passive: true, capture: true } );
+
+		this.domElement.style.touchAction = 'none'; // Disable touch scroll
+
+	}
+
+	disconnect() {
+
+		this.state = _STATE.NONE;
+
+		this.domElement.removeEventListener( 'pointerdown', this._onPointerDown );
+		this.domElement.ownerDocument.removeEventListener( 'pointermove', this._onPointerMove );
+		this.domElement.ownerDocument.removeEventListener( 'pointerup', this._onPointerUp );
+		this.domElement.removeEventListener( 'pointercancel', this._onPointerUp );
+
+		this.domElement.removeEventListener( 'wheel', this._onMouseWheel );
+		this.domElement.removeEventListener( 'contextmenu', this._onContextMenu );
+
+		this.stopListenToKeyEvents();
+
+		const document = this.domElement.getRootNode(); // offscreen canvas compatibility
+		document.removeEventListener( 'keydown', this._interceptControlDown, { capture: true } );
+		document.removeEventListener( 'keyup', this._interceptControlUp, { capture: true } );
+
+		this._controlActive = false;
+
+		this._pointers.length = 0;
+		this._pointerPositions = {};
+
+		this.domElement.style.touchAction = ''; // Restore touch scroll
+		this.domElement.style.cursor = 'auto';
+
+	}
+
+	dispose() {
+
+		this.disconnect();
+
+	}
+
+	/**
+	 * Get the current vertical rotation, in radians.
+	 *
+	 * @return {number} The current vertical rotation, in radians.
+	 */
+	getPolarAngle() {
+
+		return this._spherical.phi;
+
+	}
+
+	/**
+	 * Get the current horizontal rotation, in radians.
+	 *
+	 * @return {number} The current horizontal rotation, in radians.
+	 */
+	getAzimuthalAngle() {
+
+		return this._spherical.theta;
+
+	}
+
+	/**
+	 * Returns the distance from the camera to the target.
+	 *
+	 * @return {number} The distance from the camera to the target.
+	 */
+	getDistance() {
+
+		return this.object.position.distanceTo( this.target );
+
+	}
+
+	/**
+	 * Adds key event listeners to the given DOM element.
+	 * `window` is a recommended argument for using this method.
+	 *
+	 * @param {HTMLElement} domElement - The DOM element
+	 */
+	listenToKeyEvents( domElement ) {
+
+		domElement.addEventListener( 'keydown', this._onKeyDown );
+		this._domElementKeyEvents = domElement;
+
+	}
+
+	/**
+	 * Removes the key event listener previously defined with `listenToKeyEvents()`.
+	 */
+	stopListenToKeyEvents() {
+
+		if ( this._domElementKeyEvents !== null ) {
+
+			this._domElementKeyEvents.removeEventListener( 'keydown', this._onKeyDown );
+			this._domElementKeyEvents = null;
+
+		}
+
+	}
+
+	/**
+	 * Save the current state of the controls. This can later be recovered with `reset()`.
+	 */
+	saveState() {
+
+		this.target0.copy( this.target );
+		this.position0.copy( this.object.position );
+		this.zoom0 = this.object.zoom;
+
+	}
+
+	/**
+	 * Reset the controls to their state from either the last time the `saveState()`
+	 * was called, or the initial state.
+	 */
+	reset() {
+
+		this.target.copy( this.target0 );
+		this.object.position.copy( this.position0 );
+		this.object.zoom = this.zoom0;
+
+		this.object.updateProjectionMatrix();
+		this.dispatchEvent( _changeEvent );
+
+		this.update();
+
+		this.state = _STATE.NONE;
+
+	}
+
+	/**
+	 * Programmatically pan the camera.
+	 *
+	 * @param {number} deltaX - The horizontal pan amount in pixels.
+	 * @param {number} deltaY - The vertical pan amount in pixels.
+	 */
+	pan( deltaX, deltaY ) {
+
+		this._pan( deltaX, deltaY );
+		this.update();
+
+	}
+
+	/**
+	 * Programmatically dolly in (zoom in for perspective camera).
+	 *
+	 * @param {number} dollyScale - The dolly scale factor.
+	 */
+	dollyIn( dollyScale ) {
+
+		this._dollyIn( dollyScale );
+		this.update();
+
+	}
+
+	/**
+	 * Programmatically dolly out (zoom out for perspective camera).
+	 *
+	 * @param {number} dollyScale - The dolly scale factor.
+	 */
+	dollyOut( dollyScale ) {
+
+		this._dollyOut( dollyScale );
+		this.update();
+
+	}
+
+	/**
+	 * Programmatically rotate the camera left (around the vertical axis).
+	 *
+	 * @param {number} angle - The rotation angle in radians.
+	 */
+	rotateLeft( angle ) {
+
+		this._rotateLeft( angle );
+		this.update();
+
+	}
+
+	/**
+	 * Programmatically rotate the camera up (around the horizontal axis).
+	 *
+	 * @param {number} angle - The rotation angle in radians.
+	 */
+	rotateUp( angle ) {
+
+		this._rotateUp( angle );
+		this.update();
+
+	}
+
+	update( deltaTime = null ) {
+
+		const position = this.object.position;
+
+		_v.copy( position ).sub( this.target );
+
+		// rotate offset to "y-axis-is-up" space
+		_v.applyQuaternion( this._quat );
+
+		// angle from z-axis around y-axis
+		this._spherical.setFromVector3( _v );
+
+		if ( this.autoRotate && this.state === _STATE.NONE ) {
+
+			this._rotateLeft( this._getAutoRotationAngle( deltaTime ) );
+
+		}
+
+		if ( this.enableDamping ) {
+
+			this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
+			this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
+
+		} else {
+
+			this._spherical.theta += this._sphericalDelta.theta;
+			this._spherical.phi += this._sphericalDelta.phi;
+
+		}
+
+		// restrict theta to be between desired limits
+
+		let min = this.minAzimuthAngle;
+		let max = this.maxAzimuthAngle;
+
+		if ( isFinite( min ) && isFinite( max ) ) {
+
+			if ( min < - Math.PI ) min += _twoPI; else if ( min > Math.PI ) min -= _twoPI;
+
+			if ( max < - Math.PI ) max += _twoPI; else if ( max > Math.PI ) max -= _twoPI;
+
+			if ( min <= max ) {
+
+				this._spherical.theta = Math.max( min, Math.min( max, this._spherical.theta ) );
+
+			} else {
+
+				this._spherical.theta = ( this._spherical.theta > ( min + max ) / 2 ) ?
+					Math.max( min, this._spherical.theta ) :
+					Math.min( max, this._spherical.theta );
+
+			}
+
+		}
+
+		// restrict phi to be between desired limits
+		this._spherical.phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, this._spherical.phi ) );
+
+		this._spherical.makeSafe();
+
+
+		// move target to panned location
+
+		if ( this.enableDamping === true ) {
+
+			this.target.addScaledVector( this._panOffset, this.dampingFactor );
+
+		} else {
+
+			this.target.add( this._panOffset );
+
+		}
+
+		// Limit the target distance from the cursor to create a sphere around the center of interest
+		this.target.sub( this.cursor );
+		this.target.clampLength( this.minTargetRadius, this.maxTargetRadius );
+		this.target.add( this.cursor );
+
+		let zoomChanged = false;
+		// adjust the camera position based on zoom only if we're not zooming to the cursor or if it's an ortho camera
+		// we adjust zoom later in these cases
+		if ( this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera ) {
+
+			this._spherical.radius = this._clampDistance( this._spherical.radius );
+
+		} else {
+
+			const prevRadius = this._spherical.radius;
+			this._spherical.radius = this._clampDistance( this._spherical.radius * this._scale );
+			zoomChanged = prevRadius != this._spherical.radius;
+
+		}
+
+		_v.setFromSpherical( this._spherical );
+
+		// rotate offset back to "camera-up-vector-is-up" space
+		_v.applyQuaternion( this._quatInverse );
+
+		position.copy( this.target ).add( _v );
+
+		this.object.lookAt( this.target );
+
+		if ( this.enableDamping === true ) {
+
+			this._sphericalDelta.theta *= ( 1 - this.dampingFactor );
+			this._sphericalDelta.phi *= ( 1 - this.dampingFactor );
+
+			this._panOffset.multiplyScalar( 1 - this.dampingFactor );
+
+		} else {
+
+			this._sphericalDelta.set( 0, 0, 0 );
+
+			this._panOffset.set( 0, 0, 0 );
+
+		}
+
+		// adjust camera position
+		if ( this.zoomToCursor && this._performCursorZoom ) {
+
+			let newRadius = null;
+			if ( this.object.isPerspectiveCamera ) {
+
+				// move the camera down the pointer ray
+				// this method avoids floating point error
+				const prevRadius = _v.length();
+				newRadius = this._clampDistance( prevRadius * this._scale );
+
+				const radiusDelta = prevRadius - newRadius;
+				this.object.position.addScaledVector( this._dollyDirection, radiusDelta );
+				this.object.updateMatrixWorld();
+
+				zoomChanged = !! radiusDelta;
+
+			} else if ( this.object.isOrthographicCamera ) {
+
+				// adjust the ortho camera position based on zoom changes
+				const mouseBefore = new Vector3( this._mouse.x, this._mouse.y, 0 );
+				mouseBefore.unproject( this.object );
+
+				const prevZoom = this.object.zoom;
+				this.object.zoom = Math.max( this.minZoom, Math.min( this.maxZoom, this.object.zoom / this._scale ) );
+				this.object.updateProjectionMatrix();
+
+				zoomChanged = prevZoom !== this.object.zoom;
+
+				const mouseAfter = new Vector3( this._mouse.x, this._mouse.y, 0 );
+				mouseAfter.unproject( this.object );
+
+				this.object.position.sub( mouseAfter ).add( mouseBefore );
+				this.object.updateMatrixWorld();
+
+				newRadius = _v.length();
+
+			} else {
+
+				console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.' );
+				this.zoomToCursor = false;
+
+			}
+
+			// handle the placement of the target
+			if ( newRadius !== null ) {
+
+				if ( this.screenSpacePanning ) {
+
+					// position the orbit target in front of the new camera position
+					this.target.set( 0, 0, -1 )
+						.transformDirection( this.object.matrix )
+						.multiplyScalar( newRadius )
+						.add( this.object.position );
+
+				} else {
+
+					// get the ray and translation plane to compute target
+					_ray.origin.copy( this.object.position );
+					_ray.direction.set( 0, 0, -1 ).transformDirection( this.object.matrix );
+
+					// if the camera is 20 degrees above the horizon then don't adjust the focus target to avoid
+					// extremely large values
+					if ( Math.abs( this.object.up.dot( _ray.direction ) ) < _TILT_LIMIT ) {
+
+						this.object.lookAt( this.target );
+
+					} else {
+
+						_plane.setFromNormalAndCoplanarPoint( this.object.up, this.target );
+						_ray.intersectPlane( _plane, this.target );
+
+					}
+
+				}
+
+			}
+
+		} else if ( this.object.isOrthographicCamera ) {
+
+			const prevZoom = this.object.zoom;
+			this.object.zoom = Math.max( this.minZoom, Math.min( this.maxZoom, this.object.zoom / this._scale ) );
+
+			if ( prevZoom !== this.object.zoom ) {
+
+				this.object.updateProjectionMatrix();
+				zoomChanged = true;
+
+			}
+
+		}
+
+		this._scale = 1;
+		this._performCursorZoom = false;
+
+		// update condition is:
+		// min(camera displacement, camera rotation in radians)^2 > EPS
+		// using small-angle approximation cos(x/2) = 1 - x^2 / 8
+
+		if ( zoomChanged ||
+			this._lastPosition.distanceToSquared( this.object.position ) > _EPS ||
+			8 * ( 1 - this._lastQuaternion.dot( this.object.quaternion ) ) > _EPS ||
+			this._lastTargetPosition.distanceToSquared( this.target ) > _EPS ) {
+
+			this.dispatchEvent( _changeEvent );
+
+			this._lastPosition.copy( this.object.position );
+			this._lastQuaternion.copy( this.object.quaternion );
+			this._lastTargetPosition.copy( this.target );
+
+			return true;
+
+		}
+
+		return false;
+
+	}
+
+	_getAutoRotationAngle( deltaTime ) {
+
+		if ( deltaTime !== null ) {
+
+			return ( _twoPI / 60 * this.autoRotateSpeed ) * deltaTime;
+
+		} else {
+
+			return _twoPI / 60 / 60 * this.autoRotateSpeed;
+
+		}
+
+	}
+
+	_getZoomScale( delta ) {
+
+		const normalizedDelta = Math.abs( delta * 0.01 );
+		return Math.pow( 0.95, this.zoomSpeed * normalizedDelta );
+
+	}
+
+	_rotateLeft( angle ) {
+
+		this._sphericalDelta.theta -= angle;
+
+	}
+
+	_rotateUp( angle ) {
+
+		this._sphericalDelta.phi -= angle;
+
+	}
+
+	_panLeft( distance, objectMatrix ) {
+
+		_v.setFromMatrixColumn( objectMatrix, 0 ); // get X column of objectMatrix
+		_v.multiplyScalar( - distance );
+
+		this._panOffset.add( _v );
+
+	}
+
+	_panUp( distance, objectMatrix ) {
+
+		if ( this.screenSpacePanning === true ) {
+
+			_v.setFromMatrixColumn( objectMatrix, 1 );
+
+		} else {
+
+			_v.setFromMatrixColumn( objectMatrix, 0 );
+			_v.crossVectors( this.object.up, _v );
+
+		}
+
+		_v.multiplyScalar( distance );
+
+		this._panOffset.add( _v );
+
+	}
+
+	// deltaX and deltaY are in pixels; right and down are positive
+	_pan( deltaX, deltaY ) {
+
+		const element = this.domElement;
+
+		if ( this.object.isPerspectiveCamera ) {
+
+			// perspective
+			const position = this.object.position;
+			_v.copy( position ).sub( this.target );
+			let targetDistance = _v.length();
+
+			// half of the fov is center to top of screen
+			targetDistance *= Math.tan( ( this.object.fov / 2 ) * Math.PI / 180.0 );
+
+			// we use only clientHeight here so aspect ratio does not distort speed
+			this._panLeft( 2 * deltaX * targetDistance / element.clientHeight, this.object.matrix );
+			this._panUp( 2 * deltaY * targetDistance / element.clientHeight, this.object.matrix );
+
+		} else if ( this.object.isOrthographicCamera ) {
+
+			// orthographic
+			this._panLeft( deltaX * ( this.object.right - this.object.left ) / this.object.zoom / element.clientWidth, this.object.matrix );
+			this._panUp( deltaY * ( this.object.top - this.object.bottom ) / this.object.zoom / element.clientHeight, this.object.matrix );
+
+		} else {
+
+			// camera neither orthographic nor perspective
+			console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.' );
+			this.enablePan = false;
+
+		}
+
+	}
+
+	_dollyOut( dollyScale ) {
+
+		if ( this.object.isPerspectiveCamera || this.object.isOrthographicCamera ) {
+
+			this._scale /= dollyScale;
+
+		} else {
+
+			console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.' );
+			this.enableZoom = false;
+
+		}
+
+	}
+
+	_dollyIn( dollyScale ) {
+
+		if ( this.object.isPerspectiveCamera || this.object.isOrthographicCamera ) {
+
+			this._scale *= dollyScale;
+
+		} else {
+
+			console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.' );
+			this.enableZoom = false;
+
+		}
+
+	}
+
+	_updateZoomParameters( x, y ) {
+
+		if ( ! this.zoomToCursor ) {
+
+			return;
+
+		}
+
+		this._performCursorZoom = true;
+
+		const rect = this.domElement.getBoundingClientRect();
+		const dx = x - rect.left;
+		const dy = y - rect.top;
+		const w = rect.width;
+		const h = rect.height;
+
+		this._mouse.x = ( dx / w ) * 2 - 1;
+		this._mouse.y = - ( dy / h ) * 2 + 1;
+
+		this._dollyDirection.set( this._mouse.x, this._mouse.y, 1 ).unproject( this.object ).sub( this.object.position ).normalize();
+
+	}
+
+	_clampDistance( dist ) {
+
+		return Math.max( this.minDistance, Math.min( this.maxDistance, dist ) );
+
+	}
+
+	//
+	// event callbacks - update the object state
+	//
+
+	_handleMouseDownRotate( event ) {
+
+		this._rotateStart.set( event.clientX, event.clientY );
+
+	}
+
+	_handleMouseDownDolly( event ) {
+
+		this._updateZoomParameters( event.clientX, event.clientX );
+		this._dollyStart.set( event.clientX, event.clientY );
+
+	}
+
+	_handleMouseDownPan( event ) {
+
+		this._panStart.set( event.clientX, event.clientY );
+
+	}
+
+	_handleMouseMoveRotate( event ) {
+
+		this._rotateEnd.set( event.clientX, event.clientY );
+
+		this._rotateDelta.subVectors( this._rotateEnd, this._rotateStart ).multiplyScalar( this.rotateSpeed );
+
+		const element = this.domElement;
+
+		this._rotateLeft( _twoPI * this._rotateDelta.x / element.clientHeight ); // yes, height
+
+		this._rotateUp( _twoPI * this._rotateDelta.y / element.clientHeight );
+
+		this._rotateStart.copy( this._rotateEnd );
+
+		this.update();
+
+	}
+
+	_handleMouseMoveDolly( event ) {
+
+		this._dollyEnd.set( event.clientX, event.clientY );
+
+		this._dollyDelta.subVectors( this._dollyEnd, this._dollyStart );
+
+		if ( this._dollyDelta.y > 0 ) {
+
+			this._dollyOut( this._getZoomScale( this._dollyDelta.y ) );
+
+		} else if ( this._dollyDelta.y < 0 ) {
+
+			this._dollyIn( this._getZoomScale( this._dollyDelta.y ) );
+
+		}
+
+		this._dollyStart.copy( this._dollyEnd );
+
+		this.update();
+
+	}
+
+	_handleMouseMovePan( event ) {
+
+		this._panEnd.set( event.clientX, event.clientY );
+
+		this._panDelta.subVectors( this._panEnd, this._panStart ).multiplyScalar( this.panSpeed );
+
+		this._pan( this._panDelta.x, this._panDelta.y );
+
+		this._panStart.copy( this._panEnd );
+
+		this.update();
+
+	}
+
+	_handleMouseWheel( event ) {
+
+		this._updateZoomParameters( event.clientX, event.clientY );
+
+		if ( event.deltaY < 0 ) {
+
+			this._dollyIn( this._getZoomScale( event.deltaY ) );
+
+		} else if ( event.deltaY > 0 ) {
+
+			this._dollyOut( this._getZoomScale( event.deltaY ) );
+
+		}
+
+		this.update();
+
+	}
+
+	_handleKeyDown( event ) {
+
+		let needsUpdate = false;
+
+		switch ( event.code ) {
+
+			case this.keys.UP:
+
+				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+					if ( this.enableRotate ) {
+
+						this._rotateUp( _twoPI * this.keyRotateSpeed / this.domElement.clientHeight );
+
+					}
+
+				} else {
+
+					if ( this.enablePan ) {
+
+						this._pan( 0, this.keyPanSpeed );
+
+					}
+
+				}
+
+				needsUpdate = true;
+				break;
+
+			case this.keys.BOTTOM:
+
+				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+					if ( this.enableRotate ) {
+
+						this._rotateUp( - _twoPI * this.keyRotateSpeed / this.domElement.clientHeight );
+
+					}
+
+				} else {
+
+					if ( this.enablePan ) {
+
+						this._pan( 0, - this.keyPanSpeed );
+
+					}
+
+				}
+
+				needsUpdate = true;
+				break;
+
+			case this.keys.LEFT:
+
+				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+					if ( this.enableRotate ) {
+
+						this._rotateLeft( _twoPI * this.keyRotateSpeed / this.domElement.clientHeight );
+
+					}
+
+				} else {
+
+					if ( this.enablePan ) {
+
+						this._pan( this.keyPanSpeed, 0 );
+
+					}
+
+				}
+
+				needsUpdate = true;
+				break;
+
+			case this.keys.RIGHT:
+
+				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+					if ( this.enableRotate ) {
+
+						this._rotateLeft( - _twoPI * this.keyRotateSpeed / this.domElement.clientHeight );
+
+					}
+
+				} else {
+
+					if ( this.enablePan ) {
+
+						this._pan( - this.keyPanSpeed, 0 );
+
+					}
+
+				}
+
+				needsUpdate = true;
+				break;
+
+		}
+
+		if ( needsUpdate ) {
+
+			// prevent the browser from scrolling on cursor keys
+			event.preventDefault();
+
+			this.update();
+
+		}
+
+
+	}
+
+	_handleTouchStartRotate( event ) {
+
+		if ( this._pointers.length === 1 ) {
+
+			this._rotateStart.set( event.pageX, event.pageY );
+
+		} else {
+
+			const position = this._getSecondPointerPosition( event );
+
+			const x = 0.5 * ( event.pageX + position.x );
+			const y = 0.5 * ( event.pageY + position.y );
+
+			this._rotateStart.set( x, y );
+
+		}
+
+	}
+
+	_handleTouchStartPan( event ) {
+
+		if ( this._pointers.length === 1 ) {
+
+			this._panStart.set( event.pageX, event.pageY );
+
+		} else {
+
+			const position = this._getSecondPointerPosition( event );
+
+			const x = 0.5 * ( event.pageX + position.x );
+			const y = 0.5 * ( event.pageY + position.y );
+
+			this._panStart.set( x, y );
+
+		}
+
+	}
+
+	_handleTouchStartDolly( event ) {
+
+		const position = this._getSecondPointerPosition( event );
+
+		const dx = event.pageX - position.x;
+		const dy = event.pageY - position.y;
+
+		const distance = Math.sqrt( dx * dx + dy * dy );
+
+		this._dollyStart.set( 0, distance );
+
+	}
+
+	_handleTouchStartDollyPan( event ) {
+
+		if ( this.enableZoom ) this._handleTouchStartDolly( event );
+
+		if ( this.enablePan ) this._handleTouchStartPan( event );
+
+	}
+
+	_handleTouchStartDollyRotate( event ) {
+
+		if ( this.enableZoom ) this._handleTouchStartDolly( event );
+
+		if ( this.enableRotate ) this._handleTouchStartRotate( event );
+
+	}
+
+	_handleTouchMoveRotate( event ) {
+
+		if ( this._pointers.length == 1 ) {
+
+			this._rotateEnd.set( event.pageX, event.pageY );
+
+		} else {
+
+			const position = this._getSecondPointerPosition( event );
+
+			const x = 0.5 * ( event.pageX + position.x );
+			const y = 0.5 * ( event.pageY + position.y );
+
+			this._rotateEnd.set( x, y );
+
+		}
+
+		this._rotateDelta.subVectors( this._rotateEnd, this._rotateStart ).multiplyScalar( this.rotateSpeed );
+
+		const element = this.domElement;
+
+		this._rotateLeft( _twoPI * this._rotateDelta.x / element.clientHeight ); // yes, height
+
+		this._rotateUp( _twoPI * this._rotateDelta.y / element.clientHeight );
+
+		this._rotateStart.copy( this._rotateEnd );
+
+	}
+
+	_handleTouchMovePan( event ) {
+
+		if ( this._pointers.length === 1 ) {
+
+			this._panEnd.set( event.pageX, event.pageY );
+
+		} else {
+
+			const position = this._getSecondPointerPosition( event );
+
+			const x = 0.5 * ( event.pageX + position.x );
+			const y = 0.5 * ( event.pageY + position.y );
+
+			this._panEnd.set( x, y );
+
+		}
+
+		this._panDelta.subVectors( this._panEnd, this._panStart ).multiplyScalar( this.panSpeed );
+
+		this._pan( this._panDelta.x, this._panDelta.y );
+
+		this._panStart.copy( this._panEnd );
+
+	}
+
+	_handleTouchMoveDolly( event ) {
+
+		const position = this._getSecondPointerPosition( event );
+
+		const dx = event.pageX - position.x;
+		const dy = event.pageY - position.y;
+
+		const distance = Math.sqrt( dx * dx + dy * dy );
+
+		this._dollyEnd.set( 0, distance );
+
+		this._dollyDelta.set( 0, Math.pow( this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed ) );
+
+		this._dollyOut( this._dollyDelta.y );
+
+		this._dollyStart.copy( this._dollyEnd );
+
+		const centerX = ( event.pageX + position.x ) * 0.5;
+		const centerY = ( event.pageY + position.y ) * 0.5;
+
+		this._updateZoomParameters( centerX, centerY );
+
+	}
+
+	_handleTouchMoveDollyPan( event ) {
+
+		if ( this.enableZoom ) this._handleTouchMoveDolly( event );
+
+		if ( this.enablePan ) this._handleTouchMovePan( event );
+
+	}
+
+	_handleTouchMoveDollyRotate( event ) {
+
+		if ( this.enableZoom ) this._handleTouchMoveDolly( event );
+
+		if ( this.enableRotate ) this._handleTouchMoveRotate( event );
+
+	}
+
+	// pointers
+
+	_addPointer( event ) {
+
+		this._pointers.push( event.pointerId );
+
+	}
+
+	_removePointer( event ) {
+
+		delete this._pointerPositions[ event.pointerId ];
+
+		for ( let i = 0; i < this._pointers.length; i ++ ) {
+
+			if ( this._pointers[ i ] == event.pointerId ) {
+
+				this._pointers.splice( i, 1 );
+				return;
+
+			}
+
+		}
+
+	}
+
+	_isTrackingPointer( event ) {
+
+		for ( let i = 0; i < this._pointers.length; i ++ ) {
+
+			if ( this._pointers[ i ] == event.pointerId ) return true;
+
+		}
+
+		return false;
+
+	}
+
+	_trackPointer( event ) {
+
+		let position = this._pointerPositions[ event.pointerId ];
+
+		if ( position === undefined ) {
+
+			position = new Vector2();
+			this._pointerPositions[ event.pointerId ] = position;
+
+		}
+
+		position.set( event.pageX, event.pageY );
+
+	}
+
+	_getSecondPointerPosition( event ) {
+
+		const pointerId = ( event.pointerId === this._pointers[ 0 ] ) ? this._pointers[ 1 ] : this._pointers[ 0 ];
+
+		return this._pointerPositions[ pointerId ];
+
+	}
+
+	//
+
+	_customWheelEvent( event ) {
+
+		const mode = event.deltaMode;
+
+		// minimal wheel event altered to meet delta-zoom demand
+		const newEvent = {
+			clientX: event.clientX,
+			clientY: event.clientY,
+			deltaY: event.deltaY,
+		};
+
+		switch ( mode ) {
+
+			case 1: // LINE_MODE
+				newEvent.deltaY *= 16;
+				break;
+
+			case 2: // PAGE_MODE
+				newEvent.deltaY *= 100;
+				break;
+
+		}
+
+		// detect if event was triggered by pinching
+		if ( event.ctrlKey && ! this._controlActive ) {
+
+			newEvent.deltaY *= 10;
+
+		}
+
+		return newEvent;
+
+	}
+
+}
+
+function onPointerDown( event ) {
+
+	if ( this.enabled === false ) return;
+
+	if ( this._pointers.length === 0 ) {
+
+		this.domElement.setPointerCapture( event.pointerId );
+
+		this.domElement.ownerDocument.addEventListener( 'pointermove', this._onPointerMove );
+		this.domElement.ownerDocument.addEventListener( 'pointerup', this._onPointerUp );
+
+	}
+
+	//
+
+	if ( this._isTrackingPointer( event ) ) return;
+
+	//
+
+	this._addPointer( event );
+
+	if ( event.pointerType === 'touch' ) {
+
+		this._onTouchStart( event );
+
+	} else {
+
+		this._onMouseDown( event );
+
+	}
+
+	if ( this._cursorStyle === 'grab' ) {
+
+		this.domElement.style.cursor = 'grabbing';
+
+	}
+
+}
+
+function onPointerMove( event ) {
+
+	if ( this.enabled === false ) return;
+
+	if ( event.pointerType === 'touch' ) {
+
+		this._onTouchMove( event );
+
+	} else {
+
+		this._onMouseMove( event );
+
+	}
+
+}
+
+function onPointerUp( event ) {
+
+	this._removePointer( event );
+
+	switch ( this._pointers.length ) {
+
+		case 0:
+
+			this.domElement.releasePointerCapture( event.pointerId );
+
+			this.domElement.ownerDocument.removeEventListener( 'pointermove', this._onPointerMove );
+			this.domElement.ownerDocument.removeEventListener( 'pointerup', this._onPointerUp );
+
+			this.dispatchEvent( _endEvent );
+
+			this.state = _STATE.NONE;
+
+			if ( this._cursorStyle === 'grab' ) {
+
+				this.domElement.style.cursor = 'grab';
+
+			}
+
+			break;
+
+		case 1:
+
+			const pointerId = this._pointers[ 0 ];
+			const position = this._pointerPositions[ pointerId ];
+
+			// minimal placeholder event - allows state correction on pointer-up
+			this._onTouchStart( { pointerId: pointerId, pageX: position.x, pageY: position.y } );
+
+			break;
+
+	}
+
+}
+
+function onMouseDown( event ) {
+
+	let mouseAction;
+
+	switch ( event.button ) {
+
+		case 0:
+
+			mouseAction = this.mouseButtons.LEFT;
+			break;
+
+		case 1:
+
+			mouseAction = this.mouseButtons.MIDDLE;
+			break;
+
+		case 2:
+
+			mouseAction = this.mouseButtons.RIGHT;
+			break;
+
+		default:
+
+			mouseAction = -1;
+
+	}
+
+	switch ( mouseAction ) {
+
+		case MOUSE.DOLLY:
+
+			if ( this.enableZoom === false ) return;
+
+			this._handleMouseDownDolly( event );
+
+			this.state = _STATE.DOLLY;
+
+			break;
+
+		case MOUSE.ROTATE:
+
+			if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+				if ( this.enablePan === false ) return;
+
+				this._handleMouseDownPan( event );
+
+				this.state = _STATE.PAN;
+
+			} else {
+
+				if ( this.enableRotate === false ) return;
+
+				this._handleMouseDownRotate( event );
+
+				this.state = _STATE.ROTATE;
+
+			}
+
+			break;
+
+		case MOUSE.PAN:
+
+			if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+
+				if ( this.enableRotate === false ) return;
+
+				this._handleMouseDownRotate( event );
+
+				this.state = _STATE.ROTATE;
+
+			} else {
+
+				if ( this.enablePan === false ) return;
+
+				this._handleMouseDownPan( event );
+
+				this.state = _STATE.PAN;
+
+			}
+
+			break;
+
+		default:
+
+			this.state = _STATE.NONE;
+
+	}
+
+	if ( this.state !== _STATE.NONE ) {
+
+		this.dispatchEvent( _startEvent );
+
+	}
+
+}
+
+function onMouseMove( event ) {
+
+	switch ( this.state ) {
+
+		case _STATE.ROTATE:
+
+			if ( this.enableRotate === false ) return;
+
+			this._handleMouseMoveRotate( event );
+
+			break;
+
+		case _STATE.DOLLY:
+
+			if ( this.enableZoom === false ) return;
+
+			this._handleMouseMoveDolly( event );
+
+			break;
+
+		case _STATE.PAN:
+
+			if ( this.enablePan === false ) return;
+
+			this._handleMouseMovePan( event );
+
+			break;
+
+	}
+
+}
+
+function onMouseWheel( event ) {
+
+	if ( this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE ) return;
+
+	event.preventDefault();
+
+	this.dispatchEvent( _startEvent );
+
+	this._handleMouseWheel( this._customWheelEvent( event ) );
+
+	this.dispatchEvent( _endEvent );
+
+}
+
+function onKeyDown( event ) {
+
+	if ( this.enabled === false ) return;
+
+	this._handleKeyDown( event );
+
+}
+
+function onTouchStart( event ) {
+
+	this._trackPointer( event );
+
+	switch ( this._pointers.length ) {
+
+		case 1:
+
+			switch ( this.touches.ONE ) {
+
+				case TOUCH.ROTATE:
+
+					if ( this.enableRotate === false ) return;
+
+					this._handleTouchStartRotate( event );
+
+					this.state = _STATE.TOUCH_ROTATE;
+
+					break;
+
+				case TOUCH.PAN:
+
+					if ( this.enablePan === false ) return;
+
+					this._handleTouchStartPan( event );
+
+					this.state = _STATE.TOUCH_PAN;
+
+					break;
+
+				default:
+
+					this.state = _STATE.NONE;
+
+			}
+
+			break;
+
+		case 2:
+
+			switch ( this.touches.TWO ) {
+
+				case TOUCH.DOLLY_PAN:
+
+					if ( this.enableZoom === false && this.enablePan === false ) return;
+
+					this._handleTouchStartDollyPan( event );
+
+					this.state = _STATE.TOUCH_DOLLY_PAN;
+
+					break;
+
+				case TOUCH.DOLLY_ROTATE:
+
+					if ( this.enableZoom === false && this.enableRotate === false ) return;
+
+					this._handleTouchStartDollyRotate( event );
+
+					this.state = _STATE.TOUCH_DOLLY_ROTATE;
+
+					break;
+
+				default:
+
+					this.state = _STATE.NONE;
+
+			}
+
+			break;
+
+		default:
+
+			this.state = _STATE.NONE;
+
+	}
+
+	if ( this.state !== _STATE.NONE ) {
+
+		this.dispatchEvent( _startEvent );
+
+	}
+
+}
+
+function onTouchMove( event ) {
+
+	this._trackPointer( event );
+
+	switch ( this.state ) {
+
+		case _STATE.TOUCH_ROTATE:
+
+			if ( this.enableRotate === false ) return;
+
+			this._handleTouchMoveRotate( event );
+
+			this.update();
+
+			break;
+
+		case _STATE.TOUCH_PAN:
+
+			if ( this.enablePan === false ) return;
+
+			this._handleTouchMovePan( event );
+
+			this.update();
+
+			break;
+
+		case _STATE.TOUCH_DOLLY_PAN:
+
+			if ( this.enableZoom === false && this.enablePan === false ) return;
+
+			this._handleTouchMoveDollyPan( event );
+
+			this.update();
+
+			break;
+
+		case _STATE.TOUCH_DOLLY_ROTATE:
+
+			if ( this.enableZoom === false && this.enableRotate === false ) return;
+
+			this._handleTouchMoveDollyRotate( event );
+
+			this.update();
+
+			break;
+
+		default:
+
+			this.state = _STATE.NONE;
+
+	}
+
+}
+
+function onContextMenu( event ) {
+
+	if ( this.enabled === false ) return;
+
+	event.preventDefault();
+
+}
+
+function interceptControlDown( event ) {
+
+	if ( event.key === 'Control' ) {
+
+		this._controlActive = true;
+
+		const document = this.domElement.getRootNode(); // offscreen canvas compatibility
+
+		document.addEventListener( 'keyup', this._interceptControlUp, { passive: true, capture: true } );
+
+	}
+
+}
+
+function interceptControlUp( event ) {
+
+	if ( event.key === 'Control' ) {
+
+		this._controlActive = false;
+
+		const document = this.domElement.getRootNode(); // offscreen canvas compatibility
+
+		document.removeEventListener( 'keyup', this._interceptControlUp, { passive: true, capture: true } );
+
+	}
+
+}
+
+class ThreeEyeScene {
+    container;
+    canvas;
+    scene;
+    camera;
+    renderer;
+    controls;
+    // Lighting
+    coaxialLight;
+    obliqueLight;
+    ambientLight;
+    // Eye Anatomy Meshes
+    eyeGroup;
+    scleraMesh;
+    corneaMesh;
+    irisMesh;
+    pupilMesh;
+    // Glaucoma / Trabecular Meshwork Angle Meshes
+    angleGroup;
+    schwalbeLineMesh;
+    trabecularMeshworkMesh;
+    schlemmCanalMesh;
+    scleralSpurMesh;
+    ciliaryBodyMesh;
+    stent1Group;
+    stent2Group;
+    bloodRefluxParticles;
+    gonioprismMesh;
+    // Cataract / Phaco Meshes
+    lensGroup;
+    anteriorCapsuleMesh;
+    capsulorhexisRimMesh;
+    nucleusMesh;
+    nucleusQuadrants = [];
+    cortexMesh;
+    phacoCavitationParticles;
+    // IOL Meshes
+    iolGroup;
+    iolOpticMesh;
+    iolHapticLeading;
+    iolHapticTrailing;
+    // Nd:YAG Posterior Capsule & Laser Meshes
+    yagGroup;
+    posteriorCapsuleMesh;
+    yagAimingCone1;
+    yagAimingCone2;
+    yagFocalDot;
+    yagPlasmaSpark;
+    yagTearLines;
+    // 3D Instruments
+    instrumentGroup;
+    currentInstrumentType = null;
+    instrumentMeshes = new Map();
+    // Animation & Camera Transition
+    animFrameId = 0;
+    isDestroyed = false;
+    targetCamPos = new Vector3(0, 0, 8.5);
+    targetLookAt = new Vector3(0, 0, 0);
+    isTransitioningCamera = false;
+    transitionAlpha = 1.0;
+    // State caches
+    currentModule = 'phaco';
+    mouseNorm = { x: 0, y: 0, isDown: false };
+    currentMagnification = 12;
+    constructor(config) {
+        this.container = config.container;
+        this.canvas = config.canvas;
+        const width = this.container.clientWidth || 800;
+        const height = this.container.clientHeight || 600;
+        // 1. Initialize Scene, Camera & Renderer
+        this.scene = new Scene();
+        this.scene.background = null;
+        this.camera = new PerspectiveCamera(38, width / height, 0.05, 100);
+        this.camera.position.set(0, 0, 8.5);
+        this.renderer = new WebGLRenderer({
+            canvas: this.canvas,
+            antialias: true,
+            alpha: true,
+            powerPreference: 'high-performance'
+        });
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.toneMapping = ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.15;
+        // 2. OrbitControls
+        this.controls = new OrbitControls(this.camera, this.container);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.08;
+        this.controls.minDistance = 1.0; // Allow extreme close-up deep zoom into trabecular meshwork & stents
+        this.controls.maxDistance = 16.0;
+        this.controls.maxPolarAngle = Math.PI * 0.88; // Allow tilting to view angle and cross section
+        this.controls.target.set(0, 0, 0);
+        // 3. Lighting System
+        this.ambientLight = new AmbientLight(0x223040, 0.9);
+        this.scene.add(this.ambientLight);
+        this.coaxialLight = new PointLight(0xffeedd, 3.2, 30);
+        this.coaxialLight.position.set(0, 0, 7.5);
+        this.scene.add(this.coaxialLight);
+        this.obliqueLight = new DirectionalLight(0xffffff, 1.8);
+        this.obliqueLight.position.set(3, 4, 6);
+        this.scene.add(this.obliqueLight);
+        // 4. Build Eye Anatomy
+        this.eyeGroup = new Group();
+        this.scene.add(this.eyeGroup);
+        this.scleraMesh = this.buildScleraGlobe();
+        this.eyeGroup.add(this.scleraMesh);
+        this.corneaMesh = this.buildCorneaDome();
+        this.eyeGroup.add(this.corneaMesh);
+        this.irisMesh = this.buildIris();
+        this.eyeGroup.add(this.irisMesh);
+        this.pupilMesh = this.buildPupil();
+        this.eyeGroup.add(this.pupilMesh);
+        // Glaucoma & Trabecular Meshwork Angle
+        this.angleGroup = new Group();
+        this.eyeGroup.add(this.angleGroup);
+        this.buildTrabecularMeshworkAngle();
+        // Cataract & Lens Nucleus
+        this.lensGroup = new Group();
+        this.eyeGroup.add(this.lensGroup);
+        this.buildCataractLens();
+        // Foldable IOL
+        this.iolGroup = new Group();
+        this.eyeGroup.add(this.iolGroup);
+        this.buildFoldableIol();
+        // Nd:YAG Posterior Capsule & Laser
+        this.yagGroup = new Group();
+        this.eyeGroup.add(this.yagGroup);
+        this.buildYagPosteriorCapsule();
+        // 3D Instruments
+        this.instrumentGroup = new Group();
+        this.scene.add(this.instrumentGroup);
+        this.build3DInstruments();
+        // 5. Setup Resize Listener & Animation Loop
+        window.addEventListener('resize', this.onResize);
+        this.animate();
+    }
+    // =========================================================================
+    // ANATOMICAL BUILDERS
+    // =========================================================================
+    buildScleraGlobe() {
+        // 3D Scleral Shell with Limbal Transition
+        const geo = new SphereGeometry(4.6, 64, 48, 0, Math.PI * 2, Math.PI * 0.28, Math.PI * 0.72);
+        // Procedural scleral vascular texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f0f3f6';
+        ctx.fillRect(0, 0, 512, 512);
+        // Micro episcleral vessels
+        ctx.strokeStyle = 'rgba(215, 60, 50, 0.4)';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 45; i++) {
+            ctx.beginPath();
+            let cx = Math.random() * 512;
+            let cy = Math.random() * 512;
+            ctx.moveTo(cx, cy);
+            for (let j = 0; j < 4; j++) {
+                cx += (Math.random() - 0.5) * 60;
+                cy += (Math.random() - 0.5) * 60;
+                ctx.lineTo(cx, cy);
+            }
+            ctx.stroke();
+        }
+        const tex = new CanvasTexture(canvas);
+        const mat = new MeshStandardMaterial({
+            map: tex,
+            roughness: 0.35,
+            metalness: 0.05,
+            side: DoubleSide
+        });
+        const mesh = new Mesh(geo, mat);
+        mesh.rotation.x = Math.PI;
+        mesh.position.z = -1.2;
+        return mesh;
+    }
+    buildCorneaDome() {
+        // 3D Refractive Cornea Dome (Meniscus thickness scaled to pachymetry)
+        const geo = new SphereGeometry(3.6, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.35);
+        const mat = new MeshPhysicalMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.22,
+            roughness: 0.04,
+            metalness: 0.05,
+            transmission: 0.94,
+            ior: 1.376,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            side: DoubleSide
+        });
+        const mesh = new Mesh(geo, mat);
+        mesh.position.z = 0.55;
+        return mesh;
+    }
+    buildIris() {
+        // 3D Iris Diaphragm sloping gently back into the anterior chamber
+        const geo = new ConeGeometry(3.45, 0.45, 64, 8, true);
+        // Rich procedural blue-amber ophthalmic iris pattern
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(512, 512, 180, 512, 512, 512);
+        grad.addColorStop(0, '#0d2235'); // Pupillary margin sphincter
+        grad.addColorStop(0.2, '#184b73');
+        grad.addColorStop(0.5, '#22699e'); // Collarette
+        grad.addColorStop(0.85, '#154163');
+        grad.addColorStop(1, '#091c2b'); // Iris root at ciliary body
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1024, 1024);
+        // Radial trabecular fibers & Fuchs crypts
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 1.8;
+        for (let a = 0; a < 360; a += 1.0) {
+            const rad = (a * Math.PI) / 180;
+            ctx.beginPath();
+            ctx.moveTo(512 + Math.cos(rad) * 190, 512 + Math.sin(rad) * 190);
+            ctx.lineTo(512 + Math.cos(rad) * 490, 512 + Math.sin(rad) * 490);
+            ctx.stroke();
+        }
+        const tex = new CanvasTexture(canvas);
+        const mat = new MeshStandardMaterial({
+            map: tex,
+            roughness: 0.65,
+            metalness: 0.08,
+            side: DoubleSide
+        });
+        const mesh = new Mesh(geo, mat);
+        mesh.rotation.x = Math.PI;
+        mesh.position.z = -0.15;
+        return mesh;
+    }
+    buildPupil() {
+        const geo = new CircleGeometry(2.35, 64);
+        const mat = new MeshBasicMaterial({
+            color: 0xc8260c, // Coaxial red reflex glow
+            transparent: true,
+            opacity: 0.92
+        });
+        const mesh = new Mesh(geo, mat);
+        mesh.position.z = -0.32;
+        return mesh;
+    }
+    // =========================================================================
+    // GLAUCOMA / MIGS TRABECULAR MESHWORK & ANGLE (3D ZOOMABLE)
+    // =========================================================================
+    buildTrabecularMeshworkAngle() {
+        // 1. Schwalbe's Line (Prominent anatomical white ridge at outer corneal boundary)
+        const slGeo = new TorusGeometry(3.38, 0.045, 16, 64);
+        const slMat = new MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.25,
+            emissive: 0x444444
+        });
+        this.schwalbeLineMesh = new Mesh(slGeo, slMat);
+        this.schwalbeLineMesh.position.z = 0.18;
+        this.angleGroup.add(this.schwalbeLineMesh);
+        // 2. Pigmented Trabecular Meshwork (TM) - Main filtration site
+        const tmGeo = new CylinderGeometry(3.42, 3.48, 0.18, 64, 1, true);
+        // Porous hyperpigmented texture for the TM filter bed
+        const tmCanvas = document.createElement('canvas');
+        tmCanvas.width = 512;
+        tmCanvas.height = 64;
+        const tmCtx = tmCanvas.getContext('2d');
+        tmCtx.fillStyle = '#6b4822'; // Dark honey/brown pigment
+        tmCtx.fillRect(0, 0, 512, 64);
+        tmCtx.fillStyle = 'rgba(20, 10, 5, 0.7)';
+        for (let i = 0; i < 600; i++) {
+            tmCtx.fillRect(Math.random() * 512, Math.random() * 64, 2, 2);
+        }
+        const tmTex = new CanvasTexture(tmCanvas);
+        tmTex.wrapS = RepeatWrapping;
+        tmTex.repeat.set(8, 1);
+        const tmMat = new MeshStandardMaterial({
+            map: tmTex,
+            roughness: 0.8,
+            metalness: 0.15,
+            side: DoubleSide
+        });
+        this.trabecularMeshworkMesh = new Mesh(tmGeo, tmMat);
+        this.trabecularMeshworkMesh.rotation.x = Math.PI / 2;
+        this.trabecularMeshworkMesh.position.z = 0.08;
+        this.angleGroup.add(this.trabecularMeshworkMesh);
+        // 3. Schlemm's Canal (Circumferential collector conduit located directly behind TM)
+        const scGeo = new TorusGeometry(3.52, 0.07, 16, 64);
+        const scMat = new MeshStandardMaterial({
+            color: 0x882218, // Endothelial vascular channel
+            roughness: 0.4,
+            transparent: true,
+            opacity: 0.82
+        });
+        this.schlemmCanalMesh = new Mesh(scGeo, scMat);
+        this.schlemmCanalMesh.position.z = 0.06;
+        this.angleGroup.add(this.schlemmCanalMesh);
+        // 4. Scleral Spur (White fibrous band behind TM)
+        const ssGeo = new TorusGeometry(3.46, 0.035, 16, 64);
+        const ssMat = new MeshStandardMaterial({
+            color: 0xdedede,
+            roughness: 0.3
+        });
+        this.scleralSpurMesh = new Mesh(ssGeo, ssMat);
+        this.scleralSpurMesh.position.z = -0.04;
+        this.angleGroup.add(this.scleralSpurMesh);
+        // 5. Ciliary Body Band (Slate grey/brown uveal band at iris root)
+        const cbGeo = new CylinderGeometry(3.46, 3.44, 0.22, 64, 1, true);
+        const cbMat = new MeshStandardMaterial({
+            color: 0x3d3228,
+            roughness: 0.9,
+            side: DoubleSide
+        });
+        this.ciliaryBodyMesh = new Mesh(cbGeo, cbMat);
+        this.ciliaryBodyMesh.rotation.x = Math.PI / 2;
+        this.ciliaryBodyMesh.position.z = -0.16;
+        this.angleGroup.add(this.ciliaryBodyMesh);
+        // 6. Micro-Bypass Stents (iStent inject models in 3D)
+        this.stent1Group = this.buildMicroStentModel('Stent 1 (2:30 Target)');
+        this.stent2Group = this.buildMicroStentModel('Stent 2 (4:00 Target)');
+        // Position Stent 1 at 2:30 (approx 75 degrees)
+        const rad1 = (75 * Math.PI) / 180;
+        this.stent1Group.position.set(Math.cos(rad1) * 3.44, Math.sin(rad1) * 3.44, 0.08);
+        this.stent1Group.rotation.z = rad1 + Math.PI;
+        this.stent1Group.rotation.y = -0.4;
+        this.angleGroup.add(this.stent1Group);
+        // Position Stent 2 at 4:00 (approx 120 degrees)
+        const rad2 = (120 * Math.PI) / 180;
+        this.stent2Group.position.set(Math.cos(rad2) * 3.44, Math.sin(rad2) * 3.44, 0.08);
+        this.stent2Group.rotation.z = rad2 + Math.PI;
+        this.stent2Group.rotation.y = -0.4;
+        this.angleGroup.add(this.stent2Group);
+        // 7. Venous Blood Reflux Particles (Welling up from Schlemm's canal & stent lumens)
+        const pCount = 180;
+        const pGeo = new BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        const pVel = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount; i++) {
+            const angle = (Math.random() * 0.8 + 1.1); // Nasal quadrant angle range
+            const r = 3.42 + Math.random() * 0.12;
+            pPos[i * 3] = Math.cos(angle) * r;
+            pPos[i * 3 + 1] = Math.sin(angle) * r;
+            pPos[i * 3 + 2] = 0.06 + Math.random() * 0.12;
+            pVel[i * 3] = -Math.cos(angle) * 0.015;
+            pVel[i * 3 + 1] = -Math.sin(angle) * 0.015;
+            pVel[i * 3 + 2] = 0.008;
+        }
+        pGeo.setAttribute('position', new BufferAttribute(pPos, 3));
+        pGeo.setAttribute('velocity', new BufferAttribute(pVel, 3));
+        const pMat = new PointsMaterial({
+            color: 0xcc1111,
+            size: 0.08,
+            transparent: true,
+            opacity: 0.85,
+            blending: NormalBlending
+        });
+        this.bloodRefluxParticles = new Points(pGeo, pMat);
+        this.bloodRefluxParticles.visible = false;
+        this.angleGroup.add(this.bloodRefluxParticles);
+        // 8. Swan-Jacob Gonioprism Lens (38° clinical mirror)
+        const gonioGeo = new CylinderGeometry(2.8, 3.2, 1.4, 32);
+        const gonioMat = new MeshPhysicalMaterial({
+            color: 0x99ddff,
+            transparent: true,
+            opacity: 0.38,
+            roughness: 0.05,
+            transmission: 0.9,
+            ior: 1.52,
+            clearcoat: 1.0
+        });
+        this.gonioprismMesh = new Mesh(gonioGeo, gonioMat);
+        this.gonioprismMesh.position.set(0, 0, 1.35);
+        this.gonioprismMesh.rotation.x = 0.65; // 38 degree surgical tilt
+        this.gonioprismMesh.visible = false;
+        this.eyeGroup.add(this.gonioprismMesh);
+    }
+    buildMicroStentModel(name) {
+        const grp = new Group();
+        grp.name = name;
+        const metalMat = new MeshStandardMaterial({
+            color: 0xddddf0,
+            metalness: 0.92,
+            roughness: 0.22
+        });
+        // Stent Flanged Head (rests in anterior chamber)
+        const headGeo = new CylinderGeometry(0.12, 0.09, 0.08, 16);
+        const headMesh = new Mesh(headGeo, metalMat);
+        headMesh.rotation.z = Math.PI / 2;
+        grp.add(headMesh);
+        // Thorax / Shaft (spans trabecular meshwork)
+        const bodyGeo = new CylinderGeometry(0.06, 0.06, 0.24, 16);
+        const bodyMesh = new Mesh(bodyGeo, metalMat);
+        bodyMesh.rotation.z = Math.PI / 2;
+        bodyMesh.position.x = 0.14;
+        grp.add(bodyMesh);
+        // Duckbill Outlet Tip (seats directly into Schlemm's canal)
+        const tipGeo = new ConeGeometry(0.065, 0.12, 16);
+        const tipMesh = new Mesh(tipGeo, metalMat);
+        tipMesh.rotation.z = -Math.PI / 2;
+        tipMesh.position.x = 0.31;
+        grp.add(tipMesh);
+        // Central Lumen hole indicator
+        const lumenGeo = new CircleGeometry(0.04, 12);
+        const lumenMat = new MeshBasicMaterial({ color: 0x111111 });
+        const lumenMesh = new Mesh(lumenGeo, lumenMat);
+        lumenMesh.rotation.y = -Math.PI / 2;
+        lumenMesh.position.x = -0.042;
+        grp.add(lumenMesh);
+        grp.scale.set(0.8, 0.8, 0.8);
+        grp.visible = false;
+        return grp;
+    }
+    // =========================================================================
+    // CATARACT LENS & PHACOEMULSIFICATION (3D CORE & QUADRANTS)
+    // =========================================================================
+    buildCataractLens() {
+        // 1. Anterior Capsule
+        const acGeo = new SphereGeometry(2.36, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
+        const acMat = new MeshPhysicalMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.25,
+            roughness: 0.12,
+            transmission: 0.88,
+            side: DoubleSide
+        });
+        this.anteriorCapsuleMesh = new Mesh(acGeo, acMat);
+        this.anteriorCapsuleMesh.position.z = -0.28;
+        this.lensGroup.add(this.anteriorCapsuleMesh);
+        // Capsulorhexis 5.5mm Tear Rim indicator
+        const rimPoints = [];
+        const rRadius = 1.25;
+        for (let a = 0; a <= 64; a++) {
+            const th = (a / 64) * Math.PI * 2;
+            rimPoints.push(new Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.24));
+        }
+        const rimGeo = new BufferGeometry().setFromPoints(rimPoints);
+        const rimMat = new LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
+        this.capsulorhexisRimMesh = new LineLoop(rimGeo, rimMat);
+        this.lensGroup.add(this.capsulorhexisRimMesh);
+        // 2. Cataract Core (LOCS III NO3 Nuclear Cataract)
+        const nGeo = new SphereGeometry(2.32, 48, 32);
+        nGeo.scale(1, 1, 0.45);
+        const nMat = new MeshStandardMaterial({
+            color: 0xd99834, // Golden nuclear amber
+            roughness: 0.55,
+            metalness: 0.08,
+            transparent: true,
+            opacity: 0.92
+        });
+        this.nucleusMesh = new Mesh(nGeo, nMat);
+        this.nucleusMesh.position.z = -0.55;
+        this.lensGroup.add(this.nucleusMesh);
+        // 4 Chopped Nuclear Quadrants for Phacoemulsification
+        const quadOffsets = [
+            { x: 0.45, y: 0.45, rotZ: 0 },
+            { x: -0.45, y: 0.45, rotZ: Math.PI / 2 },
+            { x: -0.45, y: -0.45, rotZ: Math.PI },
+            { x: 0.45, y: -0.45, rotZ: -Math.PI / 2 }
+        ];
+        quadOffsets.forEach((q, idx) => {
+            const qGeo = new CylinderGeometry(1.15, 0.2, 0.45, 16, 1, false, 0, Math.PI * 0.48);
+            const qMat = new MeshStandardMaterial({
+                color: 0xcc8d28,
+                roughness: 0.6,
+                transparent: true,
+                opacity: 0.92
+            });
+            const qMesh = new Mesh(qGeo, qMat);
+            qMesh.rotation.x = Math.PI / 2;
+            qMesh.rotation.z = q.rotZ;
+            qMesh.position.set(q.x, q.y, -0.55);
+            qMesh.visible = false;
+            this.nucleusQuadrants.push(qMesh);
+            this.lensGroup.add(qMesh);
+        });
+        // 3. Cortex Fibers
+        const cGeo = new RingGeometry(1.6, 2.34, 32);
+        const cMat = new MeshStandardMaterial({
+            color: 0xf5eedc,
+            transparent: true,
+            opacity: 0.45,
+            roughness: 0.7
+        });
+        this.cortexMesh = new Mesh(cGeo, cMat);
+        this.cortexMesh.position.z = -0.38;
+        this.lensGroup.add(this.cortexMesh);
+        // 4. Ultrasonic Cavitation Shockwave Particles
+        const cavCount = 120;
+        const cavGeo = new BufferGeometry();
+        const cavPos = new Float32Array(cavCount * 3);
+        for (let i = 0; i < cavCount; i++) {
+            cavPos[i * 3] = (Math.random() - 0.5) * 0.8;
+            cavPos[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
+            cavPos[i * 3 + 2] = -0.4 + (Math.random() - 0.5) * 0.3;
+        }
+        cavGeo.setAttribute('position', new BufferAttribute(cavPos, 3));
+        const cavMat = new PointsMaterial({
+            color: 0xaae8ff,
+            size: 0.065,
+            transparent: true,
+            opacity: 0.85
+        });
+        this.phacoCavitationParticles = new Points(cavGeo, cavMat);
+        this.phacoCavitationParticles.visible = false;
+        this.lensGroup.add(this.phacoCavitationParticles);
+    }
+    // =========================================================================
+    // FOLDABLE INTRAOCULAR LENS (IOL)
+    // =========================================================================
+    buildFoldableIol() {
+        // 6.0mm Acrylic Biconvex Optic Disc
+        const opticGeo = new CylinderGeometry(1.4, 1.4, 0.18, 32);
+        const opticMat = new MeshPhysicalMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.7,
+            transmission: 0.95,
+            ior: 1.55,
+            roughness: 0.05,
+            clearcoat: 1.0
+        });
+        this.iolOpticMesh = new Mesh(opticGeo, opticMat);
+        this.iolOpticMesh.rotation.x = Math.PI / 2;
+        this.iolOpticMesh.position.z = -0.65;
+        this.iolGroup.add(this.iolOpticMesh);
+        // Flexible C-Loop Haptics
+        const curve1 = new QuadraticBezierCurve3(new Vector3(1.35, 0.2, -0.65), new Vector3(2.3, 1.2, -0.65), new Vector3(1.1, 2.1, -0.65));
+        const hapticGeo1 = new TubeGeometry(curve1, 20, 0.05, 8, false);
+        const hapticMat = new MeshStandardMaterial({
+            color: 0x90caf9,
+            roughness: 0.2,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.85
+        });
+        this.iolHapticLeading = new Mesh(hapticGeo1, hapticMat);
+        this.iolGroup.add(this.iolHapticLeading);
+        const curve2 = new QuadraticBezierCurve3(new Vector3(-1.35, -0.2, -0.65), new Vector3(-2.3, -1.2, -0.65), new Vector3(-1.1, -2.1, -0.65));
+        const hapticGeo2 = new TubeGeometry(curve2, 20, 0.05, 8, false);
+        this.iolHapticTrailing = new Mesh(hapticGeo2, hapticMat);
+        this.iolGroup.add(this.iolHapticTrailing);
+        this.iolGroup.visible = false;
+    }
+    // =========================================================================
+    // Nd:YAG POSTERIOR CAPSULE & LASER OPTICS
+    // =========================================================================
+    buildYagPosteriorCapsule() {
+        // 3D Posterior Capsule with PCO pearl texture
+        const geo = new SphereGeometry(2.32, 48, 24, 0, Math.PI * 2, Math.PI * 0.58, Math.PI * 0.42);
+        const pcoCanvas = document.createElement('canvas');
+        pcoCanvas.width = 512;
+        pcoCanvas.height = 512;
+        const pcoCtx = pcoCanvas.getContext('2d');
+        pcoCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        pcoCtx.fillRect(0, 0, 512, 512);
+        // Elschnig pearls & fibrotic wrinkling
+        pcoCtx.fillStyle = 'rgba(240, 235, 220, 0.8)';
+        for (let i = 0; i < 350; i++) {
+            const px = Math.random() * 512;
+            const py = Math.random() * 512;
+            const pr = Math.random() * 5 + 2;
+            pcoCtx.beginPath();
+            pcoCtx.arc(px, py, pr, 0, Math.PI * 2);
+            pcoCtx.fill();
+        }
+        const pcoTex = new CanvasTexture(pcoCanvas);
+        const mat = new MeshStandardMaterial({
+            map: pcoTex,
+            transparent: true,
+            opacity: 0.52,
+            roughness: 0.4,
+            side: DoubleSide
+        });
+        this.posteriorCapsuleMesh = new Mesh(geo, mat);
+        this.posteriorCapsuleMesh.position.z = -0.85;
+        this.yagGroup.add(this.posteriorCapsuleMesh);
+        // Dual Helium-Neon (He-Ne) Aiming Beams (converging twin cones)
+        const b1Geo = new BufferGeometry().setFromPoints([
+            new Vector3(-1.2, 1.2, 5.0),
+            new Vector3(0, 0, -0.88)
+        ]);
+        const bMat = new LineBasicMaterial({ color: 0xff1111, transparent: true, opacity: 0.85 });
+        this.yagAimingCone1 = new Line(b1Geo, bMat);
+        this.yagGroup.add(this.yagAimingCone1);
+        const b2Geo = new BufferGeometry().setFromPoints([
+            new Vector3(1.2, -1.2, 5.0),
+            new Vector3(0, 0, -0.88)
+        ]);
+        this.yagAimingCone2 = new Line(b2Geo, bMat);
+        this.yagGroup.add(this.yagAimingCone2);
+        // Focal Reticle Dot
+        const dotGeo = new SphereGeometry(0.045, 16, 16);
+        const dotMat = new MeshBasicMaterial({ color: 0xff0000 });
+        this.yagFocalDot = new Mesh(dotGeo, dotMat);
+        this.yagFocalDot.position.set(0, 0, -0.88);
+        this.yagGroup.add(this.yagFocalDot);
+        // Plasma Optical Breakdown Spark (white-blue ignition)
+        const sparkGeo = new SphereGeometry(0.14, 16, 16);
+        const sparkMat = new MeshBasicMaterial({
+            color: 0x99ffff,
+            transparent: true,
+            opacity: 0
+        });
+        this.yagPlasmaSpark = new Mesh(sparkGeo, sparkMat);
+        this.yagPlasmaSpark.position.set(0, 0, -0.88);
+        this.yagGroup.add(this.yagPlasmaSpark);
+        // Cruciate (+) Capsulotomy Tear Lines
+        const tearPoints = [
+            // Vertical cut
+            new Vector3(0, -0.8, -0.85), new Vector3(0, 0.8, -0.85),
+            // Horizontal cut
+            new Vector3(-0.8, 0, -0.85), new Vector3(0.8, 0, -0.85)
+        ];
+        const tearGeo = new BufferGeometry().setFromPoints(tearPoints);
+        const tearMat = new LineBasicMaterial({ color: 0x111111, linewidth: 2 });
+        this.yagTearLines = new LineSegments(tearGeo, tearMat);
+        this.yagTearLines.visible = false;
+        this.yagGroup.add(this.yagTearLines);
+        this.yagGroup.visible = false;
+    }
+    // =========================================================================
+    // 3D SURGICAL INSTRUMENTS
+    // =========================================================================
+    build3DInstruments() {
+        // 1. Phaco Handpiece & Titanium Tip
+        const phacoObj = new Group();
+        const handleGeo = new CylinderGeometry(0.18, 0.22, 2.8, 16);
+        const handleMat = new MeshStandardMaterial({ color: 0x223344, metalness: 0.6, roughness: 0.4 });
+        const handle = new Mesh(handleGeo, handleMat);
+        handle.position.y = 1.4;
+        phacoObj.add(handle);
+        // Silicone Sleeve (blue)
+        const sleeveGeo = new CylinderGeometry(0.1, 0.14, 0.9, 16);
+        const sleeveMat = new MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 });
+        const sleeve = new Mesh(sleeveGeo, sleeveMat);
+        sleeve.position.y = 0.4;
+        phacoObj.add(sleeve);
+        // Titanium Needle
+        const needleGeo = new CylinderGeometry(0.045, 0.045, 0.6, 16);
+        const needleMat = new MeshStandardMaterial({ color: 0xcccccc, metalness: 0.95, roughness: 0.15 });
+        const needle = new Mesh(needleGeo, needleMat);
+        needle.position.y = -0.15;
+        phacoObj.add(needle);
+        phacoObj.rotation.x = Math.PI / 4;
+        this.instrumentMeshes.set('phaco_tip', phacoObj);
+        // 2. MVR Blade (1.0mm)
+        const mvrObj = new Group();
+        const mvrHandle = new Mesh(new CylinderGeometry(0.12, 0.12, 2.4, 16), new MeshStandardMaterial({ color: 0xf59e0b }));
+        mvrHandle.position.y = 1.2;
+        mvrObj.add(mvrHandle);
+        const mvrBlade = new Mesh(new ConeGeometry(0.06, 0.45, 4), new MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9 }));
+        mvrBlade.position.y = -0.1;
+        mvrBlade.rotation.y = Math.PI / 4;
+        mvrObj.add(mvrBlade);
+        this.instrumentMeshes.set('mvr_blade', mvrObj);
+        // 3. Clear Corneal Keratome (2.4mm)
+        const keratomeObj = new Group();
+        const kHandle = new Mesh(new CylinderGeometry(0.14, 0.14, 2.4, 16), new MeshStandardMaterial({ color: 0x10b981 }));
+        kHandle.position.y = 1.2;
+        keratomeObj.add(kHandle);
+        const kBlade = new Mesh(new BoxGeometry(0.24, 0.5, 0.02), new MeshStandardMaterial({ color: 0xffffff, metalness: 0.95 }));
+        kBlade.position.y = -0.12;
+        keratomeObj.add(kBlade);
+        this.instrumentMeshes.set('keratome_2_4', keratomeObj);
+        // 4. MIGS Stent Injector
+        const migsObj = new Group();
+        const migsHandle = new Mesh(new CylinderGeometry(0.15, 0.15, 2.8, 16), new MeshStandardMaterial({ color: 0x3b82f6 }));
+        migsHandle.position.y = 1.4;
+        migsObj.add(migsHandle);
+        const trocar = new Mesh(new CylinderGeometry(0.035, 0.035, 0.7, 16), new MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9 }));
+        trocar.position.y = -0.2;
+        migsObj.add(trocar);
+        this.instrumentMeshes.set('migs_injector', migsObj);
+        // Add all instruments to group but hidden initially
+        this.instrumentMeshes.forEach((mesh) => {
+            mesh.visible = false;
+            this.instrumentGroup.add(mesh);
+        });
+    }
+    // =========================================================================
+    // CAMERA PRESETS & ZOOMING
+    // =========================================================================
+    setCameraPreset(preset) {
+        this.isTransitioningCamera = true;
+        this.transitionAlpha = 0.0;
+        switch (preset) {
+            case 'microscope':
+                // Standard coaxial surgeon view
+                this.targetCamPos.set(0, 0, 8.5);
+                this.targetLookAt.set(0, 0, 0);
+                break;
+            case 'glaucoma_angle':
+                // Dives into the 38° nasal iridocorneal angle right at the trabecular meshwork!
+                this.targetCamPos.set(2.4, 1.8, 1.6);
+                this.targetLookAt.set(2.8, 2.1, 0.05);
+                break;
+            case 'cataract_core':
+                // Dives deep into the anterior chamber & lens nucleus
+                this.targetCamPos.set(0.4, 0.3, 3.2);
+                this.targetLookAt.set(0, 0, -0.45);
+                break;
+            case 'yag_capsule':
+                // Macro view centered on posterior capsule & IOL optic
+                this.targetCamPos.set(0, 0, 3.5);
+                this.targetLookAt.set(0, 0, -0.85);
+                break;
+            case 'cross_section':
+                // Side profile showing cornea dome, AC depth, and lens
+                this.targetCamPos.set(6.2, 0, 1.2);
+                this.targetLookAt.set(0, 0, 0);
+                break;
+        }
+    }
+    setZoom(zoomFactor) {
+        // Smoothly scale camera distance based on magnification (6x - 25x or higher)
+        this.currentMagnification = zoomFactor;
+        const targetDist = 11.5 - (zoomFactor / 25.0) * 8.2;
+        const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+        this.camera.position.copy(this.controls.target.clone().add(dir.multiplyScalar(Math.max(1.1, targetDist))));
+    }
+    // =========================================================================
+    // MAIN SCENE UPDATE & SYNCHRONIZATION
+    // =========================================================================
+    updateState(params) {
+        this.currentModule = params.module;
+        if (params.mouseNormPos)
+            this.mouseNorm = params.mouseNormPos;
+        // 1. Lighting
+        this.coaxialLight.intensity = (params.coaxialLight / 100.0) * 3.8;
+        const reflex = (params.redReflexGain / 100.0) * (params.coaxialLight / 100.0);
+        this.pupilMesh.material.color.setRGB(0.85 * reflex, 0.18 * reflex, 0.08 * reflex);
+        // 2. Module Visibility Configuration
+        if (params.module === 'phaco') {
+            this.lensGroup.visible = true;
+            this.iolGroup.visible = false;
+            this.yagGroup.visible = false;
+            this.angleGroup.visible = false;
+            this.gonioprismMesh.visible = false;
+            // Capsulorhexis Window Opening
+            if (params.cccState.completed) {
+                this.anteriorCapsuleMesh.visible = false;
+                this.capsulorhexisRimMesh.visible = true;
+            }
+            else if (params.cccState.punctured) {
+                this.anteriorCapsuleMesh.material.opacity = 0.12;
+                this.capsulorhexisRimMesh.visible = true;
+            }
+            // Phacoemulsification Nucleus Mass & Quadrants
+            const rem = params.nucleusState.remainingMassFraction;
+            if (rem > 0.75) {
+                this.nucleusMesh.visible = true;
+                this.nucleusQuadrants.forEach(q => q.visible = false);
+                this.nucleusMesh.scale.set(rem, rem, rem);
+            }
+            else {
+                // Chopped into quadrants
+                this.nucleusMesh.visible = false;
+                this.nucleusQuadrants.forEach((q, idx) => {
+                    q.visible = rem > idx * 0.18;
+                    const qScale = Math.max(0.2, rem / 0.75);
+                    q.scale.set(qScale, qScale, qScale);
+                });
+            }
+            // Ultrasonic Cavitation Particles
+            this.phacoCavitationParticles.visible = params.pedalPosition === 3 && params.activeInstrument === 'phaco_tip';
+        }
+        else if (params.module === 'iol') {
+            this.lensGroup.visible = false;
+            this.iolGroup.visible = true;
+            this.yagGroup.visible = false;
+            this.angleGroup.visible = false;
+            this.gonioprismMesh.visible = false;
+            // Foldable IOL unfolding & centering
+            if (params.iolState.opticInChamber) {
+                this.iolOpticMesh.visible = true;
+                this.iolHapticLeading.visible = true;
+                this.iolHapticTrailing.visible = params.iolState.trailingHapticInBag;
+            }
+        }
+        else if (params.module === 'yag') {
+            this.lensGroup.visible = false;
+            this.iolGroup.visible = true; // Pseudophakic eye
+            this.yagGroup.visible = true;
+            this.angleGroup.visible = false;
+            this.gonioprismMesh.visible = false;
+            // Focus laser reticle to mouse/target
+            const targetZ = -0.85 + (params.laserDefocusZ / 1000.0) * 0.5;
+            this.yagFocalDot.position.set(this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
+            // Reconnect aiming beam lines to focal point
+            const b1Pos = this.yagAimingCone1.geometry.attributes.position;
+            b1Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
+            b1Pos.needsUpdate = true;
+            const b2Pos = this.yagAimingCone2.geometry.attributes.position;
+            b2Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
+            b2Pos.needsUpdate = true;
+            // Show cruciate tears once fired
+            if (params.yagState.shots.length > 0) {
+                this.yagTearLines.visible = true;
+            }
+        }
+        else if (params.module === 'migs') {
+            this.lensGroup.visible = false;
+            this.iolGroup.visible = true;
+            this.yagGroup.visible = false;
+            this.angleGroup.visible = true;
+            // Gonioprism on cornea
+            this.gonioprismMesh.visible = true;
+            // Stents deployment state
+            if (params.migsState) {
+                this.stent1Group.visible = params.migsState.stents[0]?.deployed ?? false;
+                this.stent2Group.visible = params.migsState.stents[1]?.deployed ?? false;
+                this.bloodRefluxParticles.visible = params.migsState.bloodRefluxWaveConfirmed ?? false;
+            }
+        }
+        // 3. Active 3D Instrument positioning
+        this.updateInstrumentPosition(params.activeInstrument, params.pedalPosition);
+    }
+    updateInstrumentPosition(activeInstrument, pedalPosition) {
+        if (this.currentInstrumentType !== activeInstrument) {
+            if (this.currentInstrumentType && this.instrumentMeshes.has(this.currentInstrumentType)) {
+                this.instrumentMeshes.get(this.currentInstrumentType).visible = false;
+            }
+            this.currentInstrumentType = activeInstrument;
+            if (this.instrumentMeshes.has(activeInstrument)) {
+                this.instrumentMeshes.get(activeInstrument).visible = true;
+            }
+        }
+        const currentMesh = this.instrumentMeshes.get(activeInstrument);
+        if (!currentMesh)
+            return;
+        // Follow cursor with realistic corneal incision pivot
+        const tx = this.mouseNorm.x * 2.2;
+        const ty = this.mouseNorm.y * 2.2;
+        currentMesh.position.set(tx, ty, 0.4);
+        // Phaco tip micro-vibration when ultrasound pedal active
+        if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
+            currentMesh.position.x += (Math.random() - 0.5) * 0.025;
+            currentMesh.position.y += (Math.random() - 0.5) * 0.025;
+        }
+    }
+    triggerYagPlasmaSpark(x, y) {
+        this.yagPlasmaSpark.position.set(x * 1.8, y * 1.8, -0.85);
+        this.yagPlasmaSpark.material.opacity = 1.0;
+    }
+    // =========================================================================
+    // ANIMATION LOOP & CLEANUP
+    // =========================================================================
+    onResize = () => {
+        if (!this.container || this.isDestroyed)
+            return;
+        const w = this.container.clientWidth;
+        const h = this.container.clientHeight;
+        this.camera.aspect = w / h;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(w, h);
+    };
+    animate = () => {
+        if (this.isDestroyed)
+            return;
+        this.animFrameId = requestAnimationFrame(this.animate);
+        // Smooth camera transition if interpolating
+        if (this.isTransitioningCamera) {
+            this.transitionAlpha += 0.04;
+            this.camera.position.lerp(this.targetCamPos, 0.08);
+            this.controls.target.lerp(this.targetLookAt, 0.08);
+            if (this.transitionAlpha >= 1.0) {
+                this.isTransitioningCamera = false;
+            }
+        }
+        // Dynamic blood reflux animation in Schlemm's canal
+        if (this.bloodRefluxParticles.visible) {
+            const posAttr = this.bloodRefluxParticles.geometry.attributes.position;
+            const velAttr = this.bloodRefluxParticles.geometry.attributes.velocity;
+            for (let i = 0; i < posAttr.count; i++) {
+                let x = posAttr.getX(i) + velAttr.getX(i);
+                let y = posAttr.getY(i) + velAttr.getY(i);
+                let z = posAttr.getZ(i) + velAttr.getZ(i);
+                // Reset particle if drifted too far into AC
+                if (Math.hypot(x, y) < 2.9) {
+                    const angle = Math.random() * 0.8 + 1.1;
+                    const r = 3.42 + Math.random() * 0.12;
+                    x = Math.cos(angle) * r;
+                    y = Math.sin(angle) * r;
+                    z = 0.06;
+                }
+                posAttr.setXYZ(i, x, y, z);
+            }
+            posAttr.needsUpdate = true;
+        }
+        // Decay YAG plasma spark
+        if (this.yagPlasmaSpark && this.yagPlasmaSpark.material.opacity > 0) {
+            this.yagPlasmaSpark.material.opacity -= 0.08;
+        }
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+    };
+    destroy() {
+        this.isDestroyed = true;
+        window.removeEventListener('resize', this.onResize);
+        cancelAnimationFrame(this.animFrameId);
+        this.controls.dispose();
+        this.renderer.dispose();
+    }
+}
+
 const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, cccState, hydroState, nucleusState, iolState, yagState, yagSettings, incisions, ovdCoverage, currentStepId = '', showGuides = true, onToggleGuides, onIncisionAdvance, onOvdInject, onCccPuncture, onCccDrag, onHydroPulse, onPhacoApply, onIaAspirate, onIolAdvance, onIolDial, onIolWashout, onYagFire, migsState, onMigsTilt, onMigsGonioPlace, onMigsOvdAngle, onMigsDeployStent, onMigsBloodReflux, onMigsWashout, }) => {
     const containerRef = reactExports.useRef(null);
     const canvasRef = reactExports.useRef(null);
     const overlayCanvasRef = reactExports.useRef(null);
     // Optical Controls State
-    const [renderMode, setRenderMode] = reactExports.useState('photo'); // 'photo' = actual eye photography
-    const [magnification, setMagnification] = reactExports.useState(12); // 6x to 25x
+    const [renderMode, setRenderMode] = reactExports.useState('3d'); // '3d' = interactive 3D model (default)
+    const [magnification, setMagnification] = reactExports.useState(12); // 6x to 45x deep zoom
     const [coaxialLight, setCoaxialLight] = reactExports.useState(92); // 0 to 100%
     const [redReflexGain, setRedReflexGain] = reactExports.useState(88); // 0 to 100%
     const [laserDefocusZ, setLaserDefocusZ] = reactExports.useState(150); // µm offset for YAG focus
     const [showOptics, setShowOptics] = reactExports.useState(false); // Collapsed on mobile by default to preserve eye view
+    const [currentCameraPreset, setCurrentCameraPreset] = reactExports.useState('microscope');
     // Pre-loaded Real Eye Image Elements
     const cataractImgRef = reactExports.useRef(null);
     const iolImgRef = reactExports.useRef(null);
@@ -69296,6 +76296,7 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
     // Mouse & Interaction Tracking
     const [mousePos, setMousePos] = reactExports.useState({ x: 0, y: 0 });
     const [isMouseDown, setIsMouseDown] = reactExports.useState(false);
+    const downPosRef = reactExports.useRef({ x: 0, y: 0 });
     const [plasmaSparks, setPlasmaSparks] = reactExports.useState([]);
     // Load actual eye photography assets with relative subpath resolution for GitHub Pages
     reactExports.useEffect(() => {
@@ -69337,201 +76338,93 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         };
         yagImgRef.current = yImg;
     }, []);
-    // Three.js instances ref
-    const threeRef = reactExports.useRef(null);
-    // Initialize Three.js scene
+    // ThreeEyeScene 3D Model Instance Ref
+    const threeEyeSceneRef = reactExports.useRef(null);
+    // Initialize ThreeEyeScene
     reactExports.useEffect(() => {
         if (!canvasRef.current || !containerRef.current)
             return;
-        const width = containerRef.current.clientWidth || 800;
-        const height = containerRef.current.clientHeight || 600;
-        const scene = new Scene();
-        scene.background = null; // Transparent background to allow layering
-        const camera = new PerspectiveCamera(40, width / height, 0.1, 100);
-        camera.position.set(0, 0, 8.5);
-        const renderer = new WebGLRenderer({
-            canvas: canvasRef.current,
-            antialias: true,
-            alpha: true,
-            powerPreference: 'high-performance'
+        const scene = new ThreeEyeScene({
+            container: containerRef.current,
+            canvas: canvasRef.current
         });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        // Coaxial Light Source
-        const coaxialLightObj = new PointLight(0xffeedd, 2.5, 20);
-        coaxialLightObj.position.set(0, 0, 7.5);
-        scene.add(coaxialLightObj);
-        // Oblique specular light for corneal reflections
-        const specularLightObj = new DirectionalLight(0xffffff, 1.2);
-        specularLightObj.position.set(2, 4, 6);
-        scene.add(specularLightObj);
-        const ambientLight = new AmbientLight(0x223344, 0.6);
-        scene.add(ambientLight);
-        // 1. Sclera / Eye Globe
-        const scleraGeo = new RingGeometry(3.6, 5.2, 64);
-        const scleraMat = new MeshStandardMaterial({
-            color: 0xeeeeee,
-            roughness: 0.35,
-            metalness: 0.05
-        });
-        const scleraMesh = new Mesh(scleraGeo, scleraMat);
-        scene.add(scleraMesh);
-        // 2. Limbal Arcade
-        const limbusGeo = new RingGeometry(3.4, 3.65, 64);
-        const limbusMat = new MeshBasicMaterial({
-            color: 0x3d4f58,
-            transparent: true,
-            opacity: 0.75
-        });
-        const limbusMesh = new Mesh(limbusGeo, limbusMat);
-        scene.add(limbusMesh);
-        // 3. Iris Structure
-        const irisGeo = new RingGeometry(2.35, 3.45, 64);
-        const irisCanvas = document.createElement('canvas');
-        irisCanvas.width = 512;
-        irisCanvas.height = 512;
-        const ictx = irisCanvas.getContext('2d');
-        const grad = ictx.createRadialGradient(256, 256, 120, 256, 256, 256);
-        grad.addColorStop(0, '#1c4a75');
-        grad.addColorStop(0.5, '#296ca8');
-        grad.addColorStop(1, '#0e2b46');
-        ictx.fillStyle = grad;
-        ictx.fillRect(0, 0, 512, 512);
-        ictx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ictx.lineWidth = 1.5;
-        for (let a = 0; a < 360; a += 1.8) {
-            const rad = (a * Math.PI) / 180;
-            ictx.beginPath();
-            ictx.moveTo(256 + Math.cos(rad) * 130, 256 + Math.sin(rad) * 130);
-            ictx.lineTo(256 + Math.cos(rad) * 250, 256 + Math.sin(rad) * 250);
-            ictx.stroke();
-        }
-        const irisTex = new CanvasTexture(irisCanvas);
-        const irisMat = new MeshStandardMaterial({
-            map: irisTex,
-            roughness: 0.7,
-            metalness: 0.1
-        });
-        const irisMesh = new Mesh(irisGeo, irisMat);
-        scene.add(irisMesh);
-        // 4. Red Reflex / Pupillary Aperture
-        const pupilGeo = new CircleGeometry(2.36, 64);
-        const pupilMat = new MeshBasicMaterial({
-            color: 0xcc2a10,
-            transparent: true,
-            opacity: 0.92
-        });
-        const pupilMesh = new Mesh(pupilGeo, pupilMat);
-        pupilMesh.position.z = -0.05;
-        scene.add(pupilMesh);
-        // 5. Crystalline Lens / Cataract Core
-        const lensGeo = new CircleGeometry(2.35, 64);
-        const lensMat = new MeshStandardMaterial({
-            color: 0xd49b35,
-            transparent: true,
-            opacity: 0.88,
-            roughness: 0.5,
-            metalness: 0.1
-        });
-        const lensMesh = new Mesh(lensGeo, lensMat);
-        lensMesh.position.z = 0.02;
-        scene.add(lensMesh);
-        // 6. Anterior Lens Capsule with reflective sheen
-        const capsuleGeo = new CircleGeometry(2.38, 64);
-        const capsuleMat = new MeshStandardMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.22,
-            roughness: 0.15,
-            metalness: 0.3
-        });
-        const capsuleMesh = new Mesh(capsuleGeo, capsuleMat);
-        capsuleMesh.position.z = 0.06;
-        scene.add(capsuleMesh);
-        // 7. Transparent Cornea Dome
-        const corneaGeo = new SphereGeometry(3.7, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
-        const corneaMat = new MeshPhysicalMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.14,
-            roughness: 0.05,
-            metalness: 0.1,
-            transmission: 0.9,
-            ior: 1.376
-        });
-        const corneaMesh = new Mesh(corneaGeo, corneaMat);
-        corneaMesh.position.z = 0.45;
-        scene.add(corneaMesh);
-        let animId = 0;
-        const animate = () => {
-            animId = requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        };
-        animate();
-        threeRef.current = {
-            scene,
-            camera,
-            renderer,
-            eyeGlobe: scleraMesh,
-            irisMesh,
-            pupilMesh,
-            lensMesh,
-            capsuleMesh,
-            corneaMesh,
-            coaxialLightObj,
-            specularLightObj,
-            animFrameId: animId
-        };
-        const handleResize = () => {
-            if (!containerRef.current || !threeRef.current)
-                return;
-            const nw = containerRef.current.clientWidth;
-            const nh = containerRef.current.clientHeight;
-            threeRef.current.camera.aspect = nw / nh;
-            threeRef.current.camera.updateProjectionMatrix();
-            threeRef.current.renderer.setSize(nw, nh);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            cancelAnimationFrame(animId);
-            renderer.dispose();
-        };
-    }, []);
-    // Update Three.js parameters
-    reactExports.useEffect(() => {
-        if (!threeRef.current)
-            return;
-        const { camera, coaxialLightObj, pupilMesh, lensMesh, irisMesh, eyeGlobe, corneaMesh } = threeRef.current;
-        // Visibility toggle based on renderMode
-        const show3d = renderMode === 'shader' || renderMode === 'hybrid';
-        if (eyeGlobe)
-            eyeGlobe.visible = show3d;
-        if (irisMesh)
-            irisMesh.visible = show3d;
-        if (pupilMesh)
-            pupilMesh.visible = show3d;
-        if (lensMesh)
-            lensMesh.visible = show3d;
-        if (corneaMesh)
-            corneaMesh.visible = true; // Always keep cornea specular reflections
-        const targetZ = 12.0 - (magnification / 25.0) * 7.5;
-        camera.position.z = targetZ;
-        coaxialLightObj.intensity = (coaxialLight / 100.0) * 3.5;
-        const reflexIntensity = (redReflexGain / 100.0) * (coaxialLight / 100.0);
-        pupilMesh.material.color.setRGB(0.85 * reflexIntensity, 0.22 * reflexIntensity, 0.08 * reflexIntensity);
-        if (module === 'phaco') {
-            const remaining = nucleusState.remainingMassFraction;
-            lensMesh.material.opacity = 0.88 * remaining;
-        }
-        else if (module === 'iol') {
-            lensMesh.material.opacity = 0.05;
+        threeEyeSceneRef.current = scene;
+        // Initial preset based on module
+        if (module === 'migs') {
+            scene.setCameraPreset('glaucoma_angle');
+            setCurrentCameraPreset('glaucoma_angle');
         }
         else if (module === 'yag') {
-            lensMesh.material.opacity = 0.45;
-            lensMesh.material.color.setRGB(0.95, 0.9, 0.8);
+            scene.setCameraPreset('yag_capsule');
+            setCurrentCameraPreset('yag_capsule');
         }
-    }, [magnification, coaxialLight, redReflexGain, module, nucleusState.remainingMassFraction, renderMode]);
+        else if (module === 'phaco') {
+            scene.setCameraPreset('cataract_core');
+            setCurrentCameraPreset('cataract_core');
+        }
+        return () => {
+            scene.destroy();
+            threeEyeSceneRef.current = null;
+        };
+    }, []);
+    // Automatically update 3D camera preset when switching surgical modules
+    reactExports.useEffect(() => {
+        if (!threeEyeSceneRef.current)
+            return;
+        if (module === 'migs') {
+            threeEyeSceneRef.current.setCameraPreset('glaucoma_angle');
+            setCurrentCameraPreset('glaucoma_angle');
+        }
+        else if (module === 'yag') {
+            threeEyeSceneRef.current.setCameraPreset('yag_capsule');
+            setCurrentCameraPreset('yag_capsule');
+        }
+        else if (module === 'phaco') {
+            threeEyeSceneRef.current.setCameraPreset('cataract_core');
+            setCurrentCameraPreset('cataract_core');
+        }
+    }, [module]);
+    // Synchronize All Reactive Surgical State with the 3D Engine
+    reactExports.useEffect(() => {
+        if (!threeEyeSceneRef.current || !containerRef.current)
+            return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const width = rect.width || 800;
+        const height = rect.height || 600;
+        const eyeRadiusPx = (175 * magnification) / 12;
+        const normX = (mousePos.x - width / 2) / (eyeRadiusPx * 0.65);
+        const normY = (mousePos.y - height / 2) / (eyeRadiusPx * 0.65);
+        threeEyeSceneRef.current.updateState({
+            module,
+            activeInstrument,
+            pedalPosition,
+            nucleusState,
+            cccState,
+            iolState,
+            yagState,
+            migsState,
+            laserDefocusZ,
+            coaxialLight,
+            redReflexGain,
+            mouseNormPos: { x: normX, y: normY, isDown: isMouseDown },
+            magnification
+        });
+    }, [
+        module,
+        activeInstrument,
+        pedalPosition,
+        nucleusState,
+        cccState,
+        iolState,
+        yagState,
+        migsState,
+        laserDefocusZ,
+        coaxialLight,
+        redReflexGain,
+        mousePos,
+        isMouseDown,
+        magnification
+    ]);
     // Master 2D High-Resolution Composite Rendering (Real Eye Photo + Dynamic Surgical Overlays)
     reactExports.useEffect(() => {
         const canvas = overlayCanvasRef.current;
@@ -69569,6 +76462,9 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 }
                 if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
                     ctx.save();
+                    if (renderMode === 'hybrid') {
+                        ctx.globalAlpha = 0.45;
+                    }
                     // Draw circular eye photo frame
                     const imgSize = eyeRadiusPx * 2.35;
                     ctx.beginPath();
@@ -69593,12 +76489,15 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 }
             }
             // ==========================================
-            // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY
+            // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY (Photo & Hybrid overlay)
             // ==========================================
-            if (module === 'migs') {
+            if (module === 'migs' && (renderMode === 'photo' || renderMode === 'hybrid')) {
                 const isGonioActive = migsState?.gonioprismPlaced || currentStepId !== 'microscope_and_head_tilt';
                 if (isGonioActive) {
                     ctx.save();
+                    if (renderMode === 'hybrid') {
+                        ctx.globalAlpha = 0.45;
+                    }
                     // 1. Direct Swan-Jacob Gonioprism Lens Frame
                     const gonioRadius = eyeRadiusPx * 1.08;
                     ctx.beginPath();
@@ -70656,11 +77555,13 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             if (currentStepId === 'contact_lens_placement' || !yagSettings.contactLensFitted) {
                 yagSettings.contactLensFitted = true;
                 onYagFire(normX, normY, laserDefocusZ);
+                threeEyeSceneRef.current?.triggerYagPlasmaSpark(normX, normY);
                 audioEngine.playPedalClick(1);
             }
             else {
                 setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
                 onYagFire(normX, normY, laserDefocusZ);
+                threeEyeSceneRef.current?.triggerYagPlasmaSpark(normX, normY);
                 audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
             }
         }
@@ -70747,52 +77648,98 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         onIaAspirate
     ]);
     const handleMouseDown = reactExports.useCallback((e) => {
-        handlePointerDownAction(e.clientX, e.clientY);
-    }, [handlePointerDownAction]);
+        setIsMouseDown(true);
+        downPosRef.current = { x: e.clientX, y: e.clientY };
+    }, []);
     const handleMouseMove = reactExports.useCallback((e) => {
         handlePointerMoveAction(e.clientX, e.clientY, isMouseDown);
     }, [handlePointerMoveAction, isMouseDown]);
-    const handleMouseUp = reactExports.useCallback(() => {
+    const handleMouseUp = reactExports.useCallback((e) => {
         setIsMouseDown(false);
-    }, []);
+        const dist = Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y);
+        if (dist < 8) {
+            handlePointerDownAction(e.clientX, e.clientY);
+        }
+    }, [handlePointerDownAction]);
     const handleTouchStart = reactExports.useCallback((e) => {
         if (e.touches.length > 0) {
             const touch = e.touches[0];
-            handlePointerDownAction(touch.clientX, touch.clientY);
+            setIsMouseDown(true);
+            downPosRef.current = { x: touch.clientX, y: touch.clientY };
         }
-    }, [handlePointerDownAction]);
+    }, []);
     const handleTouchMove = reactExports.useCallback((e) => {
         if (e.touches.length > 0) {
             const touch = e.touches[0];
             handlePointerMoveAction(touch.clientX, touch.clientY, true);
         }
     }, [handlePointerMoveAction]);
-    const handleTouchEnd = reactExports.useCallback(() => {
+    const handleTouchEnd = reactExports.useCallback((e) => {
         setIsMouseDown(false);
-    }, []);
-    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+        if (e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const dist = Math.hypot(touch.clientX - downPosRef.current.x, touch.clientY - downPosRef.current.y);
+            if (dist < 10) {
+                handlePointerDownAction(touch.clientX, touch.clientY);
+            }
+        }
+    }, [handlePointerDownAction]);
+    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 left-2 sm:left-4 z-20 flex flex-wrap items-center gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-140px)]", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-1 shrink-0", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "3D Angle:" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                            threeEyeSceneRef.current?.setCameraPreset('microscope');
+                            setCurrentCameraPreset('microscope');
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'microscope'
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "0\u00B0 Coaxial Surgeon Microscope View", children: "Microscope" }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                            threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
+                            setCurrentCameraPreset('glaucoma_angle');
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${currentCameraPreset === 'glaucoma_angle'
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                            : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'}`, title: "Deep Zoom into 38\u00B0 Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal", children: [jsxRuntimeExports.jsx(Compass, { className: "w-3 h-3 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: "TM Angle (38\u00B0)" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                            threeEyeSceneRef.current?.setCameraPreset('cataract_core');
+                            setCurrentCameraPreset('cataract_core');
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'cataract_core'
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Deep Zoom into Cataract Nucleus Core & Phaco Trench", children: "Cataract Core" }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                            threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
+                            setCurrentCameraPreset('yag_capsule');
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'yag_capsule'
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Macro Zoom onto Posterior Capsule & IOL Optic", children: "YAG Capsule" }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                            threeEyeSceneRef.current?.setCameraPreset('cross_section');
+                            setCurrentCameraPreset('cross_section');
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'cross_section'
+                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Anterior Chamber Profile Cross-Section", children: "Profile" }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                            threeEyeSceneRef.current?.controls.reset();
+                            threeEyeSceneRef.current?.setCameraPreset('microscope');
+                            setCurrentCameraPreset('microscope');
+                        }, className: "p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition", title: "Reset 3D Camera Orbit", children: jsxRuntimeExports.jsx(RotateCcw, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
                                     e.stopPropagation();
                                     onToggleGuides();
                                 }, title: showGuides ? 'Hide Interactive Guidance Pointers' : 'Show Interactive Guidance Pointers', className: `flex items-center gap-1 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showGuides
-                                    ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-cyan-900/40'
+                                    ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-emerald-900/40'
                                     : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono hidden xs:inline", children: showGuides ? 'Guides: ON' : 'Guides: OFF' }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono xs:hidden", children: showGuides ? 'ON' : 'OFF' })] })), jsxRuntimeExports.jsxs("button", { onClick: (e) => {
                                     e.stopPropagation();
                                     setShowOptics(!showOptics);
                                 }, title: "Microscope Optics & Illumination Settings", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showOptics
-                                    ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
-                                    : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [magnification, "x"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] hidden xs:inline uppercase text-slate-400", children: "Optics" })] })] }), showOptics && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-cyan-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "MICROSCOPE CONTROLS"] }), jsxRuntimeExports.jsx("button", { onClick: () => setShowOptics(false), className: "p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "View Mode" }), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "REAL PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
-                                                    ? 'bg-cyan-600 text-white shadow-md'
-                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Photo" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('hybrid'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'hybrid'
-                                                    ? 'bg-cyan-600 text-white shadow-md'
-                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Hybrid" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('shader'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'shader'
-                                                    ? 'bg-cyan-600 text-white shadow-md'
-                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "3D Mesh" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Microscope Zoom" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [magnification, "x"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx(ZoomOut, { className: "w-3 h-3 text-slate-400" }), jsxRuntimeExports.jsx("input", { type: "range", min: "6", max: "25", step: "1", value: magnification, onChange: (e) => setMagnification(Number(e.target.value)), className: "w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx(ZoomIn, { className: "w-3 h-3 text-slate-400" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Coaxial Light" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-amber-300", children: [coaxialLight, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: coaxialLight, onChange: (e) => setCoaxialLight(Number(e.target.value)), className: "w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Red Reflex" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400", children: [redReflexGain, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: redReflexGain, onChange: (e) => setRedReflexGain(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), module === 'yag' && (jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-rose-300", children: [jsxRuntimeExports.jsx("span", { children: "Focal Offset (Posterior)" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400", children: ["+", laserDefocusZ, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: laserDefocusZ, onChange: (e) => setLaserDefocusZ(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[9px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0 \u00B5m (Risk)" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "150-250 Safe" }), jsxRuntimeExports.jsx("span", { children: "350 \u00B5m" })] })] }))] }))] }), jsxRuntimeExports.jsxs("div", { className: "hidden md:flex absolute bottom-3 left-3 z-10 pointer-events-none text-slate-400 font-mono text-xs flex-col gap-0.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }), jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-semibold uppercase tracking-wider", children: module === 'phaco'
-                                    ? 'Zeiss OPMI Lumera 700 Coaxial Medical Macro'
+                                    ? 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-900/50'
+                                    : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5 text-emerald-400" }), jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [magnification, "x"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] hidden xs:inline uppercase text-slate-400", children: "Optics" })] })] }), showOptics && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-emerald-900/40 shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "MICROSCOPE & 3D CONTROLS"] }), jsxRuntimeExports.jsx("button", { onClick: () => setShowOptics(false), className: "p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "View Mode" }), renderMode === '3d' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "3D MODEL" })), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded", children: "PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('3d'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === '3d'
+                                                    ? 'bg-emerald-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "3D Model" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('hybrid'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'hybrid'
+                                                    ? 'bg-emerald-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Hybrid" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
+                                                    ? 'bg-emerald-600 text-white shadow-md'
+                                                    : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Photo" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Microscope Zoom" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [magnification, "x"] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx(ZoomOut, { className: "w-3 h-3 text-slate-400" }), jsxRuntimeExports.jsx("input", { type: "range", min: "6", max: "45", step: "1", value: magnification, onChange: (e) => {
+                                                    const val = Number(e.target.value);
+                                                    setMagnification(val);
+                                                    threeEyeSceneRef.current?.setZoom(val);
+                                                }, className: "w-full accent-emerald-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx(ZoomIn, { className: "w-3 h-3 text-slate-400" })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Coaxial Light" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-amber-300", children: [coaxialLight, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: coaxialLight, onChange: (e) => setCoaxialLight(Number(e.target.value)), className: "w-full accent-amber-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Red Reflex" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400", children: [redReflexGain, "%"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "100", value: redReflexGain, onChange: (e) => setRedReflexGain(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), module === 'yag' && (jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-rose-300", children: [jsxRuntimeExports.jsx("span", { children: "Focal Offset (Posterior)" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-rose-400", children: ["+", laserDefocusZ, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: laserDefocusZ, onChange: (e) => setLaserDefocusZ(Number(e.target.value)), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[9px] text-slate-500 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "0 \u00B5m (Risk)" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "150-250 Safe" }), jsxRuntimeExports.jsx("span", { children: "350 \u00B5m" })] })] }))] }))] }), jsxRuntimeExports.jsxs("div", { className: "hidden md:flex absolute bottom-3 left-3 z-10 pointer-events-none text-slate-400 font-mono text-xs flex-col gap-0.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }), jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-semibold uppercase tracking-wider", children: module === 'phaco'
+                                    ? 'Zeiss OPMI Lumera 700 3D Micro-Surgical Simulation'
                                     : module === 'iol'
-                                        ? 'High-Resolution Pseudophakic Capsular View'
+                                        ? 'High-Resolution 3D Pseudophakic Capsular View'
                                         : module === 'migs'
-                                            ? 'Surgical Direct Gonioscopy | Swan-Jacob Prism (38° Tilt)'
-                                            : 'Haag-Streit BQ 900 / Ellex Nd:YAG Slit-Lamp Photography' })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500", children: "Source: Clinical Ophthalmic Photography | Barraquer Speculum | Coaxial Retroillumination" })] }), (cccState.zonularDehiscenceOccurred || nucleusState.posteriorCapsulePunctured) && (jsxRuntimeExports.jsxs("div", { className: "absolute top-28 left-1/2 -translate-x-1/2 z-30 bg-red-900/95 border-2 border-red-500 text-white px-5 py-2 rounded-lg shadow-2xl backdrop-blur-md text-sm font-bold flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-2xl", children: "\u26A0\uFE0F" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "text-red-300 uppercase tracking-wide text-xs", children: "Surgical Complication Alert" }), jsxRuntimeExports.jsx("div", { children: nucleusState.posteriorCapsulePunctured
+                                            ? '3D Direct Gonioscopy | 38° Trabecular Meshwork & Stent Outflow'
+                                            : '3D Haag-Streit / Ellex Nd:YAG Laser Photodisruption Model' })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500", children: "Mode: Interactive 3D Medical Model | Full 360\u00B0 Orbit & Angle Zoom | Coaxial Retroillumination" })] }), (cccState.zonularDehiscenceOccurred || nucleusState.posteriorCapsulePunctured) && (jsxRuntimeExports.jsxs("div", { className: "absolute top-28 left-1/2 -translate-x-1/2 z-30 bg-red-900/95 border-2 border-red-500 text-white px-5 py-2 rounded-lg shadow-2xl backdrop-blur-md text-sm font-bold flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-2xl", children: "\u26A0\uFE0F" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "text-red-300 uppercase tracking-wide text-xs", children: "Surgical Complication Alert" }), jsxRuntimeExports.jsx("div", { children: nucleusState.posteriorCapsulePunctured
                                     ? 'POSTERIOR CAPSULE RUPTURE OCCURRED'
                                     : 'ZONULAR DEHISCENCE / RADIAL RUNAWAY' })] })] }))] }));
 };

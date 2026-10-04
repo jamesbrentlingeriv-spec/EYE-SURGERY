@@ -15,7 +15,8 @@ import {
   MigsState
 } from '../types/ophthalmic';
 import { audioEngine } from '../audio/SoundSynthesizer';
-import { ZoomIn, ZoomOut, Camera, X, Crosshair } from 'lucide-react';
+import { ZoomIn, ZoomOut, Camera, X, Crosshair, Eye, Compass, RotateCcw, Box } from 'lucide-react';
+import { ThreeEyeScene, CameraPresetType } from '../three/ThreeEyeScene';
 
 interface SurgicalViewportProps {
   module: SurgicalModule;
@@ -54,7 +55,7 @@ interface SurgicalViewportProps {
   onMigsWashout?: () => void;
 }
 
-export type ViewportRenderMode = 'photo' | 'hybrid' | 'shader';
+export type ViewportRenderMode = '3d' | 'hybrid' | 'photo';
 
 export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   module,
@@ -96,12 +97,13 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Optical Controls State
-  const [renderMode, setRenderMode] = useState<ViewportRenderMode>('photo'); // 'photo' = actual eye photography
-  const [magnification, setMagnification] = useState<number>(12); // 6x to 25x
+  const [renderMode, setRenderMode] = useState<ViewportRenderMode>('3d'); // '3d' = interactive 3D model (default)
+  const [magnification, setMagnification] = useState<number>(12); // 6x to 45x deep zoom
   const [coaxialLight, setCoaxialLight] = useState<number>(92); // 0 to 100%
   const [redReflexGain, setRedReflexGain] = useState<number>(88); // 0 to 100%
   const [laserDefocusZ, setLaserDefocusZ] = useState<number>(150); // µm offset for YAG focus
   const [showOptics, setShowOptics] = useState<boolean>(false); // Collapsed on mobile by default to preserve eye view
+  const [currentCameraPreset, setCurrentCameraPreset] = useState<CameraPresetType>('microscope');
 
   // Pre-loaded Real Eye Image Elements
   const cataractImgRef = useRef<HTMLImageElement | null>(null);
@@ -112,6 +114,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   // Mouse & Interaction Tracking
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
+  const downPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [plasmaSparks, setPlasmaSparks] = useState<Array<{ x: number; y: number; age: number }>>([]);
 
   // Load actual eye photography assets with relative subpath resolution for GitHub Pages
@@ -159,234 +162,94 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     yagImgRef.current = yImg;
   }, []);
 
-  // Three.js instances ref
-  const threeRef = useRef<{
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    renderer: THREE.WebGLRenderer;
-    eyeGlobe: THREE.Mesh;
-    irisMesh: THREE.Mesh;
-    pupilMesh: THREE.Mesh;
-    lensMesh: THREE.Mesh;
-    capsuleMesh: THREE.Mesh;
-    corneaMesh: THREE.Mesh;
-    coaxialLightObj: THREE.PointLight;
-    specularLightObj: THREE.DirectionalLight;
-    animFrameId: number;
-  } | null>(null);
+  // ThreeEyeScene 3D Model Instance Ref
+  const threeEyeSceneRef = useRef<ThreeEyeScene | null>(null);
 
-  // Initialize Three.js scene
+  // Initialize ThreeEyeScene
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
 
-    const width = containerRef.current.clientWidth || 800;
-    const height = containerRef.current.clientHeight || 600;
-
-    const scene = new THREE.Scene();
-    scene.background = null; // Transparent background to allow layering
-
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 0, 8.5);
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance'
+    const scene = new ThreeEyeScene({
+      container: containerRef.current,
+      canvas: canvasRef.current
     });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    threeEyeSceneRef.current = scene;
 
-    // Coaxial Light Source
-    const coaxialLightObj = new THREE.PointLight(0xffeedd, 2.5, 20);
-    coaxialLightObj.position.set(0, 0, 7.5);
-    scene.add(coaxialLightObj);
-
-    // Oblique specular light for corneal reflections
-    const specularLightObj = new THREE.DirectionalLight(0xffffff, 1.2);
-    specularLightObj.position.set(2, 4, 6);
-    scene.add(specularLightObj);
-
-    const ambientLight = new THREE.AmbientLight(0x223344, 0.6);
-    scene.add(ambientLight);
-
-    // 1. Sclera / Eye Globe
-    const scleraGeo = new THREE.RingGeometry(3.6, 5.2, 64);
-    const scleraMat = new THREE.MeshStandardMaterial({
-      color: 0xeeeeee,
-      roughness: 0.35,
-      metalness: 0.05
-    });
-    const scleraMesh = new THREE.Mesh(scleraGeo, scleraMat);
-    scene.add(scleraMesh);
-
-    // 2. Limbal Arcade
-    const limbusGeo = new THREE.RingGeometry(3.4, 3.65, 64);
-    const limbusMat = new THREE.MeshBasicMaterial({
-      color: 0x3d4f58,
-      transparent: true,
-      opacity: 0.75
-    });
-    const limbusMesh = new THREE.Mesh(limbusGeo, limbusMat);
-    scene.add(limbusMesh);
-
-    // 3. Iris Structure
-    const irisGeo = new THREE.RingGeometry(2.35, 3.45, 64);
-    const irisCanvas = document.createElement('canvas');
-    irisCanvas.width = 512;
-    irisCanvas.height = 512;
-    const ictx = irisCanvas.getContext('2d')!;
-    const grad = ictx.createRadialGradient(256, 256, 120, 256, 256, 256);
-    grad.addColorStop(0, '#1c4a75');
-    grad.addColorStop(0.5, '#296ca8');
-    grad.addColorStop(1, '#0e2b46');
-    ictx.fillStyle = grad;
-    ictx.fillRect(0, 0, 512, 512);
-
-    ictx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ictx.lineWidth = 1.5;
-    for (let a = 0; a < 360; a += 1.8) {
-      const rad = (a * Math.PI) / 180;
-      ictx.beginPath();
-      ictx.moveTo(256 + Math.cos(rad) * 130, 256 + Math.sin(rad) * 130);
-      ictx.lineTo(256 + Math.cos(rad) * 250, 256 + Math.sin(rad) * 250);
-      ictx.stroke();
+    // Initial preset based on module
+    if (module === 'migs') {
+      scene.setCameraPreset('glaucoma_angle');
+      setCurrentCameraPreset('glaucoma_angle');
+    } else if (module === 'yag') {
+      scene.setCameraPreset('yag_capsule');
+      setCurrentCameraPreset('yag_capsule');
+    } else if (module === 'phaco') {
+      scene.setCameraPreset('cataract_core');
+      setCurrentCameraPreset('cataract_core');
     }
-    const irisTex = new THREE.CanvasTexture(irisCanvas);
-    const irisMat = new THREE.MeshStandardMaterial({
-      map: irisTex,
-      roughness: 0.7,
-      metalness: 0.1
-    });
-    const irisMesh = new THREE.Mesh(irisGeo, irisMat);
-    scene.add(irisMesh);
-
-    // 4. Red Reflex / Pupillary Aperture
-    const pupilGeo = new THREE.CircleGeometry(2.36, 64);
-    const pupilMat = new THREE.MeshBasicMaterial({
-      color: 0xcc2a10,
-      transparent: true,
-      opacity: 0.92
-    });
-    const pupilMesh = new THREE.Mesh(pupilGeo, pupilMat);
-    pupilMesh.position.z = -0.05;
-    scene.add(pupilMesh);
-
-    // 5. Crystalline Lens / Cataract Core
-    const lensGeo = new THREE.CircleGeometry(2.35, 64);
-    const lensMat = new THREE.MeshStandardMaterial({
-      color: 0xd49b35,
-      transparent: true,
-      opacity: 0.88,
-      roughness: 0.5,
-      metalness: 0.1
-    });
-    const lensMesh = new THREE.Mesh(lensGeo, lensMat);
-    lensMesh.position.z = 0.02;
-    scene.add(lensMesh);
-
-    // 6. Anterior Lens Capsule with reflective sheen
-    const capsuleGeo = new THREE.CircleGeometry(2.38, 64);
-    const capsuleMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.22,
-      roughness: 0.15,
-      metalness: 0.3
-    });
-    const capsuleMesh = new THREE.Mesh(capsuleGeo, capsuleMat);
-    capsuleMesh.position.z = 0.06;
-    scene.add(capsuleMesh);
-
-    // 7. Transparent Cornea Dome
-    const corneaGeo = new THREE.SphereGeometry(3.7, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
-    const corneaMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.14,
-      roughness: 0.05,
-      metalness: 0.1,
-      transmission: 0.9,
-      ior: 1.376
-    });
-    const corneaMesh = new THREE.Mesh(corneaGeo, corneaMat);
-    corneaMesh.position.z = 0.45;
-    scene.add(corneaMesh);
-
-    let animId = 0;
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    threeRef.current = {
-      scene,
-      camera,
-      renderer,
-      eyeGlobe: scleraMesh,
-      irisMesh,
-      pupilMesh,
-      lensMesh,
-      capsuleMesh,
-      corneaMesh,
-      coaxialLightObj,
-      specularLightObj,
-      animFrameId: animId
-    };
-
-    const handleResize = () => {
-      if (!containerRef.current || !threeRef.current) return;
-      const nw = containerRef.current.clientWidth;
-      const nh = containerRef.current.clientHeight;
-      threeRef.current.camera.aspect = nw / nh;
-      threeRef.current.camera.updateProjectionMatrix();
-      threeRef.current.renderer.setSize(nw, nh);
-    };
-    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animId);
-      renderer.dispose();
+      scene.destroy();
+      threeEyeSceneRef.current = null;
     };
   }, []);
 
-  // Update Three.js parameters
+  // Automatically update 3D camera preset when switching surgical modules
   useEffect(() => {
-    if (!threeRef.current) return;
-    const { camera, coaxialLightObj, pupilMesh, lensMesh, irisMesh, eyeGlobe, corneaMesh } = threeRef.current;
-
-    // Visibility toggle based on renderMode
-    const show3d = renderMode === 'shader' || renderMode === 'hybrid';
-    if (eyeGlobe) eyeGlobe.visible = show3d;
-    if (irisMesh) irisMesh.visible = show3d;
-    if (pupilMesh) pupilMesh.visible = show3d;
-    if (lensMesh) lensMesh.visible = show3d;
-    if (corneaMesh) corneaMesh.visible = true; // Always keep cornea specular reflections
-
-    const targetZ = 12.0 - (magnification / 25.0) * 7.5;
-    camera.position.z = targetZ;
-
-    coaxialLightObj.intensity = (coaxialLight / 100.0) * 3.5;
-
-    const reflexIntensity = (redReflexGain / 100.0) * (coaxialLight / 100.0);
-    (pupilMesh.material as THREE.MeshBasicMaterial).color.setRGB(
-      0.85 * reflexIntensity,
-      0.22 * reflexIntensity,
-      0.08 * reflexIntensity
-    );
-
-    if (module === 'phaco') {
-      const remaining = nucleusState.remainingMassFraction;
-      (lensMesh.material as THREE.MeshStandardMaterial).opacity = 0.88 * remaining;
-    } else if (module === 'iol') {
-      (lensMesh.material as THREE.MeshStandardMaterial).opacity = 0.05;
+    if (!threeEyeSceneRef.current) return;
+    if (module === 'migs') {
+      threeEyeSceneRef.current.setCameraPreset('glaucoma_angle');
+      setCurrentCameraPreset('glaucoma_angle');
     } else if (module === 'yag') {
-      (lensMesh.material as THREE.MeshStandardMaterial).opacity = 0.45;
-      (lensMesh.material as THREE.MeshStandardMaterial).color.setRGB(0.95, 0.9, 0.8);
+      threeEyeSceneRef.current.setCameraPreset('yag_capsule');
+      setCurrentCameraPreset('yag_capsule');
+    } else if (module === 'phaco') {
+      threeEyeSceneRef.current.setCameraPreset('cataract_core');
+      setCurrentCameraPreset('cataract_core');
     }
-  }, [magnification, coaxialLight, redReflexGain, module, nucleusState.remainingMassFraction, renderMode]);
+  }, [module]);
+
+  // Synchronize All Reactive Surgical State with the 3D Engine
+  useEffect(() => {
+    if (!threeEyeSceneRef.current || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = rect.width || 800;
+    const height = rect.height || 600;
+    const eyeRadiusPx = (175 * magnification) / 12;
+    const normX = (mousePos.x - width / 2) / (eyeRadiusPx * 0.65);
+    const normY = (mousePos.y - height / 2) / (eyeRadiusPx * 0.65);
+
+    threeEyeSceneRef.current.updateState({
+      module,
+      activeInstrument,
+      pedalPosition,
+      nucleusState,
+      cccState,
+      iolState,
+      yagState,
+      migsState,
+      laserDefocusZ,
+      coaxialLight,
+      redReflexGain,
+      mouseNormPos: { x: normX, y: normY, isDown: isMouseDown },
+      magnification
+    });
+  }, [
+    module,
+    activeInstrument,
+    pedalPosition,
+    nucleusState,
+    cccState,
+    iolState,
+    yagState,
+    migsState,
+    laserDefocusZ,
+    coaxialLight,
+    redReflexGain,
+    mousePos,
+    isMouseDown,
+    magnification
+  ]);
 
   // Master 2D High-Resolution Composite Rendering (Real Eye Photo + Dynamic Surgical Overlays)
   useEffect(() => {
@@ -425,6 +288,9 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
 
         if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
           ctx.save();
+          if (renderMode === 'hybrid') {
+            ctx.globalAlpha = 0.45;
+          }
           // Draw circular eye photo frame
           const imgSize = eyeRadiusPx * 2.35;
           ctx.beginPath();
@@ -460,13 +326,16 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       }
 
       // ==========================================
-      // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY
+      // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY (Photo & Hybrid overlay)
       // ==========================================
-      if (module === 'migs') {
+      if (module === 'migs' && (renderMode === 'photo' || renderMode === 'hybrid')) {
         const isGonioActive = migsState?.gonioprismPlaced || currentStepId !== 'microscope_and_head_tilt';
 
         if (isGonioActive) {
           ctx.save();
+          if (renderMode === 'hybrid') {
+            ctx.globalAlpha = 0.45;
+          }
 
           // 1. Direct Swan-Jacob Gonioprism Lens Frame
           const gonioRadius = eyeRadiusPx * 1.08;
@@ -1635,10 +1504,12 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       if (currentStepId === 'contact_lens_placement' || !yagSettings.contactLensFitted) {
         yagSettings.contactLensFitted = true;
         onYagFire(normX, normY, laserDefocusZ);
+        threeEyeSceneRef.current?.triggerYagPlasmaSpark(normX, normY);
         audioEngine.playPedalClick(1);
       } else {
         setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
         onYagFire(normX, normY, laserDefocusZ);
+        threeEyeSceneRef.current?.triggerYagPlasmaSpark(normX, normY);
         audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
       }
     }
@@ -1726,23 +1597,29 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    handlePointerDownAction(e.clientX, e.clientY);
-  }, [handlePointerDownAction]);
+    setIsMouseDown(true);
+    downPosRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     handlePointerMoveAction(e.clientX, e.clientY, isMouseDown);
   }, [handlePointerMoveAction, isMouseDown]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     setIsMouseDown(false);
-  }, []);
+    const dist = Math.hypot(e.clientX - downPosRef.current.x, e.clientY - downPosRef.current.y);
+    if (dist < 8) {
+      handlePointerDownAction(e.clientX, e.clientY);
+    }
+  }, [handlePointerDownAction]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
-      handlePointerDownAction(touch.clientX, touch.clientY);
+      setIsMouseDown(true);
+      downPosRef.current = { x: touch.clientX, y: touch.clientY };
     }
-  }, [handlePointerDownAction]);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length > 0) {
@@ -1751,9 +1628,16 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     }
   }, [handlePointerMoveAction]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     setIsMouseDown(false);
-  }, []);
+    if (e.changedTouches.length > 0) {
+      const touch = e.changedTouches[0];
+      const dist = Math.hypot(touch.clientX - downPosRef.current.x, touch.clientY - downPosRef.current.y);
+      if (dist < 10) {
+        handlePointerDownAction(touch.clientX, touch.clientY);
+      }
+    }
+  }, [handlePointerDownAction]);
 
   return (
     <div
@@ -1774,6 +1658,96 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       {/* 2D High-Resolution Composite Canvas (Real Eye Photo + Dynamic Overlays) */}
       <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
+      {/* 3D Camera Angles & Deep Zoom Presets Bar */}
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-20 flex flex-wrap items-center gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-140px)]">
+        <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-1 shrink-0">
+          <Eye className="w-3.5 h-3.5" />
+          <span className="hidden xs:inline">3D Angle:</span>
+        </span>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.setCameraPreset('microscope');
+            setCurrentCameraPreset('microscope');
+          }}
+          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+            currentCameraPreset === 'microscope'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+          }`}
+          title="0° Coaxial Surgeon Microscope View"
+        >
+          Microscope
+        </button>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
+            setCurrentCameraPreset('glaucoma_angle');
+          }}
+          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
+            currentCameraPreset === 'glaucoma_angle'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+              : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'
+          }`}
+          title="Deep Zoom into 38° Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal"
+        >
+          <Compass className="w-3 h-3 text-emerald-400" />
+          <span>TM Angle (38°)</span>
+        </button>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.setCameraPreset('cataract_core');
+            setCurrentCameraPreset('cataract_core');
+          }}
+          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+            currentCameraPreset === 'cataract_core'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+          }`}
+          title="Deep Zoom into Cataract Nucleus Core & Phaco Trench"
+        >
+          Cataract Core
+        </button>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
+            setCurrentCameraPreset('yag_capsule');
+          }}
+          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+            currentCameraPreset === 'yag_capsule'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+          }`}
+          title="Macro Zoom onto Posterior Capsule & IOL Optic"
+        >
+          YAG Capsule
+        </button>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.setCameraPreset('cross_section');
+            setCurrentCameraPreset('cross_section');
+          }}
+          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+            currentCameraPreset === 'cross_section'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+          }`}
+          title="Anterior Chamber Profile Cross-Section"
+        >
+          Profile
+        </button>
+        <button
+          onClick={() => {
+            threeEyeSceneRef.current?.controls.reset();
+            threeEyeSceneRef.current?.setCameraPreset('microscope');
+            setCurrentCameraPreset('microscope');
+          }}
+          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
+          title="Reset 3D Camera Orbit"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* Top Right Optical Controls & Guidance Toggle */}
       <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2">
         <div className="flex items-center gap-1.5">
@@ -1786,7 +1760,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
               title={showGuides ? 'Hide Interactive Guidance Pointers' : 'Show Interactive Guidance Pointers'}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
                 showGuides
-                  ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-cyan-900/40'
+                  ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-emerald-900/40'
                   : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-400 hover:text-white'
               }`}
             >
@@ -1804,11 +1778,11 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
             title="Microscope Optics & Illumination Settings"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
               showOptics
-                ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+                ? 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-900/50'
                 : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'
             }`}
           >
-            <Camera className="w-3.5 h-3.5 text-cyan-400" />
+            <Camera className="w-3.5 h-3.5 text-emerald-400" />
             <span className="font-mono">{magnification}x</span>
             <span className="text-[10px] hidden xs:inline uppercase text-slate-400">Optics</span>
           </button>
@@ -1817,12 +1791,12 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         {showOptics && (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn"
+            className="flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-emerald-900/40 shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn"
           >
             <div className="flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70">
-              <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5" />
-                MICROSCOPE CONTROLS
+                MICROSCOPE & 3D CONTROLS
               </span>
               <button
                 onClick={() => setShowOptics(false)}
@@ -1832,66 +1806,75 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
               </button>
             </div>
 
-            {/* Render Mode Switcher: Real Photo vs Hybrid vs 3D Shader */}
+            {/* Render Mode Switcher: 3D Interactive Model vs Hybrid vs Photo */}
             <div className="pb-2 border-b border-[#1e2e48]/70 space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
                 <span className="text-slate-400">View Mode</span>
-                {renderMode === 'photo' && (
+                {renderMode === '3d' && (
                   <span className="text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">
-                    REAL PHOTO
+                    3D MODEL
+                  </span>
+                )}
+                {renderMode === 'photo' && (
+                  <span className="text-[9px] font-mono uppercase bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">
+                    PHOTO
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-3 gap-1">
                 <button
-                  onClick={() => setRenderMode('photo')}
+                  onClick={() => setRenderMode('3d')}
                   className={`py-1 rounded-lg text-center font-semibold transition ${
-                    renderMode === 'photo'
-                      ? 'bg-cyan-600 text-white shadow-md'
+                    renderMode === '3d'
+                      ? 'bg-emerald-600 text-white shadow-md'
                       : 'bg-[#101b2d] text-slate-400 hover:text-white'
                   }`}
                 >
-                  Photo
+                  3D Model
                 </button>
                 <button
                   onClick={() => setRenderMode('hybrid')}
                   className={`py-1 rounded-lg text-center font-semibold transition ${
                     renderMode === 'hybrid'
-                      ? 'bg-cyan-600 text-white shadow-md'
+                      ? 'bg-emerald-600 text-white shadow-md'
                       : 'bg-[#101b2d] text-slate-400 hover:text-white'
                   }`}
                 >
                   Hybrid
                 </button>
                 <button
-                  onClick={() => setRenderMode('shader')}
+                  onClick={() => setRenderMode('photo')}
                   className={`py-1 rounded-lg text-center font-semibold transition ${
-                    renderMode === 'shader'
-                      ? 'bg-cyan-600 text-white shadow-md'
+                    renderMode === 'photo'
+                      ? 'bg-emerald-600 text-white shadow-md'
                       : 'bg-[#101b2d] text-slate-400 hover:text-white'
                   }`}
                 >
-                  3D Mesh
+                  Photo
                 </button>
               </div>
             </div>
 
-            {/* Magnification Slider (6x - 25x) */}
+            {/* Magnification Slider (6x - 45x Deep Zoom) */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px] text-slate-400">
                 <span>Microscope Zoom</span>
-                <span className="font-mono text-cyan-300 font-bold">{magnification}x</span>
+                <span className="font-mono text-emerald-400 font-bold">{magnification}x</span>
               </div>
               <div className="flex items-center gap-2">
                 <ZoomOut className="w-3 h-3 text-slate-400" />
                 <input
                   type="range"
                   min="6"
-                  max="25"
+                  max="45"
                   step="1"
                   value={magnification}
-                  onChange={(e) => setMagnification(Number(e.target.value))}
-                  className="w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setMagnification(val);
+                    threeEyeSceneRef.current?.setZoom(val);
+                  }}
+                  className="w-full accent-emerald-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
                 />
                 <ZoomIn className="w-3 h-3 text-slate-400" />
               </div>
@@ -1962,16 +1945,16 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="text-slate-200 font-semibold uppercase tracking-wider">
             {module === 'phaco'
-              ? 'Zeiss OPMI Lumera 700 Coaxial Medical Macro'
+              ? 'Zeiss OPMI Lumera 700 3D Micro-Surgical Simulation'
               : module === 'iol'
-              ? 'High-Resolution Pseudophakic Capsular View'
+              ? 'High-Resolution 3D Pseudophakic Capsular View'
               : module === 'migs'
-              ? 'Surgical Direct Gonioscopy | Swan-Jacob Prism (38° Tilt)'
-              : 'Haag-Streit BQ 900 / Ellex Nd:YAG Slit-Lamp Photography'}
+              ? '3D Direct Gonioscopy | 38° Trabecular Meshwork & Stent Outflow'
+              : '3D Haag-Streit / Ellex Nd:YAG Laser Photodisruption Model'}
           </span>
         </div>
         <div className="text-[11px] text-slate-500">
-          Source: Clinical Ophthalmic Photography | Barraquer Speculum | Coaxial Retroillumination
+          Mode: Interactive 3D Medical Model | Full 360° Orbit & Angle Zoom | Coaxial Retroillumination
         </div>
       </div>
 
