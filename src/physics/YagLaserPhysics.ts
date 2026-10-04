@@ -8,7 +8,7 @@ export class YagLaserPhysicsEngine {
     focalOffsetMicrons: 150, // 150 µm posterior defocus (safe zone: 100 - 250 µm)
     burstCount: 0,
     totalEnergyDeliveredMj: 0,
-    contactLensFitted: true,
+    contactLensFitted: false,
     contactLensType: 'Abraham',
     aimingBeamIntensity: 85,
     slitBeamWidthMm: 3.5,
@@ -126,4 +126,29 @@ export class YagLaserPhysicsEngine {
       this.capsulotomy.visualAxisCleared = true;
     }
   }
+
+  public reset() {
+    this.settings = {
+      energyMj: 1.2,
+      pulseMode: 1,
+      focalOffsetMicrons: 150,
+      burstCount: 0,
+      totalEnergyDeliveredMj: 0,
+      contactLensFitted: false,
+      contactLensType: 'Abraham',
+      aimingBeamIntensity: 85,
+      slitBeamWidthMm: 3.5,
+      slitBeamAngleDeg: 15,
+      retroilluminationActive: true
+    };
+    this.capsulotomy = {
+      shots: [],
+      cruciateOpeningAreaMm2: 0,
+      visualAxisCleared: false,
+      iolPitsCount: 0,
+      vitreousFaceIntact: true,
+      postOpIopSpikeRiskMmHg: 16
+    };
+  }
 }
+

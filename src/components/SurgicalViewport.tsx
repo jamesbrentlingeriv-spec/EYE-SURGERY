@@ -1632,9 +1632,15 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     }
 
     if (module === 'yag') {
-      setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
-      onYagFire(normX, normY, laserDefocusZ);
-      audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
+      if (currentStepId === 'contact_lens_placement' || !yagSettings.contactLensFitted) {
+        yagSettings.contactLensFitted = true;
+        onYagFire(normX, normY, laserDefocusZ);
+        audioEngine.playPedalClick(1);
+      } else {
+        setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
+        onYagFire(normX, normY, laserDefocusZ);
+        audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
+      }
     }
 
     if (module === 'migs') {

@@ -20471,7 +20471,7 @@ class YagLaserPhysicsEngine {
         focalOffsetMicrons: 150, // 150 µm posterior defocus (safe zone: 100 - 250 µm)
         burstCount: 0,
         totalEnergyDeliveredMj: 0,
-        contactLensFitted: true,
+        contactLensFitted: false,
         contactLensType: 'Abraham',
         aimingBeamIntensity: 85,
         slitBeamWidthMm: 3.5,
@@ -20559,6 +20559,29 @@ class YagLaserPhysicsEngine {
         if (area >= 7.0 && centralShots.length >= 8) {
             this.capsulotomy.visualAxisCleared = true;
         }
+    }
+    reset() {
+        this.settings = {
+            energyMj: 1.2,
+            pulseMode: 1,
+            focalOffsetMicrons: 150,
+            burstCount: 0,
+            totalEnergyDeliveredMj: 0,
+            contactLensFitted: false,
+            contactLensType: 'Abraham',
+            aimingBeamIntensity: 85,
+            slitBeamWidthMm: 3.5,
+            slitBeamAngleDeg: 15,
+            retroilluminationActive: true
+        };
+        this.capsulotomy = {
+            shots: [],
+            cruciateOpeningAreaMm2: 0,
+            visualAxisCleared: false,
+            iolPitsCount: 0,
+            vitreousFaceIntact: true,
+            postOpIopSpikeRiskMmHg: 16
+        };
     }
 }
 
@@ -70580,9 +70603,16 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             onIolWashout();
         }
         if (module === 'yag') {
-            setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
-            onYagFire(normX, normY, laserDefocusZ);
-            audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
+            if (currentStepId === 'contact_lens_placement' || !yagSettings.contactLensFitted) {
+                yagSettings.contactLensFitted = true;
+                onYagFire(normX, normY, laserDefocusZ);
+                audioEngine.playPedalClick(1);
+            }
+            else {
+                setPlasmaSparks(prev => [...prev, { x, y, age: 0 }]);
+                onYagFire(normX, normY, laserDefocusZ);
+                audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
+            }
         }
         if (module === 'migs') {
             if (currentStepId === 'microscope_and_head_tilt') {
@@ -72103,7 +72133,7 @@ const App = () => {
     const [module, setModule] = reactExports.useState('phaco');
     const [phacoStep, setPhacoStep] = reactExports.useState('paracentesis');
     const [iolStep, setIolStep] = reactExports.useState('ovd_bag_refill');
-    const [yagStep, setYagStep] = reactExports.useState('aiming_focus');
+    const [yagStep, setYagStep] = reactExports.useState('contact_lens_placement');
     const [migsStep, setMigsStep] = reactExports.useState('microscope_and_head_tilt');
     // Step Arrays for Navigation
     const phacoStepsList = [
@@ -72333,14 +72363,14 @@ const App = () => {
         }
         else {
             setModule('yag');
-            setYagStep('aiming_focus');
+            setYagStep('contact_lens_placement');
             setActiveInstrument('yag_laser');
         }
     };
     const handleNextSurgery = () => {
         if (module === 'phaco' || module === 'iol') {
             setModule('yag');
-            setYagStep('aiming_focus');
+            setYagStep('contact_lens_placement');
             setActiveInstrument('yag_laser');
         }
         else if (module === 'yag') {
@@ -72458,10 +72488,28 @@ const App = () => {
         iolEngineRef.current.aspirateViscoelastic(15);
         audioEngine.playPedalClick(2);
     }, []);
-    // Nd:YAG Laser Fire
+    // Nd:YAG Laser Fire & Step Progression
     const handleYagFire = reactExports.useCallback((x, y, zMicrons) => {
+        if (yagStep === 'contact_lens_placement') {
+            yagEngineRef.current.settings.contactLensFitted = true;
+            setYagStep('aiming_focus');
+            setTick(t => t + 1);
+            return;
+        }
         yagEngineRef.current.fireLaser(x, y, zMicrons);
-    }, []);
+        setTick(t => t + 1);
+        if (yagStep === 'aiming_focus') {
+            setYagStep('offset_adjustment');
+        }
+        else if (yagStep === 'offset_adjustment') {
+            setYagStep('cruciate_capsulotomy');
+        }
+        else if (yagStep === 'cruciate_capsulotomy') {
+            if (yagEngineRef.current.capsulotomy.shots.length >= 4) {
+                setYagStep('post_yag_assessment');
+            }
+        }
+    }, [yagStep]);
     // MIGS Stent Actions
     const handleMigsTilt = reactExports.useCallback((headDeg, scopeDeg) => {
         migsEngineRef.current.setPatientHeadTilt(headDeg);
@@ -72534,7 +72582,7 @@ const App = () => {
         }
         setPhacoStep('paracentesis');
         setIolStep('ovd_bag_refill');
-        setYagStep('aiming_focus');
+        setYagStep('contact_lens_placement');
         setMigsStep('microscope_and_head_tilt');
         setElapsedSeconds(0);
         setIsReportOpen(false);
@@ -72548,7 +72596,7 @@ const App = () => {
             return SURGICAL_INSTRUCTIONS[iolStep] || SURGICAL_INSTRUCTIONS['ovd_bag_refill'];
         }
         else if (module === 'yag') {
-            return SURGICAL_INSTRUCTIONS[yagStep] || SURGICAL_INSTRUCTIONS['aiming_focus'];
+            return SURGICAL_INSTRUCTIONS[yagStep] || SURGICAL_INSTRUCTIONS['contact_lens_placement'];
         }
         else {
             return SURGICAL_INSTRUCTIONS[migsStep] || SURGICAL_INSTRUCTIONS['microscope_and_head_tilt'];
@@ -72745,6 +72793,19 @@ const App = () => {
     if (screenMode === 'menu') {
         return (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(SurgeryMainMenu, { onSelectSurgery: (mod) => {
                         setModule(mod);
+                        if (mod === 'yag') {
+                            setYagStep('contact_lens_placement');
+                            yagEngineRef.current.settings.contactLensFitted = false;
+                            setActiveInstrument('yag_laser');
+                        }
+                        else if (mod === 'phaco') {
+                            setPhacoStep('paracentesis');
+                            setActiveInstrument('mvr_blade');
+                        }
+                        else if (mod === 'migs') {
+                            setMigsStep('microscope_and_head_tilt');
+                            setActiveInstrument('gonio_lens');
+                        }
                         setScreenMode('sim');
                     }, onOpenVideoOverlay: (mod) => {
                         setModule(mod);
@@ -72771,7 +72832,7 @@ const App = () => {
                                             ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/60'
                                             : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "1. Cataract & Foldable IOL (12 Steps)" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "1. Cataract & IOL" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
                                             setModule('yag');
-                                            setYagStep('aiming_focus');
+                                            setYagStep('contact_lens_placement');
                                             setActiveInstrument('yag_laser');
                                         }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'yag'
                                             ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60'
@@ -72786,13 +72847,13 @@ const App = () => {
                                     cohesive: cataractEngineRef.current.ovdCohesiveDepth
                                 }, currentStepId: module === 'phaco' ? phacoStep : module === 'iol' ? iolStep : module === 'yag' ? yagStep : migsStep, showGuides: showGuides, onToggleGuides: () => setShowGuides(g => !g), onIncisionAdvance: handleIncisionAdvance, onOvdInject: handleOvdInject, onCccPuncture: handleCccPuncture, onCccDrag: handleCccDrag, onHydroPulse: handleHydroPulse, onHydroRotate: (deg) => cataractEngineRef.current.testNucleusRotation(deg), onPhacoApply: handlePhacoApply, onIaAspirate: handleIaAspirate, onIolAdvance: handleIolAdvance, onIolDial: handleIolDial, onIolWashout: handleIolWashout, onYagFire: handleYagFire, migsState: migsEngineRef.current.state, onMigsTilt: handleMigsTilt, onMigsGonioPlace: handleMigsGonioPlace, onMigsOvdAngle: handleMigsOvdAngle, onMigsDeployStent: handleMigsDeployStent, onMigsBloodReflux: handleMigsBloodReflux, onMigsWashout: handleMigsWashout }), jsxRuntimeExports.jsx(FootPedalControl, { pedalPosition: pedalPosition, onPedalChange: (pos) => setPedalPosition(pos), disabled: module === 'yag' })] }), jsxRuntimeExports.jsx("div", { className: "hidden lg:flex h-full", children: module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
                                 Object.assign(yagEngineRef.current.settings, newSet);
+                                if (newSet.contactLensFitted && yagStep === 'contact_lens_placement') {
+                                    setYagStep('aiming_focus');
+                                }
                                 setTick(t => t + 1);
                             }, onResetLaser: () => {
-                                yagEngineRef.current.capsulotomy.shots = [];
-                                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
-                                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
-                                yagEngineRef.current.settings.burstCount = 0;
-                                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                                yagEngineRef.current.reset();
+                                setYagStep('contact_lens_placement');
                                 setTick(t => t + 1);
                             } })) : module === 'migs' ? (jsxRuntimeExports.jsx(MigsConsolePanel, { state: migsEngineRef.current.state, onUpdateTilt: (scope, head) => {
                                 migsEngineRef.current.setMicroscopeTilt(scope);

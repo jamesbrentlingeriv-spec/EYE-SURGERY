@@ -61,7 +61,7 @@ export const App: React.FC = () => {
   const [module, setModule] = useState<SurgicalModule>('phaco');
   const [phacoStep, setPhacoStep] = useState<PhacoStep>('paracentesis');
   const [iolStep, setIolStep] = useState<IolStep>('ovd_bag_refill');
-  const [yagStep, setYagStep] = useState<YagStep>('aiming_focus');
+  const [yagStep, setYagStep] = useState<YagStep>('contact_lens_placement');
   const [migsStep, setMigsStep] = useState<MigsStep>('microscope_and_head_tilt');
 
   // Step Arrays for Navigation
@@ -312,7 +312,7 @@ export const App: React.FC = () => {
       setActiveInstrument('mvr_blade');
     } else {
       setModule('yag');
-      setYagStep('aiming_focus');
+      setYagStep('contact_lens_placement');
       setActiveInstrument('yag_laser');
     }
   };
@@ -320,7 +320,7 @@ export const App: React.FC = () => {
   const handleNextSurgery = () => {
     if (module === 'phaco' || module === 'iol') {
       setModule('yag');
-      setYagStep('aiming_focus');
+      setYagStep('contact_lens_placement');
       setActiveInstrument('yag_laser');
     } else if (module === 'yag') {
       setModule('migs');
@@ -453,10 +453,28 @@ export const App: React.FC = () => {
     audioEngine.playPedalClick(2);
   }, []);
 
-  // Nd:YAG Laser Fire
+  // Nd:YAG Laser Fire & Step Progression
   const handleYagFire = useCallback((x: number, y: number, zMicrons: number) => {
+    if (yagStep === 'contact_lens_placement') {
+      yagEngineRef.current.settings.contactLensFitted = true;
+      setYagStep('aiming_focus');
+      setTick(t => t + 1);
+      return;
+    }
+
     yagEngineRef.current.fireLaser(x, y, zMicrons);
-  }, []);
+    setTick(t => t + 1);
+
+    if (yagStep === 'aiming_focus') {
+      setYagStep('offset_adjustment');
+    } else if (yagStep === 'offset_adjustment') {
+      setYagStep('cruciate_capsulotomy');
+    } else if (yagStep === 'cruciate_capsulotomy') {
+      if (yagEngineRef.current.capsulotomy.shots.length >= 4) {
+        setYagStep('post_yag_assessment');
+      }
+    }
+  }, [yagStep]);
 
   // MIGS Stent Actions
   const handleMigsTilt = useCallback((headDeg: number, scopeDeg: number) => {
@@ -532,7 +550,7 @@ export const App: React.FC = () => {
     }
     setPhacoStep('paracentesis');
     setIolStep('ovd_bag_refill');
-    setYagStep('aiming_focus');
+    setYagStep('contact_lens_placement');
     setMigsStep('microscope_and_head_tilt');
     setElapsedSeconds(0);
     setIsReportOpen(false);
@@ -545,7 +563,7 @@ export const App: React.FC = () => {
     } else if (module === 'iol') {
       return SURGICAL_INSTRUCTIONS[iolStep] || SURGICAL_INSTRUCTIONS['ovd_bag_refill'];
     } else if (module === 'yag') {
-      return SURGICAL_INSTRUCTIONS[yagStep] || SURGICAL_INSTRUCTIONS['aiming_focus'];
+      return SURGICAL_INSTRUCTIONS[yagStep] || SURGICAL_INSTRUCTIONS['contact_lens_placement'];
     } else {
       return SURGICAL_INSTRUCTIONS[migsStep] || SURGICAL_INSTRUCTIONS['microscope_and_head_tilt'];
     }
@@ -712,6 +730,17 @@ export const App: React.FC = () => {
         <SurgeryMainMenu
           onSelectSurgery={(mod) => {
             setModule(mod);
+            if (mod === 'yag') {
+              setYagStep('contact_lens_placement');
+              yagEngineRef.current.settings.contactLensFitted = false;
+              setActiveInstrument('yag_laser');
+            } else if (mod === 'phaco') {
+              setPhacoStep('paracentesis');
+              setActiveInstrument('mvr_blade');
+            } else if (mod === 'migs') {
+              setMigsStep('microscope_and_head_tilt');
+              setActiveInstrument('gonio_lens');
+            }
             setScreenMode('sim');
           }}
           onOpenVideoOverlay={(mod) => {
@@ -828,7 +857,7 @@ export const App: React.FC = () => {
             <button
               onClick={() => {
                 setModule('yag');
-                setYagStep('aiming_focus');
+                setYagStep('contact_lens_placement');
                 setActiveInstrument('yag_laser');
               }}
               className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
@@ -986,14 +1015,14 @@ export const App: React.FC = () => {
               capsulotomy={yagEngineRef.current.capsulotomy}
               onUpdateSettings={(newSet) => {
                 Object.assign(yagEngineRef.current.settings, newSet);
+                if (newSet.contactLensFitted && yagStep === 'contact_lens_placement') {
+                  setYagStep('aiming_focus');
+                }
                 setTick(t => t + 1);
               }}
               onResetLaser={() => {
-                yagEngineRef.current.capsulotomy.shots = [];
-                yagEngineRef.current.capsulotomy.cruciateOpeningAreaMm2 = 0;
-                yagEngineRef.current.capsulotomy.iolPitsCount = 0;
-                yagEngineRef.current.settings.burstCount = 0;
-                yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
+                yagEngineRef.current.reset();
+                setYagStep('contact_lens_placement');
                 setTick(t => t + 1);
               }}
             />
