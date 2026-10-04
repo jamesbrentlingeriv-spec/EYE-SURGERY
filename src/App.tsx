@@ -118,6 +118,32 @@ export const App: React.FC = () => {
   // Elapsed operative time
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
 
+  // Theme State: 'dark' (pure black + emerald green) vs 'light' (pure white + emerald green)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('eye_sim_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('eye_sim_theme', theme);
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.remove('theme-dark');
+      root.classList.add('theme-light');
+      document.body.classList.remove('theme-dark');
+      document.body.classList.add('theme-light');
+    } else {
+      root.classList.remove('theme-light');
+      root.classList.add('theme-dark');
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Engines Refs
   const fluidicsEngineRef = useRef<FluidicsEngine>(new FluidicsEngine());
   const cataractEngineRef = useRef<CataractPhysicsEngine>(new CataractPhysicsEngine('NO3'));
@@ -752,6 +778,8 @@ export const App: React.FC = () => {
             setIsGuidesOpen(true);
           }}
           onOpenReference={() => setIsReferenceOpen(true)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         <SurgicalVideoOverlayModal
@@ -778,7 +806,7 @@ export const App: React.FC = () => {
 
   // 3. High-Fidelity Active Surgery Simulation
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#060a12] text-slate-200 select-none overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-screen bg-[#000000] text-slate-200 select-none overflow-hidden font-sans">
       {/* 1. Top Surgical Vitals & Telemetry Bar */}
       <TopVitalsBar
         module={module}
@@ -805,6 +833,8 @@ export const App: React.FC = () => {
         onToggleConsole={() => setIsConsoleOpen(!isConsoleOpen)}
         isConsoleOpen={isConsoleOpen}
         activeInstrument={activeInstrument}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Module Selector Bar with Step Navigation & Active Tool Pill */}
@@ -832,7 +862,7 @@ export const App: React.FC = () => {
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]">
+          <div className="flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-emerald-900/40">
             {/* Procedure 1: Combined Cataract & Foldable IOL */}
             <button
               onClick={() => {
@@ -844,8 +874,8 @@ export const App: React.FC = () => {
               }}
               className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'phaco' || module === 'iol'
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/60'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60 border border-emerald-400/60'
+                  : 'text-emerald-400/70 hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -862,8 +892,8 @@ export const App: React.FC = () => {
               }}
               className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'yag'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60 border border-emerald-400/60'
+                  : 'text-emerald-400/70 hover:text-white'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -880,8 +910,8 @@ export const App: React.FC = () => {
               }}
               className={`px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${
                 module === 'migs'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60 border border-emerald-400/60'
+                  : 'text-emerald-400/70 hover:text-white'
               }`}
             >
               <Compass className="w-3.5 h-3.5 shrink-0" />
@@ -891,7 +921,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Quick Step Navigation Arrows */}
-          <div className="flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-[#17253a]">
+          <div className="flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-emerald-900/40">
             <button
               onClick={handlePrevStep}
               className="p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition"
@@ -899,7 +929,7 @@ export const App: React.FC = () => {
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] sm:text-[11px] font-mono text-cyan-300 px-1 font-semibold whitespace-nowrap">
+            <span className="text-[10px] sm:text-[11px] font-mono text-emerald-400 px-1 font-semibold whitespace-nowrap">
               Step {getCurrentInstruction().stepNumber} / {module === 'yag' ? 5 : module === 'migs' ? 6 : 12}
             </span>
             <button
@@ -917,10 +947,10 @@ export const App: React.FC = () => {
           {/* Active Tool Chip (Tapping opens the Hamburger Tools Drawer) */}
           <button
             onClick={() => setIsToolsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-cyan-800/60 text-cyan-300 transition text-[11px] font-mono shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-emerald-600/50 text-emerald-400 transition text-[11px] font-mono shadow-sm active:scale-95"
             title="Click to Open Tools Menu (Hamburger Drawer)"
           >
-            <span className="text-slate-500 hidden sm:inline">Tool:</span>
+            <span className="text-emerald-500/70 hidden sm:inline">Tool:</span>
             <span className="font-bold uppercase text-white truncate max-w-[85px] xs:max-w-[120px] sm:max-w-none">
               {activeInstrument.replace('_', ' ')}
             </span>
@@ -929,7 +959,7 @@ export const App: React.FC = () => {
           {/* Quick Reset Button */}
           <button
             onClick={handleRestartModule}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-emerald-900/40 text-emerald-300 hover:text-white text-xs transition active:scale-95"
           >
             <RotateCcw className="w-3 h-3" />
             <span className="hidden xs:inline">Reset Eye</span>

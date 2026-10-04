@@ -62,10 +62,11 @@ export class SurgicalTtsEngine {
 
     // Prefer high-quality English natural/medical voices
     const preferredVoices = [
+      'Microsoft Jenny Online (Natural) - English (United States)',
+      'Microsoft Jenny (Natural)',
+      'Microsoft Aria Online (Natural) - English (United States)',
       'Microsoft Christopher Online (Natural)',
       'Microsoft Guy Online (Natural)',
-      'Microsoft Jenny Online (Natural) - English (United States)',
-      'Microsoft Ryan Online (Natural) - English (United States)',
       'Google UK English Female',
       'Google US English',
       'Samantha',

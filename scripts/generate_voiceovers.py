@@ -116,7 +116,7 @@ if sys.platform == 'win32':
     except Exception:
         pass
 
-DEFAULT_VOICE = "en-US-ChristopherNeural"  # Professional, calm, authoritative medical consultant voice
+DEFAULT_VOICE = "en-US-JennyNeural"  # Microsoft's flagship natural female voice
 RATE = "-2%"  # Slightly deliberate pacing for surgical guidance
 
 async def generate_single(step_id, filename, text, output_dir, voice):

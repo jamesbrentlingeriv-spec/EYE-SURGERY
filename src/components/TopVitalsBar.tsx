@@ -23,7 +23,9 @@ import {
   Activity,
   BookOpen,
   Home,
-  Video
+  Video,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { audioEngine } from '../audio/SoundSynthesizer';
 import { InstrumentType } from '../types/ophthalmic';
@@ -50,6 +52,8 @@ interface TopVitalsBarProps {
   onToggleConsole?: () => void;
   isConsoleOpen?: boolean;
   activeInstrument?: InstrumentType;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
@@ -74,6 +78,8 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
   onToggleConsole,
   isConsoleOpen = false,
   activeInstrument = 'mvr_blade',
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   const [pulse, setPulse] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -181,9 +187,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
             onClick={onOpenMenu}
             title="Return to Main Surgery Selection Menu"
             aria-label="Return to Main Surgery Menu"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#0e1726] hover:bg-[#16253c] border-emerald-600/60 text-emerald-400 hover:border-emerald-400"
           >
-            <Home className="w-4 h-4 shrink-0 text-cyan-400" />
+            <Home className="w-4 h-4 shrink-0 text-emerald-400" />
             <span className="text-[11px] sm:text-xs hidden xs:inline">Menu</span>
           </button>
         )}
@@ -195,8 +201,8 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
           aria-label="Toggle Surgical Tools Menu"
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 ${
             isToolsOpen
-              ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
-              : 'bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500'
+              ? 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-900/50'
+              : 'bg-[#0e1726] hover:bg-[#16253c] border-emerald-600/60 text-emerald-400 hover:border-emerald-400'
           }`}
         >
           <Menu className="w-4 h-4 shrink-0" />
@@ -205,12 +211,12 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
 
         {/* Branding & App Title */}
         <div className="flex items-center gap-1.5 sm:gap-2 sm:pr-3 sm:border-r border-[#1b2b44]">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse hidden xs:inline-block"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse hidden xs:inline-block"></span>
           <span className="font-bold tracking-wide text-white text-xs sm:text-sm">
             <span className="hidden sm:inline">SURGICAL SIMULATOR</span>
             <span className="sm:hidden">EYE SIM</span>
           </span>
-          <span className="text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded hidden sm:inline-block">
+          <span className="text-[9px] sm:text-[10px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.2 rounded hidden sm:inline-block">
             PWA
           </span>
         </div>
@@ -218,7 +224,7 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
         {/* Desktop / Tablet Step Title */}
         <div className="hidden lg:flex items-center gap-2">
           <span className="text-slate-400 font-medium">Phase:</span>
-          <span className="font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[200px] xl:max-w-none">
+          <span className="font-semibold text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[200px] xl:max-w-none">
             {getStepTitle()}
           </span>
         </div>
@@ -228,9 +234,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 overflow-hidden">
         {/* IOP Monitor (Always shown) */}
         <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]">
-          <Droplets className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+          <Droplets className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
           <span className="text-slate-400 text-[10px] hidden sm:inline">IOP:</span>
-          <span className="font-mono font-bold text-xs sm:text-sm text-cyan-300">
+          <span className="font-mono font-bold text-xs sm:text-sm text-emerald-300">
             {fluidics.iopActual.toFixed(1)}
           </span>
           <span className="text-[9px] text-slate-500 font-mono hidden md:inline">mmHg</span>
@@ -311,8 +317,30 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
           aria-label={isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine'}
           className="p-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-white transition"
         >
-          {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+          {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
         </button>
+
+        {/* Theme Mode Toggle (OLED Black/Green vs Clinical White/Green) */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode (Pure White with Green Accents)' : 'Switch to Dark Mode (Pure Black with Green Accents)'}
+            aria-label="Toggle Theme Mode"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/80 text-emerald-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden xl:inline">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="hidden xl:inline">Dark Mode</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Real Surgical Video Overlay Button */}
         {onOpenVideo && (
@@ -320,9 +348,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
             onClick={onOpenVideo}
             title="Open Real Surgical Video Overlay / Footage"
             aria-label="Surgical Video Overlay"
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-600/80 text-sky-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-600/70 text-emerald-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
           >
-            <Video className="w-3.5 h-3.5 text-sky-400" />
+            <Video className="w-3.5 h-3.5 text-emerald-400" />
             <span className="hidden sm:inline">Video</span>
           </button>
         )}
@@ -333,9 +361,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
             onClick={onOpenGuides}
             title="Download & View Ophthalmic Surgery PDF Guides"
             aria-label="Surgical PDF Guides"
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
           >
-            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
             <span className="hidden sm:inline">PDF Guides</span>
           </button>
         )}
@@ -345,9 +373,9 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
           onClick={onOpenReference}
           title="Clinical Anatomical Reference & Technique Guide"
           aria-label="Clinical Guide"
-          className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-cyan-300 text-xs transition flex items-center gap-1.5"
+          className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-emerald-300 text-xs transition flex items-center gap-1.5"
         >
-          <HelpCircle className="w-4 h-4 text-sky-400" />
+          <HelpCircle className="w-4 h-4 text-emerald-400" />
           <span className="hidden sm:inline">Guide</span>
         </button>
 
@@ -356,7 +384,7 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
           onClick={onOpenReport}
           title="View Surgical Efficiency & Report Card"
           aria-label="Post-Op Debrief"
-          className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-900/40 transition flex items-center gap-1.5"
+          className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-md shadow-emerald-900/40 transition flex items-center gap-1.5"
         >
           <FileText className="w-4 h-4" />
           <span className="hidden sm:inline">Debrief</span>

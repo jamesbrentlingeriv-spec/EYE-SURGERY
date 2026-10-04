@@ -15,7 +15,9 @@ import {
   Compass,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { SurgicalModule } from '../types/ophthalmic';
 
@@ -24,13 +26,17 @@ interface SurgeryMainMenuProps {
   onOpenVideoOverlay: (module: SurgicalModule) => void;
   onOpenPdfGuides: (module: 'phaco' | 'iol' | 'yag' | 'migs' | 'master') => void;
   onOpenReference: () => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
   onSelectSurgery,
   onOpenVideoOverlay,
   onOpenPdfGuides,
-  onOpenReference
+  onOpenReference,
+  theme = 'dark',
+  onToggleTheme
 }) => {
   const surgeries = [
     {
@@ -39,10 +45,10 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       title: 'Cataract Phacoemulsification & Foldable IOL',
       subtitle: 'Complete 12-Step Ultrasonic Emulsification & In-The-Bag Acrylic Optic Delivery',
       badge: '12-STEP UNIFIED PROTOCOL',
-      accentColor: 'cyan',
-      themeBorder: 'border-cyan-500/50 hover:border-cyan-400',
-      themeBg: 'bg-gradient-to-b from-cyan-950/30 to-[#0a1222]',
-      themeButton: 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/60',
+      accentColor: 'emerald',
+      themeBorder: 'border-emerald-500/50 hover:border-emerald-400',
+      themeBg: 'bg-gradient-to-b from-emerald-950/25 to-[#050806]',
+      themeButton: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60',
       icon: Layers,
       summary:
         'The complete gold-standard cataract procedure combining Phacoemulsification and Foldable IOL Implantation: 2.4mm tri-planar self-sealing corneal entry, dispersive OVD endothelial shield, 5.2mm continuous capsulorhexis, hydrodissection wave, phaco-chop nucleus fragmentation, cortical remnant clearance, cohesive OVD bag inflation, screw-drive folded acrylic IOL injection, Sinskey hook 360° rotational overlap, and thorough retro-lens viscoelastic washout.',
@@ -59,10 +65,10 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       title: 'Nd:YAG Laser Posterior Capsulotomy',
       subtitle: 'Q-Switched Slit-Lamp Photodisruption for PCO',
       badge: '5-STEP PROTOCOL',
-      accentColor: 'rose',
-      themeBorder: 'border-rose-500/50 hover:border-rose-400',
-      themeBg: 'bg-gradient-to-b from-rose-950/30 to-[#0a1222]',
-      themeButton: 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/60',
+      accentColor: 'emerald',
+      themeBorder: 'border-emerald-500/50 hover:border-emerald-400',
+      themeBg: 'bg-gradient-to-b from-emerald-950/25 to-[#050806]',
+      themeButton: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60',
       icon: Sparkles,
       summary:
         'Treat secondary cataracts (posterior capsule opacification) by photodisrupting a pristine central optical aperture behind the artificial lens. Features Abraham +66D contact lens stabilization, twin HeNe laser triangulation, and +150µm posterior defocus offset to guarantee zero IOL pitting.',
@@ -81,7 +87,7 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       badge: '6-STEP PROTOCOL',
       accentColor: 'emerald',
       themeBorder: 'border-emerald-500/50 hover:border-emerald-400',
-      themeBg: 'bg-gradient-to-b from-emerald-950/30 to-[#0a1222]',
+      themeBg: 'bg-gradient-to-b from-emerald-950/25 to-[#050806]',
       themeButton: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60',
       icon: Compass,
       summary:
@@ -102,11 +108,11 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       {/* Top Navigation / Brand Header */}
       <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-xl shadow-cyan-950/50">
+          <div className="p-3 rounded-2xl bg-emerald-950 border border-emerald-500/80 text-emerald-400 shadow-xl shadow-emerald-950/50">
             <Eye className="w-6 h-6" />
           </div>
           <div>
-            <div className="text-[11px] font-mono tracking-widest text-cyan-400 uppercase font-bold flex items-center gap-1.5">
+            <div className="text-[11px] font-mono tracking-widest text-emerald-400 uppercase font-bold flex items-center gap-1.5">
               <span>PAL OPTIC MEDICAL SPECIALTY SUITE</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping" />
             </div>
@@ -117,12 +123,33 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
         </div>
 
         {/* Global Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode (Pure White with Green Accents)' : 'Switch to Dark Mode (Pure Black with Green Accents)'}
+              aria-label="Toggle Theme Mode"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/80 text-emerald-300 text-xs font-semibold transition active:scale-95 shadow-md"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-emerald-400" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-emerald-300" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => onOpenPdfGuides('master')}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md"
           >
-            <BookOpen className="w-4 h-4 text-cyan-400" />
+            <BookOpen className="w-4 h-4 text-emerald-400" />
             <span>Master PDF Manual</span>
           </button>
 
@@ -130,16 +157,16 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
             onClick={onOpenReference}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md"
           >
-            <Award className="w-4 h-4 text-sky-400" />
+            <Award className="w-4 h-4 text-emerald-400" />
             <span>Clinical Compendium</span>
           </button>
         </div>
       </header>
 
       {/* Hero Welcome Banner */}
-      <div className="max-w-6xl w-full mx-auto my-5 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
+      <div className="max-w-6xl w-full mx-auto my-5 bg-gradient-to-r from-emerald-950/30 via-[#0a1426] to-[#071120] border border-emerald-900/60 rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
         <div>
-          <span className="text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold">
+          <span className="text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded font-bold">
             RESIDENCY & FELLOWSHIP SIMULATION
           </span>
           <h2 className="text-lg sm:text-xl font-bold text-white mt-1.5">
@@ -159,13 +186,13 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       </div>
 
       {/* Quick Surgery Carousel & Selector Strip */}
-      <div className="max-w-6xl w-full mx-auto mb-4 sticky top-0 z-30 bg-[#080d19]/95 backdrop-blur-md p-2.5 rounded-2xl border border-[#1b2b44] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+      <div className="max-w-6xl w-full mx-auto mb-4 sticky top-0 z-30 bg-[#080d19]/95 backdrop-blur-md p-2.5 rounded-2xl border border-emerald-900/60 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${
               activeFilter === 'all'
-                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
                 : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'
             }`}
           >
@@ -183,7 +210,7 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
               }}
               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${
                 activeFilter === idx
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
                   : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'
               }`}
             >
