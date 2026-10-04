@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Surgical Simulation Spoken Voice Scripts - Pal Optic</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 16mm 16mm 18mm 16mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      line-height: 1.45;
+      font-size: 11pt;
+    }
+
+    .cover-header {
+      border-bottom: 3px solid #059669;
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    .badge-top {
+      display: inline-block;
+      background: #064e3b;
+      color: #34d399;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8.5pt;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 22pt;
+      margin: 0 0 6px 0;
+      color: #064e3b;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 12pt;
+      color: #475569;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 22px;
+      font-size: 9.5pt;
+      color: #334155;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .meta-item strong {
+      display: block;
+      color: #0f172a;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .section-title {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #0f172a;
+      background: #ecfdf5;
+      border-left: 5px solid #059669;
+      padding: 8px 12px;
+      margin-top: 26px;
+      margin-bottom: 16px;
+      page-break-after: avoid;
+    }
+
+    .step-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      background: #ffffff;
+      overflow: hidden;
+      page-break-inside: avoid;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .step-header {
+      background: #f1f5f9;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .step-title-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-badge {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      font-size: 8pt;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .step-title {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .file-chip {
+      background: #0284c7;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8.5pt;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .step-body {
+      padding: 12px 14px;
+    }
+
+    .spoken-script-label {
+      font-size: 8pt;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #059669;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .spoken-script-box {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11.5pt;
+      line-height: 1.55;
+      color: #064e3b;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 9pt;
+      color: #475569;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 8px;
+    }
+
+    .info-item strong {
+      color: #1e293b;
+    }
+
+    .pronunciation-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 9pt;
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+
+    .pronunciation-box strong {
+      color: #b45309;
+      display: block;
+      margin-bottom: 4px;
+      font-size: 9.5pt;
+    }
+
+    .table-summary {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+
+    .table-summary th {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 8.5pt;
+    }
+
+    .table-summary td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table-summary tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="cover-header">
+    <div class="badge-top">PAL OPTIC • OPHTHALMIC SIMULATION SUITE</div>
+    <h1>Master Spoken Voiceover Narration Script</h1>
+    <div class="subtitle">Complete Voice Lines for Text-to-Speech (TTS) & Studio Voiceover Production</div>
+  </div>
+
+  <!-- Meta details -->
+  <div class="meta-box">
+    <div class="meta-grid">
+      <div class="meta-item">
+        <strong>Total Audio Clips</strong>
+        23 Surgical Step Voiceover Tracks
+      </div>
+      <div class="meta-item">
+        <strong>Target Audio Format</strong>
+        MP3 (44.1 kHz / 48 kHz, Stereo or Mono, 192–320 kbps)
+      </div>
+      <div class="meta-item">
+        <strong>Voice Persona / Tone</strong>
+        Preceptor Surgeon (Calm, authoritative, clear, 130–145 wpm)
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Pronunciation Guide -->
+  <div class="pronunciation-box">
+    <strong>🎙️ Medical Pronunciation & TTS Direction Guide:</strong>
+    <div>• <strong>Phacoemulsification</strong>: <em>FAY-co-ee-mul-sih-fih-KAY-shun</em> (shortened to <em>FAY-co</em>)</div>
+    <div>• <strong>Paracentesis</strong>: <em>pair-uh-sen-TEE-sis</em> (small side-port corneal entry)</div>
+    <div>• <strong>Capsulorhexis (CCC)</strong>: <em>cap-syoo-lo-REK-sis</em> (continuous circular tear of lens capsule)</div>
+    <div>• <strong>Viscoelastic (OVD)</strong>: <em>vis-co-ee-LAS-tik</em> (clear protective jelly: <em>VIS-coat</em> / <em>PRO-visk</em>)</div>
+    <div>• <strong>Nd:YAG Laser</strong>: <em>EN-dee YAG</em> (Neodymium-doped Yttrium Aluminum Garnet)</div>
+    <div>• <strong>He-Ne Beams</strong>: <em>HEE-nee</em> (Helium-Neon red aiming laser)</div>
+    <div>• <strong>MIGS</strong>: <em>MIGZ</em> (Minimally Invasive Glaucoma Surgery)</div>
+    <div>• <strong>Trabecular Meshwork</strong>: <em>truh-BEK-yoo-ler MESH-werk</em></div>
+    <div>• <strong>Schlemm's Canal</strong>: <em>SHLEMZ kuh-NAL</em></div>
+    <div>• <strong>Schwalbe's Line</strong>: <em>SHVAL-bays line</em></div>
+  </div>
+
+  <!-- Quick Reference Table -->
+  <table class="table-summary">
+    <thead>
+      <tr>
+        <th style="width: 70px;">Step #</th>
+        <th style="width: 140px;">Target MP3 File</th>
+        <th>Surgical Step Title</th>
+        <th style="width: 60px; text-align: center;">Words</th>
+        <th style="width: 80px; text-align: right;">Est. Duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 1</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_01_paracentesis.mp3</strong></td>
+          <td>Paracentesis Incision (~1.0mm MVR)</td>
+          <td style="text-align: center;">51</td>
+          <td style="text-align: right; color: #64748b;">~23 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 2</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_02_clear_corneal_incision.mp3</strong></td>
+          <td>Tri-Planar Clear Corneal Incision (2.4mm)</td>
+          <td style="text-align: center;">56</td>
+          <td style="text-align: right; color: #64748b;">~25 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 3</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_03_ovd_injection.mp3</strong></td>
+          <td>OVD Injection (Dispersive & Cohesive)</td>
+          <td style="text-align: center;">41</td>
+          <td style="text-align: right; color: #64748b;">~18 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 4</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_04_capsulorhexis.mp3</strong></td>
+          <td>Continuous Curvilinear Capsulorhexis (CCC)</td>
+          <td style="text-align: center;">55</td>
+          <td style="text-align: right; color: #64748b;">~24 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 5</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_05_hydrodissection.mp3</strong></td>
+          <td>Hydrodissection & Free Rotation Test</td>
+          <td style="text-align: center;">55</td>
+          <td style="text-align: right; color: #64748b;">~24 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 6</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_06_phaco_chop.mp3</strong></td>
+          <td>Phaco-Chop Nucleofractis & Aspiration</td>
+          <td style="text-align: center;">63</td>
+          <td style="text-align: right; color: #64748b;">~28 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">PHACO 7</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_07_cortex_removal.mp3</strong></td>
+          <td>Cortical Remnant Clearance (I/A)</td>
+          <td style="text-align: center;">46</td>
+          <td style="text-align: right; color: #64748b;">~20 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">IOL 8</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_08_ovd_bag_refill.mp3</strong></td>
+          <td>Capsular Bag Refill with Cohesive OVD</td>
+          <td style="text-align: center;">43</td>
+          <td style="text-align: right; color: #64748b;">~19 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">IOL 9</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_09_cartridge_insertion.mp3</strong></td>
+          <td>Cartridge Delivery into Bag</td>
+          <td style="text-align: center;">37</td>
+          <td style="text-align: right; color: #64748b;">~16 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">IOL 10</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_10_haptic_unfolding.mp3</strong></td>
+          <td>Leading Haptic Placement</td>
+          <td style="text-align: center;">38</td>
+          <td style="text-align: right; color: #64748b;">~17 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">IOL 11</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_11_sinskey_dialing.mp3</strong></td>
+          <td>Sinskey Hook 360° Rotational Centering</td>
+          <td style="text-align: center;">48</td>
+          <td style="text-align: right; color: #64748b;">~21 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">IOL 12</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">cataract_12_viscoelastic_washout.mp3</strong></td>
+          <td>Retro-Lens & AC Viscoelastic Washout</td>
+          <td style="text-align: center;">50</td>
+          <td style="text-align: right; color: #64748b;">~22 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">YAG 1</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">yag_01_contact_lens_placement.mp3</strong></td>
+          <td>Abraham Capsulotomy Lens Placement</td>
+          <td style="text-align: center;">49</td>
+          <td style="text-align: right; color: #64748b;">~22 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">YAG 2</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">yag_02_aiming_focus.mp3</strong></td>
+          <td>Dual HeNe Aiming Beam Convergence</td>
+          <td style="text-align: center;">47</td>
+          <td style="text-align: right; color: #64748b;">~21 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">YAG 3</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">yag_03_offset_adjustment.mp3</strong></td>
+          <td>Posterior Focal Offset (+150µm)</td>
+          <td style="text-align: center;">46</td>
+          <td style="text-align: right; color: #64748b;">~20 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">YAG 4</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">yag_04_cruciate_capsulotomy.mp3</strong></td>
+          <td>Cruciate Pattern Laser Breakdown</td>
+          <td style="text-align: center;">54</td>
+          <td style="text-align: right; color: #64748b;">~24 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">YAG 5</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">yag_05_post_yag_assessment.mp3</strong></td>
+          <td>Visual Axis Clearance & IOP Check</td>
+          <td style="text-align: center;">45</td>
+          <td style="text-align: right; color: #64748b;">~20 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 1</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_01_microscope_and_head_tilt.mp3</strong></td>
+          <td>Operating Microscope & Patient Head Tilt</td>
+          <td style="text-align: center;">66</td>
+          <td style="text-align: right; color: #64748b;">~29 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 2</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_02_gonioprism_placement.mp3</strong></td>
+          <td>Surgical Gonioprism Lens Placement</td>
+          <td style="text-align: center;">48</td>
+          <td style="text-align: right; color: #64748b;">~21 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 3</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_03_viscoelastic_angle_deepening.mp3</strong></td>
+          <td>Viscoelastic Angle Deepening</td>
+          <td style="text-align: center;">41</td>
+          <td style="text-align: right; color: #64748b;">~18 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 4</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_04_stent_1_deployment.mp3</strong></td>
+          <td>Micro-Stent 1 Insertion into Schlemm Canal</td>
+          <td style="text-align: center;">57</td>
+          <td style="text-align: right; color: #64748b;">~25 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 5</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_05_stent_2_deployment.mp3</strong></td>
+          <td>Micro-Stent 2 Insertion (Bilateral Bypass)</td>
+          <td style="text-align: center;">50</td>
+          <td style="text-align: right; color: #64748b;">~22 sec</td>
+        </tr>
+      
+        <tr>
+          <td><span class="step-badge">MIGS 6</span></td>
+          <td><strong style="color: #0284c7; font-family: monospace;">migs_06_blood_reflux_and_washout.mp3</strong></td>
+          <td>Episcleral Blood Reflux & Viscoelastic Washout</td>
+          <td style="text-align: center;">68</td>
+          <td style="text-align: right; color: #64748b;">~30 sec</td>
+        </tr>
+      
+    </tbody>
+  </table>
+
+  <!-- Detailed Step Scripts by Procedure -->
+  
+    <div class="">
+      <div class="section-title">
+        Procedure 1: Cataract Phacoemulsification & Foldable IOL (12 Steps)
+      </div>
+
+      
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 1</span>
+                <span class="step-title">Paracentesis Incision (~1.0mm MVR)</span>
+              </div>
+              <span class="file-chip">📁 cataract_01_paracentesis.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (51 words • ~23s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 1: Make a small side door. Take the 1.0 millimeter blade from the left tray. Look for the flashing orange target at the top-left edge of the eye, at the 10 o'clock position. Click there to make a tiny slit. This gives your assistant tool a way into the eye."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> MVR BLADE
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Upper-left edge of the cornea at 10:00 o'clock (limbus border between clear cornea and white sclera).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the 1.0mm MVR Blade on the left tray, then CLICK the pulsing orange target at the 10 o'clock corneal edge.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Eye surgery requires two hands. Your right hand holds the main ultrasound tool through the big incision, but you need a second tool (like a spatula or chopper) in your left hand to hold the cataract still, push pieces, and protect the back of the eye. Without this side door, you cannot control the cataract pieces and risk tearing the eye.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 2</span>
+                <span class="step-title">Tri-Planar Clear Corneal Incision (2.4mm)</span>
+              </div>
+              <span class="file-chip">📁 cataract_02_clear_corneal_incision.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (56 words • ~25s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 2: Create your main doorway. Switch to the 2.4 millimeter keratome blade. Look for the flashing blue target at the upper-right, at the 1:30 o'clock position. Click 3 times to step through the three planes: groove the surface, tunnel through the wall, and enter the eye chamber. This creates a self-sealing tunnel that won't leak."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> KERATOME 2_4
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Upper-right corneal edge at 1:30 o'clock, where clear cornea transitions into the white of the eye.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Pick the 2.4mm Keratome blade. CLICK the pulsing blue target at the 1:30 o'clock position 3 times to complete Plane 1 (Groove), Plane 2 (Tunnel), and Plane 3 (AC Entry).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Your primary ultrasound pen (phaco handpiece) is 2.4mm thick. You must create an entry tunnel wide enough for the pen to slide through easily, yet tight enough that fluid doesn't rush out and collapse the eye. Cutting it in 3 staggered planes creates an automatic valve: inside eye pressure presses the inner flap shut, keeping the eye pressurized and preventing bacteria from entering post-surgery.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 3</span>
+                <span class="step-title">OVD Injection (Dispersive & Cohesive)</span>
+              </div>
+              <span class="file-chip">📁 cataract_03_ovd_injection.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (41 words • ~18s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 3: Protect the eye with jelly. Choose the Viscoat syringe on the left. Click inside the pupil to inject a clear protective gel. This coats the fragile inner lining of the cornea so ultrasonic soundwaves and turbulence won't damage it."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> OVD VISCOAT
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Center of the pupil and the dome directly behind the cornea (the anterior chamber).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select Viscoat (dispersive jelly) or Provisc on the left tray, then CLICK inside the front chamber of the eye to inject the protective cushion.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> The back surface of your cornea is lined with fragile "endothelial cells" that act like microscopic bilge pumps keeping the cornea clear. Unlike skin or hair, these cells NEVER grow back once lost! If ultrasound vibrates near them or turbulent water washes over them, they die, turning the cornea permanently milky white. The viscous jelly acts like a protective suit of armor and keeps the eyeball round and firm.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 4</span>
+                <span class="step-title">Continuous Curvilinear Capsulorhexis (CCC)</span>
+              </div>
+              <span class="file-chip">📁 cataract_04_capsulorhexis.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (55 words • ~24s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 4: Cut a circular window in the lens skin. Take the needle cystotome to poke a small tear in the center, then use the Utrata micro-forceps to steer the flap around the dashed blue circle. Make a smooth 5.2 millimeter circle. If it starts running wild toward the edge, pull back toward the center."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> UTRATA FORCEPS
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Center of the dark pupil, following the 5.2mm glowing blue circle guide.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 1. Pick Cystotome and CLICK the center crosshair to puncture the skin. 2. Grab Utrata Forceps and DRAG in a smooth circle along the dashed blue guide ring.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> If you just randomly poke or shred the bag, sharp tears will zip down the sides to the back of the eye like a run in a nylon stocking! If that happens, the entire cataract falls into the back of the eyeball (vitreous) and you cannot put a replacement lens in place. A smooth, continuous circle distributes tension evenly and has immense structural strength.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 5</span>
+                <span class="step-title">Hydrodissection & Free Rotation Test</span>
+              </div>
+              <span class="file-chip">📁 cataract_05_hydrodissection.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (55 words • ~24s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 5: Loosen the cataract with a fluid wave. Select the hydrodissection cannula. Slide the flat tip gently under the edge of your circular opening and click to spray a gentle pulse of balanced salt water. Look for the golden wave rolling across the back. Then verify the cataract spins freely like a dinner plate."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> HYDRO CANNULA
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Underneath the anterior capsular rim at the top or side of your circular window.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Pick the Hydro Cannula on the left tray, then CLICK just under the edge of the circular opening to inject the fluid wave.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> The cataract is naturally glued to its protective bag by thousands of sticky cellular fibers. If you try to chop or turn the cataract while it is glued down, you will rip the fragile micro-threads (zonules) holding the bag to the eye wall, dropping the whole lens into the back of the eye! Water cleaves these bonds safely with zero mechanical stress.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 6</span>
+                <span class="step-title">Phaco-Chop Nucleofractis & Aspiration</span>
+              </div>
+              <span class="file-chip">📁 cataract_06_phaco_chop.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (63 words • ~28s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 6: Pulverize and vacuum the hard cataract. Select the phaco tip. Step on your foot pedal to Position 3 to engage ultrasonic vibration. Touch the tip to the center of the brown lens core to impale it, chop it into smaller bite-sized quarters, and vacuum them up. Keep your tip in the middle and stay far away from the thin back capsule."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> PHACO TIP
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Center of the pupil in the safe "phaco zone" (iris plane, pupil center, >1.5mm away from the delicate back capsule).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Pick the Phaco Tip. Click Foot Pedal to Position 3 (Ultrasound). CLICK and HOLD the central cataract core to chop and suck up all 4 quadrants.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> A cataract is a rock-hard, cloudy natural lens up to 10 millimeters wide. You cannot pull a 10mm hard stone through a tiny 2.4mm keyhole incision without tearing the eye open! The phaco ultrasound needle turns the rock into soup (emulsification) so it fits right through the microscopic straw.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 7</span>
+                <span class="step-title">Cortical Remnant Clearance (I/A)</span>
+              </div>
+              <span class="file-chip">📁 cataract_07_cortex_removal.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (46 words • ~20s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 7: Vacuum the soft sticky leftovers. Switch to the Irrigation and Aspiration handpiece. Step on pedal Position 2 to turn on suction. Click around the outer edges to vacuum away the fluffy cortical fibers. Polish the back surface until it looks like a clean window."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> IA HANDPIECE
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Equatorial periphery of the capsular bag (all 360 degrees around the outer rim).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Pick the I/A Handpiece on the tray. Put Foot Pedal in Position 2 (Aspiration). CLICK around the periphery to vacuum all remaining cortical fluff.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Even after the hard core is gone, sticky cotton-candy-like material (cortex) clings to the bag walls. If you leave these cellular remnants inside, they cause severe eye inflammation, sky-high eye pressure (glaucoma), and trigger cloudy scar tissue that blinds the new implant.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 8</span>
+                <span class="step-title">Capsular Bag Refill with Cohesive OVD</span>
+              </div>
+              <span class="file-chip">📁 cataract_08_ovd_bag_refill.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (43 words • ~19s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 8: Re-inflate the empty bag. Select the Provisc cohesive jelly. Click inside the capsular bag to pump it full of thick jelly. This opens the bag wide so the new lens can slide in safely without poking a hole in the back."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> OVD PROVISC
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Inside the circular capsulorhexis opening, aiming toward the back and corners of the bag.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select Provisc (cohesive OVD) on the left tray, then CLICK inside the pupil to inflate the capsular bag.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Now that the cataract is gone, the clear bag collapses flat like an empty balloon. If you shove a hard plastic injector nozzle into a collapsed bag, it will spear right through the paper-thin back membrane! Injecting thick jelly acts like a balloon inflator, opening up a safe 3D pocket for the lens to unpack.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 9</span>
+                <span class="step-title">Cartridge Delivery into Bag</span>
+              </div>
+              <span class="file-chip">📁 cataract_09_cartridge_insertion.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (37 words • ~16s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 9: Deliver the folded lens. Select the IOL injector. Slide the tapered nozzle through your main incision with the bevel pointing down. Click to smoothly advance the screw plunger and push the folded artificial lens inside."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> IOL INJECTOR
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> The 2.4mm main corneal incision at 1:30 o'clock, aiming towards the center of the pupil.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the IOL Injector on the left tray. CLICK on the main incision target to insert the nozzle and begin advancing the lens.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> An artificial lens is 6 millimeters wide, but our incision is only 2.4 millimeters! The lens is folded up tightly like a microscopic burrito inside a sterile lubricated cartridge. The injector squeezes it through the tiny incision without stretching or tearing the corneal wound.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 10</span>
+                <span class="step-title">Leading Haptic Placement</span>
+              </div>
+              <span class="file-chip">📁 cataract_10_haptic_unfolding.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (38 words • ~17s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 10: Place the front leg. Watch the leading springy arm unfold out of the nozzle directly into the far corner of the bag. Keep the nozzle steady in the center so the lens optic unrolls smoothly flat."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> IOL INJECTOR
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Far (distal) corner equator of the capsular bag, opposite your incision.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 CLICK again with the IOL Injector to push the front arm and central optic fully out into the pupil plane.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> If the spring arms unfold on top of the iris (the colored part of the eye) instead of inside the bag, they will rub against blood vessels, causing bleeding (hyphema), intense inflammation, and vision distortion. Both arms must seat neatly inside the bag pockets.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 11</span>
+                <span class="step-title">Sinskey Hook 360° Rotational Centering</span>
+              </div>
+              <span class="file-chip">📁 cataract_11_sinskey_dialing.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (48 words • ~21s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 11: Tuck the back leg in. Select the tiny Sinskey hook tool. Hook into the corner notch of the lens and rotate it clockwise. Tuck the trailing arm under the edge of the circular opening. Check that the round opening overlaps the lens edge all 360 degrees."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> SINSKEY HOOK
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Near the junction of the central optic and the trailing spring arm (proximal haptic).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the Sinskey Hook on the tray. CLICK the edge of the lens to rotate it clockwise and tuck the trailing haptic inside the bag.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> If one arm is inside the bag and the other is outside in the ciliary sulcus (asymmetric placement), the lens will tilt, causing severe blurred vision, double vision, and chronic eye pressure spikes. Furthermore, having the capsulorhexis overlap the lens 360 degrees locks it in place forever.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 12</span>
+                <span class="step-title">Retro-Lens & AC Viscoelastic Washout</span>
+              </div>
+              <span class="file-chip">📁 cataract_12_viscoelastic_washout.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (50 words • ~22s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 12: Vacuum out all the remaining jelly. Take the I/A suction handpiece. Gently tilt the lens and reach behind it to suck out all the thick jelly trapped in the back. If you leave even a little jelly behind, the patient will wake up with dangerously high eye pressure."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> IA HANDPIECE
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Behind the new acrylic lens optic (the retro-lens space) and inside the front chamber angles.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the I/A Handpiece. Put Foot Pedal in Position 2. CLICK behind the lens optic to vacuum out all residual viscoelastic jelly.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> The surgical jelly that saved the cornea earlier will now destroy the eye if left behind! The microscopic drains of the eye (trabecular meshwork) get completely clogged by thick jelly. Fluid cannot drain out, causing intraocular pressure to skyrocket past 40 or 50 mmHg within hours of surgery, leading to agonizing pain, nausea, and irreversible optic nerve damage (glaucoma).
+                </div>
+              </div>
+            </div>
+          </div>
+        
+    </div>
+  
+    <div class="page-break">
+      <div class="section-title">
+        Procedure 2: Nd:YAG Laser Photodisruption Capsulotomy (5 Steps)
+      </div>
+
+      
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 1</span>
+                <span class="step-title">Abraham Capsulotomy Lens Placement</span>
+              </div>
+              <span class="file-chip">📁 yag_01_contact_lens_placement.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (49 words • ~22s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 1 of YAG Laser: Place the special contact lens on the eye. Put a drop of clear gel on the Abraham contact lens and place it onto the patient's cornea. The magnifying button sharpens the laser beam into a tight focus point and keeps the patient from blinking."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> YAG LASER
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Cornea surface, centered over the pupil.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 With the YAG Laser module active, CLICK on the eye to apply the Abraham contact lens.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Months or years after cataract surgery, microscopic cells grow across the back bag like frosting on glass (a secondary cataract). We use an invisible infrared laser to blast a clear window through the haze. The Abraham contact lens widens the laser cone angle from 16° to 24°, concentrating energy strictly at the cloudy membrane while making it harmless to the cornea in front and the retina in the back.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 2</span>
+                <span class="step-title">Dual HeNe Aiming Beam Convergence</span>
+              </div>
+              <span class="file-chip">📁 yag_02_aiming_focus.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (47 words • ~21s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 2: Align the twin red aiming lasers. Move your slit-lamp joystick forward or backward until the two separate red dots merge into a single crisp red point right on the cloudy membrane. When the two dots become one, you know the laser is perfectly in focus."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> YAG LASER
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> On the opacified posterior capsule behind the artificial lens.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Move your cursor over the hazy membrane until the twin red aiming dots converge into a single tight red reticle.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> The therapeutic laser beam is 1064nm infrared—completely invisible to the human eye! To show you where it will strike, the machine projects two red aiming beams from different angles. When the two red spots merge into one, the invisible laser is focused with pinpoint accuracy. If they are separated, the laser will fire in the wrong depth plane!
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 3</span>
+                <span class="step-title">Posterior Focal Offset (+150µm)</span>
+              </div>
+              <span class="file-chip">📁 yag_03_offset_adjustment.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (46 words • ~20s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 3: Crucial safety setting! Set the posterior offset to plus 150 micrometers. Never fire at zero offset! When the laser sparks, the mini shockwave expands forward. If you don't set a safety gap, the shockwave will pit, scratch, and crack the patient's expensive artificial lens!"
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> YAG LASER
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> The right machine console: "Defocus Offset" dial set to +150 µm.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Verify the Laser Defocus Offset is set between +150µm and +200µm in the right console panel.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> This is the number one rookie mistake in ophthalmology! When a laser spark creates plasma, the plasma sparks and expands FORWARD back toward the incoming laser beam. If your focus is set directly on the capsule (zero offset), the shockwave strikes the posterior surface of the plastic lens, blasting permanent micro-craters (pits) into the optic, creating glare, halos, and permanent vision distortion for the patient.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 4</span>
+                <span class="step-title">Cruciate Pattern Laser Breakdown</span>
+              </div>
+              <span class="file-chip">📁 yag_04_cruciate_capsulotomy.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (54 words • ~24s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 4: Zap the membrane in a cross pattern. Fire your laser pulses starting at the outer edges: 12 o'clock at the top, 6 o'clock at the bottom, then 9 and 3 o'clock. Cutting in a cross releases the tension, making the cloudy flaps curl up and roll out of the visual axis naturally."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> YAG LASER
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> The 4 arms of the cross (+) in the hazy pupil area outside the central line of sight.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 CLICK on the numbered cross targets on the cloudy membrane: 1 (Top 12h) -> 2 (Bottom 6h) -> 3 (Left 9h) -> 4 (Right 3h).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> If you blast directly in the dead center first, any accidental lens pit will land right in the patient's central vision line! Furthermore, the cloudy capsule is under tight drum-skin tension. By cutting the edges first like cutting the ropes of a tent, the tension pulls the central flaps wide open automatically, clearing vision using minimum laser energy.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 5</span>
+                <span class="step-title">Visual Axis Clearance & IOP Check</span>
+              </div>
+              <span class="file-chip">📁 yag_05_post_yag_assessment.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (45 words • ~20s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 5: Inspect your work and check pressure. Verify you have created a clean 4 millimeter circular window with no loose tags hanging in the center. Check that the gel bag behind the eye is intact, and apply eye drops to prevent post-laser pressure spikes."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> YAG LASER
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Central 4mm optical zone of the pupil and the anterior vitreous face.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Verify the visual axis is clear, confirm 0 IOL pits, and finalize the procedure.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Loose tags hanging in the pupil will swing back and forth like a pendulum, creating ghostly double vision and annoying glare for the patient. Also, laser shockwaves release microscopic debris that can clog eye drains for 1 to 4 hours post-op, requiring prophylactic pressure-lowering drops (apraclonidine or brimonidine).
+                </div>
+              </div>
+            </div>
+          </div>
+        
+    </div>
+  
+    <div class="page-break">
+      <div class="section-title">
+        Procedure 3: MIGS Glaucoma Trabecular Micro-Bypass Stents (6 Steps)
+      </div>
+
+      
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 1</span>
+                <span class="step-title">Operating Microscope & Patient Head Tilt</span>
+              </div>
+              <span class="file-chip">📁 migs_01_microscope_and_head_tilt.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (66 words • ~29s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 1 of MIGS Glaucoma Stent Surgery: Angle the microscope and patient head. Because the drainage angle of the eye is hidden around the side curve behind the cornea, light from straight above cannot see it. Tilt the microscope 35 to 40 degrees towards yourself, and tilt the patient's head 30 to 35 degrees away. Click the alignment beacon to set optimal direct gonioscopic optical trajectory."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> NONE
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Microscope ocular axis and patient cervical rotation angle.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 CLICK the Tilt Alignment control on the angle HUD to align the microscope and patient head to 38°/35°.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Normal light from a surgical microscope shines straight down into the pupil. But the eye's microscopic drainage canal (Schlemm's canal) is tucked sideways around the 360-degree perimeter of the corneal rim! If you look straight down, total internal reflection inside the curved cornea completely hides the drain! Tilting the microscope and head lets you peek sideways into the drainage angle.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 2</span>
+                <span class="step-title">Surgical Gonioprism Lens Placement</span>
+              </div>
+              <span class="file-chip">📁 migs_02_gonioprism_placement.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (48 words • ~21s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 2: Apply the Swan-Jacob surgical gonioprism. Select the gonio lens from your tray. Place a drop of cohesive viscoelastic on the front surface of the cornea, then gently couple the flat lens onto the eye. Look for the golden-brown pigmented band: that is the diseased trabecular meshwork."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> GONIO LENS
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Anterior corneal surface and nasal iridocorneal angle.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the Swan-Jacob Gonioprism on the tray, then CLICK the center of the cornea to lock the high-definition angle view.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Even with tilt, the curved cornea bends light like a dome mirror. A surgical gonioprism is an optical glass wedge that cancels the optical curvature of the cornea. It turns the curved surface into an optically flat window, revealing the four key landmarks: Schwalbe's line, the pigmented trabecular meshwork, the scleral spur, and the ciliary body band.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 3</span>
+                <span class="step-title">Viscoelastic Angle Deepening</span>
+              </div>
+              <span class="file-chip">📁 migs_03_viscoelastic_angle_deepening.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (41 words • ~18s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 3: Deepen the drainage corner with thick cohesive jelly. Select Provisc on the tray. Inject a gentle bolus into the nasal angle. Watch the iris push backward away from the cornea, opening up a spacious cavern for the stent injector."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> OVD PROVISC
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Nasal anterior chamber angle recess between the peripheral cornea and iris root.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select Provisc on the tray, then CLICK the nasal angle target to expand the iridocorneal recess.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> In many glaucoma patients, the iris sits very close to the drainage meshwork (a crowded or narrow angle). If you attempt to slide an injector into a crowded angle, the sharp metal tip will gouge into the iris, causing bleeding (hyphema) and severe inflammation. Injecting cohesive jelly acts like an architectural pillar, pushing the iris back and giving you a wide, safe runway.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 4</span>
+                <span class="step-title">Micro-Stent 1 Insertion into Schlemm Canal</span>
+              </div>
+              <span class="file-chip">📁 migs_04_stent_1_deployment.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (57 words • ~25s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 4: Deploy Micro-Stent number 1. Select the iStent inject pen. Guide the microscopic tip across the eye to the nasal golden-brown meshwork band at 2:30 o'clock. Approach at a 15 to 20 degree angle. Pierce through the meshwork right into Schlemm's canal and click the deployment button! The stent now channels fluid straight into the bloodstream."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> MIGS INJECTOR
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Pigmented trabecular meshwork at 2:30 o'clock in the nasal quadrant, directly over a primary collector channel ostium.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the iStent Injector Pen. CLICK the flashing green beacon at 2:30 o'clock on the pigmented meshwork to seat Micro-Stent 1.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Here is the core secret: In glaucoma, 70% to 90% of the clog is in the trabecular meshwork filter itself! But the veins right behind it (Schlemm's canal and episcleral veins) are wide open and healthy! By punching this microscopic titanium snorkel directly through the clog, eye fluid bypasses the blockage completely and dumps directly into the bloodstream! And because the venous bloodstream has an automatic backpressure of 8 to 10 mmHg, the eye can never over-drain or collapse!
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 5</span>
+                <span class="step-title">Micro-Stent 2 Insertion (Bilateral Bypass)</span>
+              </div>
+              <span class="file-chip">📁 migs_05_stent_2_deployment.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (50 words • ~22s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 5: Deploy the second micro-stent. Retract the injector tip slightly, slide 2 clock hours down to 4:00 o'clock, and target the adjacent collector channel. Press gently into the pigmented meshwork and click to deploy Stent 2. Having two stents doubles your outflow capacity and guarantees dramatic eye pressure reduction."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> MIGS INJECTOR
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Pigmented trabecular meshwork at 4:00 o'clock in the nasal-inferior quadrant (~2.0mm distance from Stent 1).
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 With the iStent Injector Pen still selected, CLICK the flashing cyan beacon at 4:00 o'clock to deploy Micro-Stent 2.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> Schlemm's canal has discrete outflow collector channels spaced around the eye like highway exit ramps. Placing two micro-stents spaced 2 clock hours (~2 mm) apart taps into multiple collector channel networks across the nasal quadrant. This drops eye pressure twice as effectively and provides backup insurance in case one channel ever scars down.
+                </div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-title-area">
+                <span class="step-badge">STEP 6</span>
+                <span class="step-title">Episcleral Blood Reflux & Viscoelastic Washout</span>
+              </div>
+              <span class="file-chip">📁 migs_06_blood_reflux_and_washout.mp3</span>
+            </div>
+            <div class="step-body">
+              <div class="spoken-script-label">
+                <span>🔊 EXACT SPOKEN SCRIPT (68 words • ~30s):</span>
+              </div>
+              <div class="spoken-script-box">
+                "Step 6: Verify blood reflux and clean the eye. Take the I/A suction handpiece. Gently tap the corneal wound to let a tiny drop of fluid out. Watch the miraculous blood reflux wave! Bright red blood seeps backwards through both stents from the bloodstream into the eye. This proves your stents are connected directly to the bloodstream! Wash out all remaining jelly, and your glaucoma surgery is complete."
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Recommended Instrument:</strong> IA HANDPIECE
+                </div>
+                <div class="info-item">
+                  <strong>Target Location:</strong> Nasal trabecular meshwork stent lumens and anterior chamber angle.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Action Guide:</strong> 👉 Select the I/A Handpiece, put Foot Pedal in Position 2. CLICK to confirm the blood reflux wave and vacuum out all viscoelastic jelly.
+                </div>
+                <div class="info-item" style="grid-column: span 2;">
+                  <strong>Why Necessary:</strong> The Blood Reflux Wave is the definitive holy grail test in glaucoma surgery! When you temporarily lower the eye pressure slightly below 8 to 10 mmHg, venous blood from the body's bloodstream flows backward out of Schlemm's canal into the stent inlet! Seeing that bright red blood plume proves 100% that your stents are in the bloodstream! And because the blood pressure will always push back at 8 to 10 mmHg, the patient's eye pressure can never drop too low (protecting against hypotony)!
+                </div>
+              </div>
+            </div>
+          </div>
+        
+    </div>
+  
+
+</body>
+</html>

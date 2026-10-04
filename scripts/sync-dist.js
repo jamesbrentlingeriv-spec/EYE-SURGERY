@@ -20,7 +20,15 @@ function copyDirRecursive(src, dest) {
     if (entry.isDirectory()) {
       copyDirRecursive(srcPath, destPath);
     } else {
-      fs.copyFileSync(srcPath, destPath);
+      try {
+        fs.copyFileSync(srcPath, destPath);
+      } catch (err) {
+        try {
+          fs.copyFileSync(srcPath, destPath);
+        } catch (err2) {
+          console.warn(`[Sync] Warning copying ${entry.name}: ${err2.message}`);
+        }
+      }
     }
   }
 }

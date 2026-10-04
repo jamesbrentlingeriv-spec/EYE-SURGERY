@@ -15,7 +15,7 @@ import {
   MigsState
 } from '../types/ophthalmic';
 import { audioEngine } from '../audio/SoundSynthesizer';
-import { ZoomIn, ZoomOut, Camera, X, Crosshair, Eye, Compass, RotateCcw, Box } from 'lucide-react';
+import { ZoomIn, ZoomOut, Camera, X, Crosshair, Eye, Compass, RotateCcw, Box, ChevronDown, Minimize2, Maximize2 } from 'lucide-react';
 import { ThreeEyeScene, CameraPresetType } from '../three/ThreeEyeScene';
 
 interface SurgicalViewportProps {
@@ -104,6 +104,8 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   const [laserDefocusZ, setLaserDefocusZ] = useState<number>(150); // µm offset for YAG focus
   const [showOptics, setShowOptics] = useState<boolean>(false); // Collapsed on mobile by default to preserve eye view
   const [currentCameraPreset, setCurrentCameraPreset] = useState<CameraPresetType>('microscope');
+  const [isCameraMenuOpen, setIsCameraMenuOpen] = useState<boolean>(false);
+  const [isCameraBarMinimized, setIsCameraBarMinimized] = useState<boolean>(false);
   const [isZenMode, setIsZenMode] = useState<boolean>(false); // One-click clear view of 3D eyeball without HUD obstruction
 
   // Auto-focus 3D camera into target anatomy whenever surgical step advances
@@ -1668,120 +1670,213 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       {/* 2D High-Resolution Composite Canvas (Real Eye Photo + Dynamic Overlays) */}
       <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-      {/* 3D Camera Angles & Deep Zoom Presets Bar */}
+      {/* 3D Camera Angles & Presets Menu (Compact Dropdown + Minimization) */}
       {!isZenMode && (
-        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-20 flex flex-wrap items-center gap-1 sm:gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-120px)]">
-          <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-0.5 shrink-0">
-            <Eye className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">3D View:</span>
-          </span>
+        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-30 flex flex-col items-start select-none">
+          {isCameraBarMinimized ? (
+            <button
+              onClick={() => setIsCameraBarMinimized(false)}
+              className="p-2 rounded-xl bg-[#0a121e]/90 hover:bg-[#121f33] border border-emerald-600/50 text-emerald-400 shadow-xl backdrop-blur-md transition active:scale-95 flex items-center gap-1.5"
+              title="Expand 3D Camera Angles"
+            >
+              <Eye className="w-4 h-4" />
+              <span className="text-[10px] font-bold text-white uppercase hidden xs:inline">3D Angle</span>
+              <Maximize2 className="w-3 h-3 text-slate-400" />
+            </button>
+          ) : (
+            <div className="relative">
+              {/* Compact Active View Trigger Pill */}
+              <div className="flex items-center gap-1 bg-[#0a121e]/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-emerald-700/60 shadow-xl text-xs">
+                <button
+                  onClick={() => setIsCameraMenuOpen(!isCameraMenuOpen)}
+                  className="flex items-center gap-1.5 text-xs font-semibold transition active:scale-95 text-slate-200 hover:text-white"
+                  title="Click to select 3D Camera Angle"
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-[11px] font-bold text-emerald-300">
+                    {currentCameraPreset === 'step_focus'
+                      ? '🎯 Step Focus'
+                      : currentCameraPreset === 'microscope'
+                      ? 'Microscope (0°)'
+                      : currentCameraPreset === 'glaucoma_angle'
+                      ? 'TM Angle (38°)'
+                      : currentCameraPreset === 'cataract_core'
+                      ? 'Cataract Core'
+                      : currentCameraPreset === 'yag_capsule'
+                      ? 'YAG Capsule'
+                      : currentCameraPreset === 'cross_section'
+                      ? 'Profile'
+                      : '3D Angle'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isCameraMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-          {/* Direct Step Target Macro Focus */}
-          <button
-            onClick={() => {
-              if (currentStepId) {
-                threeEyeSceneRef.current?.focusOnStep(currentStepId);
-                setCurrentCameraPreset('step_focus');
-              }
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'step_focus'
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-950/60 font-bold animate-pulse'
-                : 'bg-amber-950/50 text-amber-300 hover:text-white hover:bg-amber-900/60 border border-amber-600/50'
-            }`}
-            title="Macro Zoom directly into the target incision or tissue for the current surgical step"
-          >
-            <Crosshair className="w-3 h-3 text-amber-300" />
-            <span>🎯 Step Focus</span>
-          </button>
+                {/* Direct quick-trigger for active Step Focus */}
+                <button
+                  onClick={() => {
+                    if (currentStepId) {
+                      threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                      setCurrentCameraPreset('step_focus');
+                    }
+                  }}
+                  className={`p-1 rounded-lg border text-[10px] transition active:scale-95 ${
+                    currentCameraPreset === 'step_focus'
+                      ? 'bg-amber-500 border-amber-400 text-white shadow-sm'
+                      : 'bg-amber-950/60 border-amber-700/60 text-amber-300 hover:text-white'
+                  }`}
+                  title="Auto-Focus directly on active surgical tissue"
+                >
+                  <Crosshair className="w-3 h-3" />
+                </button>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.setCameraPreset('microscope');
-              setCurrentCameraPreset('microscope');
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'microscope'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="0° Coaxial Surgeon Microscope View"
-          >
-            Microscope
-          </button>
+                {/* Minimize button */}
+                <button
+                  onClick={() => {
+                    setIsCameraBarMinimized(true);
+                    setIsCameraMenuOpen(false);
+                  }}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition"
+                  title="Minimize 3D Camera bar"
+                >
+                  <Minimize2 className="w-3 h-3" />
+                </button>
+              </div>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
-              setCurrentCameraPreset('glaucoma_angle');
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'glaucoma_angle'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'
-            }`}
-            title="Deep Zoom into 38° Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal"
-          >
-            <Compass className="w-3 h-3 text-emerald-400" />
-            <span>TM Angle (38°)</span>
-          </button>
+              {/* Dropdown Menu */}
+              {isCameraMenuOpen && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute top-full left-0 mt-1.5 w-56 bg-[#0a121e]/98 backdrop-blur-md p-1.5 rounded-xl border border-emerald-600/50 shadow-2xl text-xs space-y-1 animate-fadeIn z-40"
+                >
+                  <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold border-b border-[#1b2b44] flex items-center justify-between">
+                    <span>3D Camera Angles</span>
+                    <button
+                      onClick={() => setIsCameraMenuOpen(false)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.setCameraPreset('cataract_core');
-              setCurrentCameraPreset('cataract_core');
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'cataract_core'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="Deep Zoom into Cataract Nucleus Core & Phaco Trench"
-          >
-            Cataract Core
-          </button>
+                  <button
+                    onClick={() => {
+                      if (currentStepId) {
+                        threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                        setCurrentCameraPreset('step_focus');
+                      }
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'step_focus'
+                        ? 'bg-amber-600 text-white font-bold'
+                        : 'text-amber-300 hover:bg-amber-950/50'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Crosshair className="w-3.5 h-3.5 text-amber-400" />
+                      <span>🎯 Step Macro Focus</span>
+                    </span>
+                    <span className="text-[9px] font-mono text-amber-200/80">Auto</span>
+                  </button>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
-              setCurrentCameraPreset('yag_capsule');
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'yag_capsule'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="Macro Zoom onto Posterior Capsule & IOL Optic"
-          >
-            YAG Capsule
-          </button>
+                  <button
+                    onClick={() => {
+                      threeEyeSceneRef.current?.setCameraPreset('microscope');
+                      setCurrentCameraPreset('microscope');
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'microscope'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    }`}
+                  >
+                    <span>🔬 Microscope (0° Coaxial)</span>
+                    <span className="text-[9px] font-mono text-slate-400">Default</span>
+                  </button>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.setCameraPreset('cross_section');
-              setCurrentCameraPreset('cross_section');
-            }}
-            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-              currentCameraPreset === 'cross_section'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-            title="Anterior Chamber Profile Cross-Section"
-          >
-            Profile
-          </button>
+                  <button
+                    onClick={() => {
+                      threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
+                      setCurrentCameraPreset('glaucoma_angle');
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'glaucoma_angle'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    }`}
+                  >
+                    <span>📐 TM Angle (38° Glaucoma)</span>
+                    <span className="text-[9px] font-mono text-emerald-400">MIGS</span>
+                  </button>
 
-          <button
-            onClick={() => {
-              threeEyeSceneRef.current?.controls.reset();
-              threeEyeSceneRef.current?.setCameraPreset('microscope');
-              setCurrentCameraPreset('microscope');
-            }}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
-            title="Reset 3D Camera Orbit"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+                  <button
+                    onClick={() => {
+                      threeEyeSceneRef.current?.setCameraPreset('cataract_core');
+                      setCurrentCameraPreset('cataract_core');
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'cataract_core'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    }`}
+                  >
+                    <span>🟡 Cataract Core & Trench</span>
+                    <span className="text-[9px] font-mono text-slate-400">Phaco</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
+                      setCurrentCameraPreset('yag_capsule');
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'yag_capsule'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    }`}
+                  >
+                    <span>⚡ YAG Posterior Capsule</span>
+                    <span className="text-[9px] font-mono text-slate-400">Laser</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      threeEyeSceneRef.current?.setCameraPreset('cross_section');
+                      setCurrentCameraPreset('cross_section');
+                      setIsCameraMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${
+                      currentCameraPreset === 'cross_section'
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                    }`}
+                  >
+                    <span>📏 Profile (Cross-Section)</span>
+                    <span className="text-[9px] font-mono text-slate-400">Side</span>
+                  </button>
+
+                  <div className="pt-1 border-t border-[#1b2b44] flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        threeEyeSceneRef.current?.controls.reset();
+                        threeEyeSceneRef.current?.setCameraPreset('microscope');
+                        setCurrentCameraPreset('microscope');
+                        setIsCameraMenuOpen(false);
+                      }}
+                      className="w-full py-1 text-center text-[10px] font-mono text-slate-400 hover:text-white hover:bg-slate-800/60 rounded flex items-center justify-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset Orbit / 360° Free View</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -76384,6 +76384,8 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
     const [laserDefocusZ, setLaserDefocusZ] = reactExports.useState(150); // µm offset for YAG focus
     const [showOptics, setShowOptics] = reactExports.useState(false); // Collapsed on mobile by default to preserve eye view
     const [currentCameraPreset, setCurrentCameraPreset] = reactExports.useState('microscope');
+    const [isCameraMenuOpen, setIsCameraMenuOpen] = reactExports.useState(false);
+    const [isCameraBarMinimized, setIsCameraBarMinimized] = reactExports.useState(false);
     const [isZenMode, setIsZenMode] = reactExports.useState(false); // One-click clear view of 3D eyeball without HUD obstruction
     // Auto-focus 3D camera into target anatomy whenever surgical step advances
     reactExports.useEffect(() => {
@@ -77790,43 +77792,72 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             }
         }
     }, [handlePointerDownAction]);
-    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), !isZenMode && (jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-3 left-2 sm:left-3 z-20 flex flex-wrap items-center gap-1 sm:gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-120px)]", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-0.5 shrink-0", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "3D View:" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
-                            if (currentStepId) {
-                                threeEyeSceneRef.current?.focusOnStep(currentStepId);
-                                setCurrentCameraPreset('step_focus');
-                            }
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${currentCameraPreset === 'step_focus'
-                            ? 'bg-amber-500 text-white shadow-md shadow-amber-950/60 font-bold animate-pulse'
-                            : 'bg-amber-950/50 text-amber-300 hover:text-white hover:bg-amber-900/60 border border-amber-600/50'}`, title: "Macro Zoom directly into the target incision or tissue for the current surgical step", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3 h-3 text-amber-300" }), jsxRuntimeExports.jsx("span", { children: "\uD83C\uDFAF Step Focus" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
-                            threeEyeSceneRef.current?.setCameraPreset('microscope');
-                            setCurrentCameraPreset('microscope');
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'microscope'
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "0\u00B0 Coaxial Surgeon Microscope View", children: "Microscope" }), jsxRuntimeExports.jsxs("button", { onClick: () => {
-                            threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
-                            setCurrentCameraPreset('glaucoma_angle');
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${currentCameraPreset === 'glaucoma_angle'
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                            : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'}`, title: "Deep Zoom into 38\u00B0 Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal", children: [jsxRuntimeExports.jsx(Compass, { className: "w-3 h-3 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: "TM Angle (38\u00B0)" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
-                            threeEyeSceneRef.current?.setCameraPreset('cataract_core');
-                            setCurrentCameraPreset('cataract_core');
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'cataract_core'
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Deep Zoom into Cataract Nucleus Core & Phaco Trench", children: "Cataract Core" }), jsxRuntimeExports.jsx("button", { onClick: () => {
-                            threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
-                            setCurrentCameraPreset('yag_capsule');
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'yag_capsule'
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Macro Zoom onto Posterior Capsule & IOL Optic", children: "YAG Capsule" }), jsxRuntimeExports.jsx("button", { onClick: () => {
-                            threeEyeSceneRef.current?.setCameraPreset('cross_section');
-                            setCurrentCameraPreset('cross_section');
-                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'cross_section'
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`, title: "Anterior Chamber Profile Cross-Section", children: "Profile" }), jsxRuntimeExports.jsx("button", { onClick: () => {
-                            threeEyeSceneRef.current?.controls.reset();
-                            threeEyeSceneRef.current?.setCameraPreset('microscope');
-                            setCurrentCameraPreset('microscope');
-                        }, className: "p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition", title: "Reset 3D Camera Orbit", children: jsxRuntimeExports.jsx(RotateCcw, { className: "w-3.5 h-3.5" }) })] })), jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), !isZenMode && (jsxRuntimeExports.jsx("div", { className: "absolute top-2 sm:top-3 left-2 sm:left-3 z-30 flex flex-col items-start select-none", children: isCameraBarMinimized ? (jsxRuntimeExports.jsxs("button", { onClick: () => setIsCameraBarMinimized(false), className: "p-2 rounded-xl bg-[#0a121e]/90 hover:bg-[#121f33] border border-emerald-600/50 text-emerald-400 shadow-xl backdrop-blur-md transition active:scale-95 flex items-center gap-1.5", title: "Expand 3D Camera Angles", children: [jsxRuntimeExports.jsx(Eye, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold text-white uppercase hidden xs:inline", children: "3D Angle" }), jsxRuntimeExports.jsx(Maximize2, { className: "w-3 h-3 text-slate-400" })] })) : (jsxRuntimeExports.jsxs("div", { className: "relative", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#0a121e]/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-emerald-700/60 shadow-xl text-xs", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setIsCameraMenuOpen(!isCameraMenuOpen), className: "flex items-center gap-1.5 text-xs font-semibold transition active:scale-95 text-slate-200 hover:text-white", title: "Click to select 3D Camera Angle", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-emerald-300", children: currentCameraPreset === 'step_focus'
+                                                ? '🎯 Step Focus'
+                                                : currentCameraPreset === 'microscope'
+                                                    ? 'Microscope (0°)'
+                                                    : currentCameraPreset === 'glaucoma_angle'
+                                                        ? 'TM Angle (38°)'
+                                                        : currentCameraPreset === 'cataract_core'
+                                                            ? 'Cataract Core'
+                                                            : currentCameraPreset === 'yag_capsule'
+                                                                ? 'YAG Capsule'
+                                                                : currentCameraPreset === 'cross_section'
+                                                                    ? 'Profile'
+                                                                    : '3D Angle' }), jsxRuntimeExports.jsx(ChevronDown, { className: `w-3.5 h-3.5 text-slate-400 transition-transform ${isCameraMenuOpen ? 'rotate-180' : ''}` })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                                        if (currentStepId) {
+                                            threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                                            setCurrentCameraPreset('step_focus');
+                                        }
+                                    }, className: `p-1 rounded-lg border text-[10px] transition active:scale-95 ${currentCameraPreset === 'step_focus'
+                                        ? 'bg-amber-500 border-amber-400 text-white shadow-sm'
+                                        : 'bg-amber-950/60 border-amber-700/60 text-amber-300 hover:text-white'}`, title: "Auto-Focus directly on active surgical tissue", children: jsxRuntimeExports.jsx(Crosshair, { className: "w-3 h-3" }) }), jsxRuntimeExports.jsx("button", { onClick: () => {
+                                        setIsCameraBarMinimized(true);
+                                        setIsCameraMenuOpen(false);
+                                    }, className: "p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition", title: "Minimize 3D Camera bar", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3 h-3" }) })] }), isCameraMenuOpen && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "absolute top-full left-0 mt-1.5 w-56 bg-[#0a121e]/98 backdrop-blur-md p-1.5 rounded-xl border border-emerald-600/50 shadow-2xl text-xs space-y-1 animate-fadeIn z-40", children: [jsxRuntimeExports.jsxs("div", { className: "px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold border-b border-[#1b2b44] flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { children: "3D Camera Angles" }), jsxRuntimeExports.jsx("button", { onClick: () => setIsCameraMenuOpen(false), className: "text-slate-400 hover:text-white", children: jsxRuntimeExports.jsx(X, { className: "w-3 h-3" }) })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        if (currentStepId) {
+                                            threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                                            setCurrentCameraPreset('step_focus');
+                                        }
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'step_focus'
+                                        ? 'bg-amber-600 text-white font-bold'
+                                        : 'text-amber-300 hover:bg-amber-950/50'}`, children: [jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5 text-amber-400" }), jsxRuntimeExports.jsx("span", { children: "\uD83C\uDFAF Step Macro Focus" })] }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-amber-200/80", children: "Auto" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        threeEyeSceneRef.current?.setCameraPreset('microscope');
+                                        setCurrentCameraPreset('microscope');
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'microscope'
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`, children: [jsxRuntimeExports.jsx("span", { children: "\uD83D\uDD2C Microscope (0\u00B0 Coaxial)" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-slate-400", children: "Default" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
+                                        setCurrentCameraPreset('glaucoma_angle');
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'glaucoma_angle'
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`, children: [jsxRuntimeExports.jsx("span", { children: "\uD83D\uDCD0 TM Angle (38\u00B0 Glaucoma)" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-emerald-400", children: "MIGS" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        threeEyeSceneRef.current?.setCameraPreset('cataract_core');
+                                        setCurrentCameraPreset('cataract_core');
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'cataract_core'
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`, children: [jsxRuntimeExports.jsx("span", { children: "\uD83D\uDFE1 Cataract Core & Trench" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-slate-400", children: "Phaco" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
+                                        setCurrentCameraPreset('yag_capsule');
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'yag_capsule'
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`, children: [jsxRuntimeExports.jsx("span", { children: "\u26A1 YAG Posterior Capsule" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-slate-400", children: "Laser" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        threeEyeSceneRef.current?.setCameraPreset('cross_section');
+                                        setCurrentCameraPreset('cross_section');
+                                        setIsCameraMenuOpen(false);
+                                    }, className: `w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition ${currentCameraPreset === 'cross_section'
+                                        ? 'bg-emerald-600 text-white font-bold'
+                                        : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'}`, children: [jsxRuntimeExports.jsx("span", { children: "\uD83D\uDCCF Profile (Cross-Section)" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono text-slate-400", children: "Side" })] }), jsxRuntimeExports.jsx("div", { className: "pt-1 border-t border-[#1b2b44] flex items-center justify-between", children: jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            threeEyeSceneRef.current?.controls.reset();
+                                            threeEyeSceneRef.current?.setCameraPreset('microscope');
+                                            setCurrentCameraPreset('microscope');
+                                            setIsCameraMenuOpen(false);
+                                        }, className: "w-full py-1 text-center text-[10px] font-mono text-slate-400 hover:text-white hover:bg-slate-800/60 rounded flex items-center justify-center gap-1", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-3 h-3" }), jsxRuntimeExports.jsx("span", { children: "Reset Orbit / 360\u00B0 Free View" })] }) })] }))] })) })), jsxRuntimeExports.jsxs("button", { onClick: (e) => {
                     e.stopPropagation();
                     setIsZenMode(!isZenMode);
                 }, className: `absolute ${isZenMode ? 'top-3 right-3 bg-emerald-600 text-white' : 'bottom-3 right-3 bg-[#0a121e]/90 text-slate-400 hover:text-white border border-emerald-900/40'} z-30 px-2.5 py-1.5 rounded-xl backdrop-blur-md shadow-2xl text-[10px] font-mono font-bold flex items-center gap-1.5 transition active:scale-95`, title: isZenMode ? 'Exit Zen Mode (Show Controls)' : 'Zen Mode: Hide HUD for 100% Unobstructed Eyeball View', children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: isZenMode ? 'EXIT ZEN MODE' : 'ZEN MODE' })] }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
