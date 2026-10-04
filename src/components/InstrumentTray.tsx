@@ -62,7 +62,7 @@ const INSTRUMENT_REGISTRY: ToolDefinition[] = [
     category: 'Viscosurgical',
     description: 'High molecular weight hyaluronate to maintain AC depth and bag volume',
     icon: <Syringe className="w-4 h-4 text-sky-400" />,
-    modules: ['phaco', 'iol']
+    modules: ['phaco', 'iol', 'migs']
   },
   {
     id: 'cystotome',
@@ -102,7 +102,7 @@ const INSTRUMENT_REGISTRY: ToolDefinition[] = [
     category: 'Fluidics & Cleanup',
     description: 'Coaxial Irrigation/Aspiration for cortical clearance & OVD evacuation',
     icon: <RotateCw className="w-4 h-4 text-sky-300" />,
-    modules: ['phaco', 'iol']
+    modules: ['phaco', 'iol', 'migs']
   },
   {
     id: 'iol_injector',
@@ -110,7 +110,7 @@ const INSTRUMENT_REGISTRY: ToolDefinition[] = [
     category: 'Implantation',
     description: 'Screw/plunger injector delivering foldable hydrophobic acrylic optic',
     icon: <Disc className="w-4 h-4 text-emerald-400" />,
-    modules: ['iol']
+    modules: ['phaco', 'iol']
   },
   {
     id: 'sinskey_hook',
@@ -118,7 +118,7 @@ const INSTRUMENT_REGISTRY: ToolDefinition[] = [
     category: 'Positioning',
     description: '0.2mm angled hook for dialing trailing haptic and centration',
     icon: <Compass className="w-4 h-4 text-indigo-400" />,
-    modules: ['iol']
+    modules: ['phaco', 'iol']
   },
   {
     id: 'yag_laser',
@@ -127,6 +127,22 @@ const INSTRUMENT_REGISTRY: ToolDefinition[] = [
     description: 'Q-switched laser with dual red HeNe aiming diodes and focus offset',
     icon: <Sparkles className="w-4 h-4 text-rose-500" />,
     modules: ['yag']
+  },
+  {
+    id: 'gonio_lens',
+    name: 'Swan-Jacob Gonioprism',
+    category: 'Angle Visualization',
+    description: 'Direct surgical prism lens revealing iridocorneal drainage structures',
+    icon: <Eye className="w-4 h-4 text-emerald-300" />,
+    modules: ['migs']
+  },
+  {
+    id: 'migs_injector',
+    name: 'iStent Inject® Delivery Pen',
+    category: 'Trabecular Micro-Bypass',
+    description: 'Preloaded trocar pen delivering micro-bypass stents directly into Schlemm canal',
+    icon: <Crosshair className="w-4 h-4 text-amber-400" />,
+    modules: ['migs']
   }
 ];
 

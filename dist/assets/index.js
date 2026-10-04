@@ -20094,8 +20094,30 @@ class FluidicsEngine {
 
 class CataractPhysicsEngine {
     incisions = [
-        { x: 0.85, y: -0.4, angleRad: -0.45, widthMm: 1.0, depthFraction: 0, type: 'paracentesis', completed: false },
-        { x: 0.95, y: 0.25, angleRad: 0.26, widthMm: 2.4, depthFraction: 0, type: 'clear_corneal', completed: false }
+        {
+            x: 0.85,
+            y: -0.4,
+            angleRad: -0.45,
+            widthMm: 1.0,
+            depthFraction: 0,
+            type: 'paracentesis',
+            completed: false,
+            plane: 0,
+            planeName: 'Ready: 1.0mm MVR at 10:00 limbus',
+            clockPosition: '10:00'
+        },
+        {
+            x: 0.95,
+            y: 0.25,
+            angleRad: 0.26,
+            widthMm: 2.4,
+            depthFraction: 0,
+            type: 'clear_corneal',
+            completed: false,
+            plane: 0,
+            planeName: 'Ready: 2.4mm Tri-Planar Keratome at 1:30',
+            clockPosition: '1:30'
+        }
     ];
     ovdDispersiveCoverage = 0; // Endothelial coat: 0 to 100%
     ovdCohesiveDepth = 0; // AC inflation: 0 to 100%
@@ -20143,13 +20165,41 @@ class CataractPhysicsEngine {
         this.cataractGrade = cataractGrade;
     }
     // --- 1. Incision Interactions ---
-    advanceIncision(type, amount = 0.3) {
+    advanceIncision(type, amount = 0.35) {
         const inc = this.incisions.find(i => i.type === type);
         if (!inc)
             return;
         inc.depthFraction = Math.min(1.0, inc.depthFraction + amount);
+        if (type === 'clear_corneal') {
+            if (inc.depthFraction < 0.35) {
+                inc.plane = 1;
+                inc.planeName = 'Plane 1: Vertical Limbal Groove (300 µm)';
+            }
+            else if (inc.depthFraction < 0.7) {
+                inc.plane = 2;
+                inc.planeName = 'Plane 2: Lamellar Stromal Tunnel (1.5–1.75 mm)';
+            }
+            else {
+                inc.plane = 3;
+                inc.planeName = 'Plane 3: Internal Descemet AC Entry (Self-Sealing)';
+            }
+        }
+        else {
+            if (inc.depthFraction < 0.5) {
+                inc.plane = 1;
+                inc.planeName = 'Plane 1: External Corneal Puncture';
+            }
+            else {
+                inc.plane = 2;
+                inc.planeName = 'Plane 2: Parallel Iris Entry into AC (1.0 mm)';
+            }
+        }
         if (inc.depthFraction >= 1.0) {
             inc.completed = true;
+            inc.plane = 3;
+            inc.planeName = inc.type === 'clear_corneal'
+                ? '✓ Complete: 2.4 mm Tri-Planar Self-Sealing Port'
+                : '✓ Complete: 1.0 mm Paracentesis Port';
         }
     }
     // --- 2. OVD Injection ---
@@ -20509,6 +20559,157 @@ class YagLaserPhysicsEngine {
         if (area >= 7.0 && centralShots.length >= 8) {
             this.capsulotomy.visualAxisCleared = true;
         }
+    }
+}
+
+// Minimally Invasive Glaucoma Surgery (MIGS) - Trabecular Micro-Bypass Physics Engine
+// Models Schlemm's Canal Direct-to-Bloodstream Drainage & Episcleral Venous Back-Pressure (8-10 mmHg)
+class MigsStentPhysicsEngine {
+    state;
+    // Goldmann Outflow Parameters
+    aqueousProductionF = 2.4; // µL/min from ciliary processes
+    uveoscleralOutflowU = 0.35; // µL/min
+    diseasedTrabecularFacility = 0.075; // µL/min/mmHg in glaucoma (normally ~0.28)
+    stentAddedFacility = 0.095; // µL/min/mmHg per patent micro-stent
+    viscoRetainedFraction = 1.0;
+    constructor() {
+        this.state = {
+            microscopeTiltDeg: 0,
+            patientHeadTiltDeg: 0,
+            gonioprismPlaced: false,
+            gonioViewClarityPercent: 0,
+            angleDeepenedWithOvd: false,
+            stents: [
+                {
+                    id: 'migs_stent_1',
+                    clockPosition: 2.5, // Nasal upper-mid quadrant
+                    deployed: false,
+                    angleAngleDeg: 0,
+                    seatingDepthMicrons: 0,
+                    isPatentToVenousStream: false,
+                    collectorChannelAlignmentScore: 0
+                },
+                {
+                    id: 'migs_stent_2',
+                    clockPosition: 4.0, // Nasal lower-mid quadrant (~2 clock hours away)
+                    deployed: false,
+                    angleAngleDeg: 0,
+                    seatingDepthMicrons: 0,
+                    isPatentToVenousStream: false,
+                    collectorChannelAlignmentScore: 0
+                }
+            ],
+            stentsRemainingInInjector: 2,
+            baselineIopMmHg: 32.5,
+            episcleralVenousPressureMmHg: 8.5, // Physiologic venous floor: 8 - 10 mmHg
+            currentIopMmHg: 32.5,
+            outflowFacilityMicrolitersPerMinPerMmHg: 0.075,
+            bloodRefluxWaveConfirmed: false,
+            hypotonyProtectedByVenousBackpressure: true
+        };
+    }
+    // Microscope Tilt: Target 35° - 45° toward surgeon
+    setMicroscopeTilt(deg) {
+        this.state.microscopeTiltDeg = Math.max(0, Math.min(50, deg));
+        this.updateGonioClarity();
+    }
+    // Patient Head Tilt: Target 30° - 40° away from surgeon
+    setPatientHeadTilt(deg) {
+        this.state.patientHeadTiltDeg = Math.max(0, Math.min(45, deg));
+        this.updateGonioClarity();
+    }
+    // Direct Surgical Gonioprism Placement
+    placeGonioprism(placed) {
+        this.state.gonioprismPlaced = placed;
+        this.updateGonioClarity();
+    }
+    // Calculate optical gonioscopic clarity of iridocorneal angle landmarks
+    updateGonioClarity() {
+        if (!this.state.gonioprismPlaced) {
+            this.state.gonioViewClarityPercent = 0;
+            return;
+        }
+        // Optimal alignment occurs when combined tilt is roughly 70° - 85°
+        const combinedTilt = this.state.microscopeTiltDeg + this.state.patientHeadTiltDeg;
+        let clarity = 0;
+        if (combinedTilt >= 50) {
+            clarity = Math.min(100, ((combinedTilt - 50) / 25) * 100);
+        }
+        if (this.state.angleDeepenedWithOvd) {
+            clarity = Math.min(100, clarity * 1.15);
+        }
+        this.state.gonioViewClarityPercent = Math.round(clarity);
+    }
+    // Deepen anterior chamber angle with cohesive OVD
+    deepenAngleWithOvd() {
+        this.state.angleDeepenedWithOvd = true;
+        this.updateGonioClarity();
+    }
+    // Deploy Micro-Stent into Schlemm's Canal (e.g. iStent inject W system)
+    deployStent(stentIndex, clockHour, angleDeg, depthMicrons) {
+        if (stentIndex < 0 || stentIndex >= this.state.stents.length)
+            return;
+        const stent = this.state.stents[stentIndex];
+        if (stent.deployed)
+            return;
+        stent.deployed = true;
+        stent.clockPosition = clockHour;
+        stent.angleAngleDeg = angleDeg;
+        stent.seatingDepthMicrons = depthMicrons;
+        // Evaluate placement accuracy:
+        // Ideal trajectory is 15° to 30° tangential to the pigmented trabecular meshwork band
+        // Ideal depth is 340µm - 380µm (lumen fully in Schlemm's canal, thorax in TM, inlet in AC)
+        const angleQuality = Math.max(0, 1 - Math.abs(angleDeg - 22) / 20);
+        const depthQuality = Math.max(0, 1 - Math.abs(depthMicrons - 360) / 70);
+        stent.collectorChannelAlignmentScore = Math.round((angleQuality * 0.5 + depthQuality * 0.5) * 100);
+        // Stent is patent to venous bloodstream if alignment score is > 60%
+        if (stent.collectorChannelAlignmentScore >= 60) {
+            stent.isPatentToVenousStream = true;
+        }
+        this.state.stentsRemainingInInjector = Math.max(0, this.state.stentsRemainingInInjector - 1);
+        this.recalculateHemodynamics();
+    }
+    // Goldmann Equation Hemodynamic Recalculation:
+    // IOP = (F - U) / C + EVP
+    recalculateHemodynamics() {
+        let totalFacility = this.diseasedTrabecularFacility;
+        this.state.stents.forEach((stent) => {
+            if (stent.deployed && stent.isPatentToVenousStream) {
+                // Each patent micro-stent provides a direct low-resistance conduit into Schlemm's canal
+                const stentContribution = this.stentAddedFacility * (stent.collectorChannelAlignmentScore / 100);
+                totalFacility += stentContribution;
+            }
+        });
+        this.state.outflowFacilityMicrolitersPerMinPerMmHg = totalFacility;
+        // Goldmann Equation:
+        const evp = this.state.episcleralVenousPressureMmHg; // 8.5 mmHg floor
+        const netFlow = this.aqueousProductionF - this.uveoscleralOutflowU; // ~2.05 µL/min
+        const theoreticalIop = (netFlow / totalFacility) + evp;
+        // Viscoelastic in angle temporarily elevates AC resistance until washed out
+        const viscoResistance = this.viscoRetainedFraction * 6.0;
+        this.state.currentIopMmHg = Math.max(evp, Math.min(55, theoreticalIop + viscoResistance));
+    }
+    // Blood Reflux Test: Lower AC pressure briefly (pedal in aspiration or decompress wound)
+    // When AC pressure drops below Episcleral Venous Pressure (8.5 mmHg),
+    // venous blood naturally refluxes backward out of Schlemm's canal through the stent lumen!
+    // This is the definitive clinical proof of direct venous communication.
+    triggerBloodRefluxTest() {
+        const patentCount = this.state.stents.filter(s => s.deployed && s.isPatentToVenousStream).length;
+        if (patentCount > 0) {
+            this.state.bloodRefluxWaveConfirmed = true;
+            return true;
+        }
+        return false;
+    }
+    // Viscoelastic Washout
+    washOutViscoelastic(fraction) {
+        this.viscoRetainedFraction = Math.max(0, this.viscoRetainedFraction - fraction);
+        this.recalculateHemodynamics();
+    }
+    // Loop update
+    update(dt) {
+        // Gentle physiologic drift
+        this.recalculateHemodynamics();
     }
 }
 
@@ -21071,7 +21272,7 @@ function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
  */
 
 
-const __iconData$I = {
+const __iconData$S = {
   name: "activity",
   size: 24,
   node: [
@@ -21084,8 +21285,8 @@ const __iconData$I = {
     ]
   ]
 };
-__iconData$I.node;
-const Activity = createLucideIcon(__iconData$I);
+__iconData$S.node;
+const Activity = createLucideIcon(__iconData$S);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21095,7 +21296,26 @@ const Activity = createLucideIcon(__iconData$I);
  */
 
 
-const __iconData$H = {
+const __iconData$R = {
+  name: "arrow-right",
+  size: 24,
+  node: [
+    ["path", { d: "M5 12h14", key: "1ays0h" }],
+    ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  ]
+};
+__iconData$R.node;
+const ArrowRight = createLucideIcon(__iconData$R);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$Q = {
   name: "award",
   size: 24,
   node: [
@@ -21109,8 +21329,8 @@ const __iconData$H = {
     ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
   ]
 };
-__iconData$H.node;
-const Award = createLucideIcon(__iconData$H);
+__iconData$Q.node;
+const Award = createLucideIcon(__iconData$Q);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21120,7 +21340,7 @@ const Award = createLucideIcon(__iconData$H);
  */
 
 
-const __iconData$G = {
+const __iconData$P = {
   name: "book-open",
   size: 24,
   node: [
@@ -21134,8 +21354,8 @@ const __iconData$G = {
     ]
   ]
 };
-__iconData$G.node;
-const BookOpen = createLucideIcon(__iconData$G);
+__iconData$P.node;
+const BookOpen = createLucideIcon(__iconData$P);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21145,7 +21365,7 @@ const BookOpen = createLucideIcon(__iconData$G);
  */
 
 
-const __iconData$F = {
+const __iconData$O = {
   name: "camera",
   size: 24,
   node: [
@@ -21159,8 +21379,8 @@ const __iconData$F = {
     ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
   ]
 };
-__iconData$F.node;
-const Camera$1 = createLucideIcon(__iconData$F);
+__iconData$O.node;
+const Camera$1 = createLucideIcon(__iconData$O);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21170,13 +21390,29 @@ const Camera$1 = createLucideIcon(__iconData$F);
  */
 
 
-const __iconData$E = {
+const __iconData$N = {
+  name: "check",
+  size: 24,
+  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
+};
+__iconData$N.node;
+const Check = createLucideIcon(__iconData$N);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$M = {
   name: "chevron-down",
   size: 24,
   node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
 };
-__iconData$E.node;
-const ChevronDown = createLucideIcon(__iconData$E);
+__iconData$M.node;
+const ChevronDown = createLucideIcon(__iconData$M);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21186,13 +21422,13 @@ const ChevronDown = createLucideIcon(__iconData$E);
  */
 
 
-const __iconData$D = {
+const __iconData$L = {
   name: "chevron-right",
   size: 24,
   node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
 };
-__iconData$D.node;
-const ChevronRight = createLucideIcon(__iconData$D);
+__iconData$L.node;
+const ChevronRight = createLucideIcon(__iconData$L);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21202,13 +21438,13 @@ const ChevronRight = createLucideIcon(__iconData$D);
  */
 
 
-const __iconData$C = {
+const __iconData$K = {
   name: "chevron-left",
   size: 24,
   node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
 };
-__iconData$C.node;
-const ChevronLeft = createLucideIcon(__iconData$C);
+__iconData$K.node;
+const ChevronLeft = createLucideIcon(__iconData$K);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21218,13 +21454,13 @@ const ChevronLeft = createLucideIcon(__iconData$C);
  */
 
 
-const __iconData$B = {
+const __iconData$J = {
   name: "chevron-up",
   size: 24,
   node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
-__iconData$B.node;
-const ChevronUp = createLucideIcon(__iconData$B);
+__iconData$J.node;
+const ChevronUp = createLucideIcon(__iconData$J);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21234,7 +21470,7 @@ const ChevronUp = createLucideIcon(__iconData$B);
  */
 
 
-const __iconData$A = {
+const __iconData$I = {
   name: "circle-check-big",
   size: 24,
   node: [
@@ -21243,8 +21479,8 @@ const __iconData$A = {
   ],
   aliases: ["check-circle"]
 };
-__iconData$A.node;
-const CircleCheckBig = createLucideIcon(__iconData$A);
+__iconData$I.node;
+const CircleCheckBig = createLucideIcon(__iconData$I);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21254,7 +21490,27 @@ const CircleCheckBig = createLucideIcon(__iconData$A);
  */
 
 
-const __iconData$z = {
+const __iconData$H = {
+  name: "circle-check",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m16 9-5.5 5.5L8 12", key: "xofnsj" }]
+  ],
+  aliases: ["check-circle-2"]
+};
+__iconData$H.node;
+const CircleCheck = createLucideIcon(__iconData$H);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$G = {
   name: "circle-question-mark",
   size: 24,
   node: [
@@ -21264,8 +21520,8 @@ const __iconData$z = {
   ],
   aliases: ["help-circle", "circle-help"]
 };
-__iconData$z.node;
-const CircleQuestionMark = createLucideIcon(__iconData$z);
+__iconData$G.node;
+const CircleQuestionMark = createLucideIcon(__iconData$G);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21275,7 +21531,7 @@ const CircleQuestionMark = createLucideIcon(__iconData$z);
  */
 
 
-const __iconData$y = {
+const __iconData$F = {
   name: "compass",
   size: 24,
   node: [
@@ -21289,8 +21545,8 @@ const __iconData$y = {
     ]
   ]
 };
-__iconData$y.node;
-const Compass = createLucideIcon(__iconData$y);
+__iconData$F.node;
+const Compass = createLucideIcon(__iconData$F);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21300,7 +21556,7 @@ const Compass = createLucideIcon(__iconData$y);
  */
 
 
-const __iconData$x = {
+const __iconData$E = {
   name: "crosshair",
   size: 24,
   node: [
@@ -21311,8 +21567,8 @@ const __iconData$x = {
     ["line", { x1: "12", x2: "12", y1: "22", y2: "18", key: "15g9kq" }]
   ]
 };
-__iconData$x.node;
-const Crosshair = createLucideIcon(__iconData$x);
+__iconData$E.node;
+const Crosshair = createLucideIcon(__iconData$E);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21322,7 +21578,7 @@ const Crosshair = createLucideIcon(__iconData$x);
  */
 
 
-const __iconData$w = {
+const __iconData$D = {
   name: "disc",
   size: 24,
   node: [
@@ -21330,8 +21586,8 @@ const __iconData$w = {
     ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
   ]
 };
-__iconData$w.node;
-const Disc = createLucideIcon(__iconData$w);
+__iconData$D.node;
+const Disc = createLucideIcon(__iconData$D);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21341,7 +21597,7 @@ const Disc = createLucideIcon(__iconData$w);
  */
 
 
-const __iconData$v = {
+const __iconData$C = {
   name: "download",
   size: 24,
   node: [
@@ -21350,8 +21606,8 @@ const __iconData$v = {
     ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
-__iconData$v.node;
-const Download = createLucideIcon(__iconData$v);
+__iconData$C.node;
+const Download = createLucideIcon(__iconData$C);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21361,7 +21617,31 @@ const Download = createLucideIcon(__iconData$v);
  */
 
 
-const __iconData$u = {
+const __iconData$B = {
+  name: "droplet",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z",
+        key: "c7niix"
+      }
+    ]
+  ]
+};
+__iconData$B.node;
+const Droplet = createLucideIcon(__iconData$B);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$A = {
   name: "droplets",
   size: 24,
   node: [
@@ -21381,8 +21661,8 @@ const __iconData$u = {
     ]
   ]
 };
-__iconData$u.node;
-const Droplets = createLucideIcon(__iconData$u);
+__iconData$A.node;
+const Droplets = createLucideIcon(__iconData$A);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21392,7 +21672,7 @@ const Droplets = createLucideIcon(__iconData$u);
  */
 
 
-const __iconData$t = {
+const __iconData$z = {
   name: "eye",
   size: 24,
   node: [
@@ -21406,8 +21686,8 @@ const __iconData$t = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$t.node;
-const Eye = createLucideIcon(__iconData$t);
+__iconData$z.node;
+const Eye = createLucideIcon(__iconData$z);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21417,7 +21697,7 @@ const Eye = createLucideIcon(__iconData$t);
  */
 
 
-const __iconData$s = {
+const __iconData$y = {
   name: "file-text",
   size: 24,
   node: [
@@ -21434,8 +21714,8 @@ const __iconData$s = {
     ["path", { d: "M16 17H8", key: "z1uh3a" }]
   ]
 };
-__iconData$s.node;
-const FileText = createLucideIcon(__iconData$s);
+__iconData$y.node;
+const FileText = createLucideIcon(__iconData$y);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21445,7 +21725,7 @@ const FileText = createLucideIcon(__iconData$s);
  */
 
 
-const __iconData$r = {
+const __iconData$x = {
   name: "flame",
   size: 24,
   node: [
@@ -21458,8 +21738,8 @@ const __iconData$r = {
     ]
   ]
 };
-__iconData$r.node;
-const Flame = createLucideIcon(__iconData$r);
+__iconData$x.node;
+const Flame = createLucideIcon(__iconData$x);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21469,7 +21749,7 @@ const Flame = createLucideIcon(__iconData$r);
  */
 
 
-const __iconData$q = {
+const __iconData$w = {
   name: "gauge",
   size: 24,
   node: [
@@ -21477,8 +21757,8 @@ const __iconData$q = {
     ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
   ]
 };
-__iconData$q.node;
-const Gauge = createLucideIcon(__iconData$q);
+__iconData$w.node;
+const Gauge = createLucideIcon(__iconData$w);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21488,7 +21768,7 @@ const Gauge = createLucideIcon(__iconData$q);
  */
 
 
-const __iconData$p = {
+const __iconData$v = {
   name: "heart",
   size: 24,
   node: [
@@ -21501,8 +21781,8 @@ const __iconData$p = {
     ]
   ]
 };
-__iconData$p.node;
-const Heart = createLucideIcon(__iconData$p);
+__iconData$v.node;
+const Heart = createLucideIcon(__iconData$v);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21512,7 +21792,33 @@ const Heart = createLucideIcon(__iconData$p);
  */
 
 
-const __iconData$o = {
+const __iconData$u = {
+  name: "house",
+  size: 24,
+  node: [
+    ["path", { d: "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8", key: "5wwlr5" }],
+    [
+      "path",
+      {
+        d: "M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+        key: "r6nss1"
+      }
+    ]
+  ],
+  aliases: ["home"]
+};
+__iconData$u.node;
+const House = createLucideIcon(__iconData$u);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$t = {
   name: "layers",
   size: 24,
   node: [
@@ -21540,8 +21846,8 @@ const __iconData$o = {
   ],
   aliases: ["layers-3"]
 };
-__iconData$o.node;
-const Layers$1 = createLucideIcon(__iconData$o);
+__iconData$t.node;
+const Layers$1 = createLucideIcon(__iconData$t);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21551,7 +21857,7 @@ const Layers$1 = createLucideIcon(__iconData$o);
  */
 
 
-const __iconData$n = {
+const __iconData$s = {
   name: "lightbulb",
   size: 24,
   node: [
@@ -21566,8 +21872,8 @@ const __iconData$n = {
     ["path", { d: "M10 22h4", key: "ceow96" }]
   ]
 };
-__iconData$n.node;
-const Lightbulb = createLucideIcon(__iconData$n);
+__iconData$s.node;
+const Lightbulb = createLucideIcon(__iconData$s);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21577,7 +21883,7 @@ const Lightbulb = createLucideIcon(__iconData$n);
  */
 
 
-const __iconData$m = {
+const __iconData$r = {
   name: "maximize-2",
   size: 24,
   node: [
@@ -21587,8 +21893,8 @@ const __iconData$m = {
     ["path", { d: "M9 21H3v-6", key: "wtvkvv" }]
   ]
 };
-__iconData$m.node;
-const Maximize2 = createLucideIcon(__iconData$m);
+__iconData$r.node;
+const Maximize2 = createLucideIcon(__iconData$r);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21598,7 +21904,7 @@ const Maximize2 = createLucideIcon(__iconData$m);
  */
 
 
-const __iconData$l = {
+const __iconData$q = {
   name: "menu",
   size: 24,
   node: [
@@ -21607,8 +21913,8 @@ const __iconData$l = {
     ["path", { d: "M4 19h16", key: "1djgab" }]
   ]
 };
-__iconData$l.node;
-const Menu = createLucideIcon(__iconData$l);
+__iconData$q.node;
+const Menu = createLucideIcon(__iconData$q);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21618,7 +21924,7 @@ const Menu = createLucideIcon(__iconData$l);
  */
 
 
-const __iconData$k = {
+const __iconData$p = {
   name: "minimize-2",
   size: 24,
   node: [
@@ -21628,8 +21934,8 @@ const __iconData$k = {
     ["path", { d: "M4 14h6v6", key: "rmj7iw" }]
   ]
 };
-__iconData$k.node;
-const Minimize2 = createLucideIcon(__iconData$k);
+__iconData$p.node;
+const Minimize2 = createLucideIcon(__iconData$p);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21639,7 +21945,33 @@ const Minimize2 = createLucideIcon(__iconData$k);
  */
 
 
-const __iconData$j = {
+const __iconData$o = {
+  name: "pen-line",
+  size: 24,
+  node: [
+    ["path", { d: "M13 21h8", key: "1jsn5i" }],
+    [
+      "path",
+      {
+        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+        key: "1a8usu"
+      }
+    ]
+  ],
+  aliases: ["edit-3"]
+};
+__iconData$o.node;
+const PenLine = createLucideIcon(__iconData$o);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$n = {
   name: "play",
   size: 24,
   node: [
@@ -21652,8 +21984,8 @@ const __iconData$j = {
     ]
   ]
 };
-__iconData$j.node;
-const Play = createLucideIcon(__iconData$j);
+__iconData$n.node;
+const Play = createLucideIcon(__iconData$n);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21663,7 +21995,33 @@ const Play = createLucideIcon(__iconData$j);
  */
 
 
-const __iconData$i = {
+const __iconData$m = {
+  name: "printer",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2",
+        key: "143wyd"
+      }
+    ],
+    ["path", { d: "M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6", key: "1itne7" }],
+    ["rect", { x: "6", y: "14", width: "12", height: "8", rx: "1", key: "1ue0tg" }]
+  ]
+};
+__iconData$m.node;
+const Printer = createLucideIcon(__iconData$m);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$l = {
   name: "radio",
   size: 24,
   node: [
@@ -21674,8 +22032,8 @@ const __iconData$i = {
     ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
   ]
 };
-__iconData$i.node;
-const Radio = createLucideIcon(__iconData$i);
+__iconData$l.node;
+const Radio = createLucideIcon(__iconData$l);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21685,7 +22043,7 @@ const Radio = createLucideIcon(__iconData$i);
  */
 
 
-const __iconData$h = {
+const __iconData$k = {
   name: "rotate-ccw",
   size: 24,
   node: [
@@ -21693,8 +22051,8 @@ const __iconData$h = {
     ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
   ]
 };
-__iconData$h.node;
-const RotateCcw = createLucideIcon(__iconData$h);
+__iconData$k.node;
+const RotateCcw = createLucideIcon(__iconData$k);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21704,7 +22062,7 @@ const RotateCcw = createLucideIcon(__iconData$h);
  */
 
 
-const __iconData$g = {
+const __iconData$j = {
   name: "rotate-cw",
   size: 24,
   node: [
@@ -21712,8 +22070,8 @@ const __iconData$g = {
     ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
   ]
 };
-__iconData$g.node;
-const RotateCw = createLucideIcon(__iconData$g);
+__iconData$j.node;
+const RotateCw = createLucideIcon(__iconData$j);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21723,7 +22081,7 @@ const RotateCw = createLucideIcon(__iconData$g);
  */
 
 
-const __iconData$f = {
+const __iconData$i = {
   name: "scissors",
   size: 24,
   node: [
@@ -21734,8 +22092,8 @@ const __iconData$f = {
     ["path", { d: "M14.8 14.8 20 20", key: "ptml3r" }]
   ]
 };
-__iconData$f.node;
-const Scissors = createLucideIcon(__iconData$f);
+__iconData$i.node;
+const Scissors = createLucideIcon(__iconData$i);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21745,7 +22103,7 @@ const Scissors = createLucideIcon(__iconData$f);
  */
 
 
-const __iconData$e = {
+const __iconData$h = {
   name: "shield-alert",
   size: 24,
   node: [
@@ -21760,8 +22118,8 @@ const __iconData$e = {
     ["path", { d: "M12 16h.01", key: "1drbdi" }]
   ]
 };
-__iconData$e.node;
-const ShieldAlert = createLucideIcon(__iconData$e);
+__iconData$h.node;
+const ShieldAlert = createLucideIcon(__iconData$h);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21771,7 +22129,32 @@ const ShieldAlert = createLucideIcon(__iconData$e);
  */
 
 
-const __iconData$d = {
+const __iconData$g = {
+  name: "shield-check",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+        key: "oel41y"
+      }
+    ],
+    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ]
+};
+__iconData$g.node;
+const ShieldCheck = createLucideIcon(__iconData$g);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$f = {
   name: "sliders-vertical",
   size: 24,
   node: [
@@ -21787,8 +22170,8 @@ const __iconData$d = {
   ],
   aliases: ["sliders"]
 };
-__iconData$d.node;
-const SlidersVertical = createLucideIcon(__iconData$d);
+__iconData$f.node;
+const SlidersVertical = createLucideIcon(__iconData$f);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21798,7 +22181,7 @@ const SlidersVertical = createLucideIcon(__iconData$d);
  */
 
 
-const __iconData$c = {
+const __iconData$e = {
   name: "sparkles",
   size: 24,
   node: [
@@ -21815,8 +22198,8 @@ const __iconData$c = {
   ],
   aliases: ["stars"]
 };
-__iconData$c.node;
-const Sparkles = createLucideIcon(__iconData$c);
+__iconData$e.node;
+const Sparkles = createLucideIcon(__iconData$e);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21826,13 +22209,13 @@ const Sparkles = createLucideIcon(__iconData$c);
  */
 
 
-const __iconData$b = {
+const __iconData$d = {
   name: "square",
   size: 24,
   node: [["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }]]
 };
-__iconData$b.node;
-const Square = createLucideIcon(__iconData$b);
+__iconData$d.node;
+const Square = createLucideIcon(__iconData$d);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21842,7 +22225,7 @@ const Square = createLucideIcon(__iconData$b);
  */
 
 
-const __iconData$a = {
+const __iconData$c = {
   name: "syringe",
   size: 24,
   node: [
@@ -21854,8 +22237,8 @@ const __iconData$a = {
     ["path", { d: "m14 4 6 6", key: "yqp9t2" }]
   ]
 };
-__iconData$a.node;
-const Syringe = createLucideIcon(__iconData$a);
+__iconData$c.node;
+const Syringe = createLucideIcon(__iconData$c);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21865,7 +22248,7 @@ const Syringe = createLucideIcon(__iconData$a);
  */
 
 
-const __iconData$9 = {
+const __iconData$b = {
   name: "timer",
   size: 24,
   node: [
@@ -21874,8 +22257,8 @@ const __iconData$9 = {
     ["circle", { cx: "12", cy: "14", r: "8", key: "1e1u0o" }]
   ]
 };
-__iconData$9.node;
-const Timer = createLucideIcon(__iconData$9);
+__iconData$b.node;
+const Timer = createLucideIcon(__iconData$b);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21885,7 +22268,7 @@ const Timer = createLucideIcon(__iconData$9);
  */
 
 
-const __iconData$8 = {
+const __iconData$a = {
   name: "triangle-alert",
   size: 24,
   node: [
@@ -21901,8 +22284,8 @@ const __iconData$8 = {
   ],
   aliases: ["alert-triangle"]
 };
-__iconData$8.node;
-const TriangleAlert = createLucideIcon(__iconData$8);
+__iconData$a.node;
+const TriangleAlert = createLucideIcon(__iconData$a);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21912,7 +22295,32 @@ const TriangleAlert = createLucideIcon(__iconData$8);
  */
 
 
-const __iconData$7 = {
+const __iconData$9 = {
+  name: "video",
+  size: 24,
+  node: [
+    [
+      "path",
+      {
+        d: "m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5",
+        key: "ftymec"
+      }
+    ],
+    ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2", key: "158x01" }]
+  ]
+};
+__iconData$9.node;
+const Video = createLucideIcon(__iconData$9);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$8 = {
   name: "volume-2",
   size: 24,
   node: [
@@ -21927,8 +22335,8 @@ const __iconData$7 = {
     ["path", { d: "M19.364 18.364a9 9 0 0 0 0-12.728", key: "ijwkga" }]
   ]
 };
-__iconData$7.node;
-const Volume2 = createLucideIcon(__iconData$7);
+__iconData$8.node;
+const Volume2 = createLucideIcon(__iconData$8);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21938,7 +22346,7 @@ const Volume2 = createLucideIcon(__iconData$7);
  */
 
 
-const __iconData$6 = {
+const __iconData$7 = {
   name: "volume-x",
   size: 24,
   node: [
@@ -21953,8 +22361,29 @@ const __iconData$6 = {
     ["path", { d: "m16.5 9.5 5 5", key: "1akey5" }]
   ]
 };
+__iconData$7.node;
+const VolumeX = createLucideIcon(__iconData$7);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$6 = {
+  name: "waves-horizontal",
+  size: 24,
+  node: [
+    ["path", { d: "M2 12q2.5 2 5 0t5 0 5 0 5 0", key: "8ddzzs" }],
+    ["path", { d: "M2 19q2.5 2 5 0t5 0 5 0 5 0", key: "1wj4st" }],
+    ["path", { d: "M2 5q2.5 2 5 0t5 0 5 0 5 0", key: "69x50u" }]
+  ],
+  aliases: ["waves"]
+};
 __iconData$6.node;
-const VolumeX = createLucideIcon(__iconData$6);
+const WavesHorizontal = createLucideIcon(__iconData$6);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21965,17 +22394,16 @@ const VolumeX = createLucideIcon(__iconData$6);
 
 
 const __iconData$5 = {
-  name: "waves-horizontal",
+  name: "wind",
   size: 24,
   node: [
-    ["path", { d: "M2 12q2.5 2 5 0t5 0 5 0 5 0", key: "8ddzzs" }],
-    ["path", { d: "M2 19q2.5 2 5 0t5 0 5 0 5 0", key: "1wj4st" }],
-    ["path", { d: "M2 5q2.5 2 5 0t5 0 5 0 5 0", key: "69x50u" }]
-  ],
-  aliases: ["waves"]
+    ["path", { d: "M12.8 19.6A2 2 0 1 0 14 16H2", key: "148xed" }],
+    ["path", { d: "M17.5 8a2.5 2.5 0 1 1 2 4H2", key: "1u4tom" }],
+    ["path", { d: "M9.8 4.4A2 2 0 1 1 11 8H2", key: "75valh" }]
+  ]
 };
 __iconData$5.node;
-const WavesHorizontal = createLucideIcon(__iconData$5);
+const Wind = createLucideIcon(__iconData$5);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21986,16 +22414,20 @@ const WavesHorizontal = createLucideIcon(__iconData$5);
 
 
 const __iconData$4 = {
-  name: "wind",
+  name: "wrench",
   size: 24,
   node: [
-    ["path", { d: "M12.8 19.6A2 2 0 1 0 14 16H2", key: "148xed" }],
-    ["path", { d: "M17.5 8a2.5 2.5 0 1 1 2 4H2", key: "1u4tom" }],
-    ["path", { d: "M9.8 4.4A2 2 0 1 1 11 8H2", key: "75valh" }]
+    [
+      "path",
+      {
+        d: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z",
+        key: "1ngwbx"
+      }
+    ]
   ]
 };
 __iconData$4.node;
-const Wind = createLucideIcon(__iconData$4);
+const Wrench = createLucideIcon(__iconData$4);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -22081,7 +22513,7 @@ const __iconData = {
 __iconData.node;
 const ZoomOut = createLucideIcon(__iconData);
 
-const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vitals, elapsedSeconds, onOpenReport, onOpenReference, isMuted, onToggleMute, onToggleTools, isToolsOpen = false, onToggleConsole, isConsoleOpen = false, activeInstrument = 'mvr_blade', }) => {
+const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, migsStep = 'microscope_and_head_tilt', fluidics, cde, vitals, elapsedSeconds, onOpenReport, onOpenReference, onOpenGuides, onOpenMenu, onOpenVideo, isMuted, onToggleMute, onToggleTools, isToolsOpen = false, onToggleConsole, isConsoleOpen = false, activeInstrument = 'mvr_blade', }) => {
     const [pulse, setPulse] = reactExports.useState(false);
     const [deferredPrompt, setDeferredPrompt] = reactExports.useState(null);
     const [isAppInstalled, setIsAppInstalled] = reactExports.useState(false);
@@ -22144,15 +22576,15 @@ const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vita
         }
         else if (module === 'iol') {
             const stepLabels = {
-                ovd_bag_refill: 'Step 1: Bag Refill with Cohesive OVD',
-                cartridge_insertion: 'Step 2: Cartridge Delivery into Bag',
-                haptic_unfolding: 'Step 3: Leading Haptic Placement',
-                sinskey_dialing: 'Step 4: Sinskey Hook 360° Rotational Centering',
-                viscoelastic_washout: 'Step 5: Retro-lens & AC Viscoelastic Washout'
+                ovd_bag_refill: 'Step 8: Bag Refill with Cohesive OVD',
+                cartridge_insertion: 'Step 9: Cartridge Delivery into Bag',
+                haptic_unfolding: 'Step 10: Leading Haptic Placement',
+                sinskey_dialing: 'Step 11: Sinskey Hook 360° Rotational Centering',
+                viscoelastic_washout: 'Step 12: Retro-lens & AC Viscoelastic Washout'
             };
             return stepLabels[iolStep];
         }
-        else {
+        else if (module === 'yag') {
             const stepLabels = {
                 contact_lens_placement: 'Step 1: Abraham Capsulotomy Lens Placement',
                 aiming_focus: 'Step 2: Dual HeNe Aiming Beam Convergence',
@@ -22162,12 +22594,23 @@ const TopVitalsBar = ({ module, phacoStep, iolStep, yagStep, fluidics, cde, vita
             };
             return stepLabels[yagStep];
         }
+        else {
+            const stepLabels = {
+                microscope_and_head_tilt: 'Step 1: Microscope (40°) & Head Tilt (35°)',
+                gonioprism_placement: 'Step 2: Direct Swan-Jacob Gonioprism',
+                viscoelastic_angle_deepening: 'Step 3: Cohesive OVD Angle Deepening',
+                stent_1_deployment: 'Step 4: Micro-Stent 1 Insertion (2:30)',
+                stent_2_deployment: 'Step 5: Micro-Stent 2 Insertion (4:00)',
+                blood_reflux_and_washout: 'Step 6: Episcleral Blood Reflux & Washout'
+            };
+            return stepLabels[migsStep];
+        }
     };
-    return (jsxRuntimeExports.jsxs("header", { className: "h-14 bg-[#0a101d] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: onToggleTools, title: "Toggle Surgical Tools Menu (Hamburger)", "aria-label": "Toggle Surgical Tools Menu", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 ${isToolsOpen
+    return (jsxRuntimeExports.jsxs("header", { className: "h-14 bg-[#0a101d] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 shrink-0", children: [onOpenMenu && (jsxRuntimeExports.jsxs("button", { onClick: onOpenMenu, title: "Return to Main Surgery Selection Menu", "aria-label": "Return to Main Surgery Menu", className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500", children: [jsxRuntimeExports.jsx(House, { className: "w-4 h-4 shrink-0 text-cyan-400" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs hidden xs:inline", children: "Menu" })] })), jsxRuntimeExports.jsxs("button", { onClick: onToggleTools, title: "Toggle Surgical Tools Menu (Hamburger)", "aria-label": "Toggle Surgical Tools Menu", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 ${isToolsOpen
                             ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
                             : 'bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500'}`, children: [jsxRuntimeExports.jsx(Menu, { className: "w-4 h-4 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: "Tools" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2 sm:pr-3 sm:border-r border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse hidden xs:inline-block" }), jsxRuntimeExports.jsxs("span", { className: "font-bold tracking-wide text-white text-xs sm:text-sm", children: [jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "SURGICAL SIMULATOR" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "EYE SIM" })] }), jsxRuntimeExports.jsx("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950/80 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded hidden sm:inline-block", children: "PWA" })] }), jsxRuntimeExports.jsxs("div", { className: "hidden lg:flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium", children: "Phase:" }), jsxRuntimeExports.jsx("span", { className: "font-semibold text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[200px] xl:max-w-none", children: getStepTitle() })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 overflow-hidden", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Droplets, { className: "w-3.5 h-3.5 shrink-0 text-cyan-400" }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px] hidden sm:inline", children: "IOP:" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-xs sm:text-sm text-cyan-300", children: fluidics.iopActual.toFixed(1) }), jsxRuntimeExports.jsx("span", { className: "text-[9px] text-slate-500 font-mono hidden md:inline", children: "mmHg" })] }), module === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Zap, { className: `w-3.5 h-3.5 shrink-0 ${cde > 18 ? 'text-amber-400' : 'text-yellow-400'}` }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px] hidden md:inline", children: "CDE:" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-xs sm:text-sm text-yellow-300", children: cde.toFixed(2) })] })), jsxRuntimeExports.jsxs("div", { className: "hidden xl:flex items-center gap-2.5 px-2.5 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Heart, { className: `w-3.5 h-3.5 text-rose-500 transition-transform ${pulse ? 'scale-125' : 'scale-100'}` }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200", children: vitals.heartRate }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "BPM" })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "BP:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-slate-200", children: [vitals.bloodPressureSys, "/", vitals.bloodPressureDia] })] }), jsxRuntimeExports.jsx("span", { className: "text-slate-600", children: "|" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "SpO\u2082:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono font-bold text-emerald-400", children: [vitals.spO2, "%"] })] })] }), jsxRuntimeExports.jsxs("div", { className: "hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-[#0d1626] border border-[#1e2f4a]", children: [jsxRuntimeExports.jsx(Timer, { className: "w-3.5 h-3.5 text-slate-400" }), jsxRuntimeExports.jsx("span", { className: "font-mono font-bold text-slate-200 text-xs", children: formatTime(elapsedSeconds) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-2 shrink-0", children: [onToggleConsole && (jsxRuntimeExports.jsxs("button", { onClick: onToggleConsole, title: "Toggle Machine Settings Console", "aria-label": "Toggle Machine Settings Console", className: `flex items-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-semibold transition lg:hidden ${isConsoleOpen
                             ? 'bg-amber-600 border-amber-400 text-white shadow-md'
-                            : 'bg-[#0d1626] hover:bg-[#162238] border-[#1e2f4a] text-amber-400 hover:text-amber-300'}`, children: [jsxRuntimeExports.jsx(Gauge, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] hidden sm:inline", children: "Console" })] })), !isAppInstalled && (jsxRuntimeExports.jsxs("button", { onClick: handleInstallClick, title: "Install Ophthalmic Simulator", className: "hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-semibold text-xs shadow-md transition", children: [jsxRuntimeExports.jsx(Download, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "PWA" })] })), jsxRuntimeExports.jsx("button", { onClick: onToggleMute, title: isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', "aria-label": isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', className: "p-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-white transition", children: isMuted ? jsxRuntimeExports.jsx(VolumeX, { className: "w-4 h-4 text-rose-400" }) : jsxRuntimeExports.jsx(Volume2, { className: "w-4 h-4 text-cyan-400" }) }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, title: "Clinical Anatomical Reference & Technique Guide", "aria-label": "Clinical Guide", className: "p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-cyan-300 text-xs transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Guide" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReport, title: "View Surgical Efficiency & Report Card", "aria-label": "Post-Op Debrief", className: "p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-900/40 transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(FileText, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Debrief" })] })] })] }));
+                            : 'bg-[#0d1626] hover:bg-[#162238] border-[#1e2f4a] text-amber-400 hover:text-amber-300'}`, children: [jsxRuntimeExports.jsx(Gauge, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] hidden sm:inline", children: "Console" })] })), !isAppInstalled && (jsxRuntimeExports.jsxs("button", { onClick: handleInstallClick, title: "Install Ophthalmic Simulator", className: "hidden md:flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-300 font-semibold text-xs shadow-md transition", children: [jsxRuntimeExports.jsx(Download, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "PWA" })] })), jsxRuntimeExports.jsx("button", { onClick: onToggleMute, title: isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', "aria-label": isMuted ? 'Unmute Audio Engine' : 'Mute Audio Engine', className: "p-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-white transition", children: isMuted ? jsxRuntimeExports.jsx(VolumeX, { className: "w-4 h-4 text-rose-400" }) : jsxRuntimeExports.jsx(Volume2, { className: "w-4 h-4 text-cyan-400" }) }), onOpenVideo && (jsxRuntimeExports.jsxs("button", { onClick: onOpenVideo, title: "Open Real Surgical Video Overlay / Footage", "aria-label": "Surgical Video Overlay", className: "p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-600/80 text-sky-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95", children: [jsxRuntimeExports.jsx(Video, { className: "w-3.5 h-3.5 text-sky-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Video" })] })), onOpenGuides && (jsxRuntimeExports.jsxs("button", { onClick: onOpenGuides, title: "Download & View Ophthalmic Surgery PDF Guides", "aria-label": "Surgical PDF Guides", className: "p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95", children: [jsxRuntimeExports.jsx(BookOpen, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "PDF Guides" })] })), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, title: "Clinical Anatomical Reference & Technique Guide", "aria-label": "Clinical Guide", className: "p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#0d1626] hover:bg-[#162238] border border-[#1e2f4a] text-slate-300 hover:text-cyan-300 text-xs transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Guide" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReport, title: "View Surgical Efficiency & Report Card", "aria-label": "Post-Op Debrief", className: "p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-900/40 transition flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(FileText, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Debrief" })] })] })] }));
 };
 
 const INSTRUMENT_REGISTRY = [
@@ -22201,7 +22644,7 @@ const INSTRUMENT_REGISTRY = [
         category: 'Viscosurgical',
         description: 'High molecular weight hyaluronate to maintain AC depth and bag volume',
         icon: jsxRuntimeExports.jsx(Syringe, { className: "w-4 h-4 text-sky-400" }),
-        modules: ['phaco', 'iol']
+        modules: ['phaco', 'iol', 'migs']
     },
     {
         id: 'cystotome',
@@ -22241,7 +22684,7 @@ const INSTRUMENT_REGISTRY = [
         category: 'Fluidics & Cleanup',
         description: 'Coaxial Irrigation/Aspiration for cortical clearance & OVD evacuation',
         icon: jsxRuntimeExports.jsx(RotateCw, { className: "w-4 h-4 text-sky-300" }),
-        modules: ['phaco', 'iol']
+        modules: ['phaco', 'iol', 'migs']
     },
     {
         id: 'iol_injector',
@@ -22249,7 +22692,7 @@ const INSTRUMENT_REGISTRY = [
         category: 'Implantation',
         description: 'Screw/plunger injector delivering foldable hydrophobic acrylic optic',
         icon: jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-emerald-400" }),
-        modules: ['iol']
+        modules: ['phaco', 'iol']
     },
     {
         id: 'sinskey_hook',
@@ -22257,7 +22700,7 @@ const INSTRUMENT_REGISTRY = [
         category: 'Positioning',
         description: '0.2mm angled hook for dialing trailing haptic and centration',
         icon: jsxRuntimeExports.jsx(Compass, { className: "w-4 h-4 text-indigo-400" }),
-        modules: ['iol']
+        modules: ['phaco', 'iol']
     },
     {
         id: 'yag_laser',
@@ -22266,6 +22709,22 @@ const INSTRUMENT_REGISTRY = [
         description: 'Q-switched laser with dual red HeNe aiming diodes and focus offset',
         icon: jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-500" }),
         modules: ['yag']
+    },
+    {
+        id: 'gonio_lens',
+        name: 'Swan-Jacob Gonioprism',
+        category: 'Angle Visualization',
+        description: 'Direct surgical prism lens revealing iridocorneal drainage structures',
+        icon: jsxRuntimeExports.jsx(Eye, { className: "w-4 h-4 text-emerald-300" }),
+        modules: ['migs']
+    },
+    {
+        id: 'migs_injector',
+        name: 'iStent Inject® Delivery Pen',
+        category: 'Trabecular Micro-Bypass',
+        description: 'Preloaded trocar pen delivering micro-bypass stents directly into Schlemm canal',
+        icon: jsxRuntimeExports.jsx(Crosshair, { className: "w-4 h-4 text-amber-400" }),
+        modules: ['migs']
     }
 ];
 const InstrumentTray = ({ module, activeInstrument, onSelectInstrument, isOpenMobile = false, onCloseMobile, }) => {
@@ -68724,7 +69183,7 @@ class WebGLRenderer {
 
 }
 
-const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, cccState, hydroState, nucleusState, iolState, yagState, yagSettings, incisions, ovdCoverage, onIncisionAdvance, onOvdInject, onCccPuncture, onCccDrag, onHydroPulse, onPhacoApply, onIaAspirate, onIolAdvance, onIolDial, onIolWashout, onYagFire, }) => {
+const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, cccState, hydroState, nucleusState, iolState, yagState, yagSettings, incisions, ovdCoverage, currentStepId = '', showGuides = true, onToggleGuides, onIncisionAdvance, onOvdInject, onCccPuncture, onCccDrag, onHydroPulse, onPhacoApply, onIaAspirate, onIolAdvance, onIolDial, onIolWashout, onYagFire, migsState, onMigsTilt, onMigsGonioPlace, onMigsOvdAngle, onMigsDeployStent, onMigsBloodReflux, onMigsWashout, }) => {
     const containerRef = reactExports.useRef(null);
     const canvasRef = reactExports.useRef(null);
     const overlayCanvasRef = reactExports.useRef(null);
@@ -69011,6 +69470,9 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 else if (module === 'yag') {
                     activeImg = yagImgRef.current;
                 }
+                else if (module === 'migs') {
+                    activeImg = cataractImgRef.current;
+                }
                 if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
                     ctx.save();
                     // Draw circular eye photo frame
@@ -69032,6 +69494,161 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                     ctx.lineWidth = 4;
                     ctx.beginPath();
                     ctx.arc(centerX, centerY, eyeRadiusPx * 1.15, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+            // ==========================================
+            // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY
+            // ==========================================
+            if (module === 'migs') {
+                const isGonioActive = migsState?.gonioprismPlaced || currentStepId !== 'microscope_and_head_tilt';
+                if (isGonioActive) {
+                    ctx.save();
+                    // 1. Direct Swan-Jacob Gonioprism Lens Frame
+                    const gonioRadius = eyeRadiusPx * 1.08;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, gonioRadius, 0, Math.PI * 2);
+                    ctx.clip();
+                    // Gonioprism fluid coupling glass gradient
+                    const gonioGlass = ctx.createRadialGradient(centerX, centerY, gonioRadius * 0.2, centerX, centerY, gonioRadius);
+                    gonioGlass.addColorStop(0, 'rgba(10, 25, 45, 0.85)');
+                    gonioGlass.addColorStop(0.7, 'rgba(15, 35, 60, 0.92)');
+                    gonioGlass.addColorStop(1, 'rgba(6, 16, 32, 0.98)');
+                    ctx.fillStyle = gonioGlass;
+                    ctx.fill();
+                    // 2. Anatomical Angle Bands (Curved concentric sectors in nasal quadrant)
+                    // Band A: Cornea & Schwalbe's Line (Pearly glistening white)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 1.15, -Math.PI * 0.32, Math.PI * 0.32);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+                    ctx.lineWidth = 8;
+                    ctx.stroke();
+                    // Band B: Non-Pigmented Trabecular Meshwork (Light beige band)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 1.05, -Math.PI * 0.32, Math.PI * 0.32);
+                    ctx.strokeStyle = 'rgba(215, 205, 185, 0.75)';
+                    ctx.lineWidth = 14;
+                    ctx.stroke();
+                    // Band C: Pigmented Trabecular Meshwork (Rich golden-brown filtration band - where the clog is!)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.93, -Math.PI * 0.32, Math.PI * 0.32);
+                    ctx.strokeStyle = 'rgba(125, 78, 38, 0.95)';
+                    ctx.lineWidth = 18;
+                    ctx.stroke();
+                    // Band D: Schlemm's Canal & Venous Collector Bed (Translucent violet/indigo behind TM)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.93, -Math.PI * 0.3, Math.PI * 0.3);
+                    ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+                    // Band E: Scleral Spur (Crisp ivory white line)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.81, -Math.PI * 0.32, Math.PI * 0.32);
+                    ctx.strokeStyle = 'rgba(240, 238, 230, 0.85)';
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+                    // Band F: Ciliary Body Band & Peripheral Iris Root (Deep brown with radial fibers)
+                    ctx.beginPath();
+                    ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.68, -Math.PI * 0.32, Math.PI * 0.32);
+                    ctx.strokeStyle = 'rgba(65, 38, 18, 0.92)';
+                    ctx.lineWidth = 26;
+                    ctx.stroke();
+                    // 3. Anatomical Gonio Labels on Viewport
+                    ctx.font = 'bold 9px monospace';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                    ctx.fillText("SCHWALBE'S LINE", centerX + eyeRadiusPx * 0.78, centerY - eyeRadiusPx * 0.35);
+                    ctx.fillStyle = 'rgba(234, 179, 8, 0.9)';
+                    ctx.fillText("PIGMENTED TM (FILTER CLOG)", centerX + eyeRadiusPx * 0.62, centerY - eyeRadiusPx * 0.18);
+                    ctx.fillStyle = 'rgba(192, 132, 252, 0.9)';
+                    ctx.fillText("SCHLEMM'S CANAL (VENOUS DRAIN)", centerX + eyeRadiusPx * 0.58, centerY + eyeRadiusPx * 0.05);
+                    ctx.fillStyle = 'rgba(240, 238, 230, 0.75)';
+                    ctx.fillText("SCLERAL SPUR", centerX + eyeRadiusPx * 0.48, centerY + eyeRadiusPx * 0.22);
+                    // 4. Stent Deployment Visualization
+                    const stentLocations = [
+                        { idx: 0, clock: '2:30', angleRad: -Math.PI * 0.11, label: 'STENT 1' },
+                        { idx: 1, clock: '4:00', angleRad: Math.PI * 0.21, label: 'STENT 2' }
+                    ];
+                    stentLocations.forEach(loc => {
+                        const stentData = migsState?.stents[loc.idx];
+                        const sx = centerX - eyeRadiusPx * 0.25 + Math.cos(loc.angleRad) * (eyeRadiusPx * 0.93);
+                        const sy = centerY + Math.sin(loc.angleRad) * (eyeRadiusPx * 0.93);
+                        if (stentData && stentData.deployed) {
+                            // Deployed Titanium Micro-Stent
+                            ctx.save();
+                            ctx.translate(sx, sy);
+                            ctx.rotate(loc.angleRad + Math.PI / 2);
+                            // Stent Titanium Body
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.strokeStyle = '#06b6d4';
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.roundRect(-4, -8, 8, 16, 2);
+                            ctx.fill();
+                            ctx.stroke();
+                            // Stent Central Outflow Lumen
+                            ctx.fillStyle = '#0f172a';
+                            ctx.beginPath();
+                            ctx.arc(0, -4, 2.5, 0, Math.PI * 2);
+                            ctx.fill();
+                            // Four Side Outflow Orifices
+                            ctx.fillStyle = '#06b6d4';
+                            ctx.fillRect(-3, 2, 2, 2);
+                            ctx.fillRect(1, 2, 2, 2);
+                            ctx.restore();
+                            // Label
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 9px monospace';
+                            ctx.fillText(`${loc.label} (PATENT)`, sx + 8, sy - 4);
+                            // 5. Blood Reflux Wave Plume (Crimson plume from bloodstream)
+                            if (migsState?.bloodRefluxWaveConfirmed) {
+                                const plumeGrad = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24);
+                                plumeGrad.addColorStop(0, 'rgba(220, 38, 38, 0.85)');
+                                plumeGrad.addColorStop(0.5, 'rgba(185, 28, 28, 0.45)');
+                                plumeGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+                                ctx.fillStyle = plumeGrad;
+                                ctx.beginPath();
+                                ctx.arc(sx, sy, 24, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                        else {
+                            // Pre-deployment Target Beacon on TM
+                            ctx.save();
+                            ctx.strokeStyle = '#f59e0b';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([3, 3]);
+                            ctx.beginPath();
+                            ctx.arc(sx, sy, 11, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+                            ctx.fill();
+                            ctx.fillStyle = '#fbbf24';
+                            ctx.font = 'bold 9px monospace';
+                            ctx.fillText(`${loc.label} TARGET (${loc.clock})`, sx + 14, sy + 3);
+                            ctx.restore();
+                        }
+                    });
+                    // 6. Reflux Confirmation Banner at Bottom of Angle
+                    if (migsState?.bloodRefluxWaveConfirmed) {
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(centerX - 170, centerY + eyeRadiusPx * 0.72, 340, 26, 6);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = '#f87171';
+                        ctx.font = 'bold 10px monospace';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('🩸 VENOUS BLOOD REFLUX ACTIVE: 8.5 mmHg FLOOR CONFIRMED', centerX, centerY + eyeRadiusPx * 0.72 + 16);
+                        ctx.textAlign = 'start';
+                    }
+                    // Gonioprism Outer Bezel & Glass Reflection
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, gonioRadius - 2, 0, Math.PI * 2);
                     ctx.stroke();
                     ctx.restore();
                 }
@@ -69065,7 +69682,53 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 ctx.fill();
                 ctx.restore();
             }
-            // C. Incision Wounds (Paracentesis & Tri-Planar Keratome)
+            // C. Limbal Clock Hours & Anatomical Landmarks
+            ctx.save();
+            const clockHours = [
+                { label: '12:00', rad: -Math.PI / 2 },
+                { label: '1:30', rad: 0.26 },
+                { label: '3:00', rad: 0 },
+                { label: '6:00', rad: Math.PI / 2 },
+                { label: '9:00', rad: Math.PI },
+                { label: '10:00', rad: -0.45 }
+            ];
+            ctx.font = 'bold 9px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            clockHours.forEach(ch => {
+                const lx = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 1.05);
+                const ly = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 1.05);
+                ctx.fillStyle = ch.label === '10:00' || ch.label === '1:30' ? '#38bdf8' : 'rgba(255, 255, 255, 0.4)';
+                ctx.fillText(ch.label, lx, ly);
+                // Limbal radial tick
+                const tx1 = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 0.96);
+                const ty1 = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 0.96);
+                const tx2 = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 1.0);
+                const ty2 = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 1.0);
+                ctx.strokeStyle = ch.label === '10:00' || ch.label === '1:30' ? '#0284c7' : 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(tx1, ty1);
+                ctx.lineTo(tx2, ty2);
+                ctx.stroke();
+            });
+            // Limbal Vascular Arcade (Subtle micro-capillary arches)
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)';
+            ctx.lineWidth = 1.0;
+            for (let a = 0; a < Math.PI * 2; a += 0.15) {
+                const ax = centerX + Math.cos(a) * (eyeRadiusPx * 0.98);
+                const ay = centerY + Math.sin(a) * (eyeRadiusPx * 0.98);
+                const cpx = centerX + Math.cos(a + 0.07) * (eyeRadiusPx * 1.01);
+                const cpy = centerY + Math.sin(a + 0.07) * (eyeRadiusPx * 1.01);
+                const ax2 = centerX + Math.cos(a + 0.15) * (eyeRadiusPx * 0.98);
+                const ay2 = centerY + Math.sin(a + 0.15) * (eyeRadiusPx * 0.98);
+                ctx.beginPath();
+                ctx.moveTo(ax, ay);
+                ctx.quadraticCurveTo(cpx, cpy, ax2, ay2);
+                ctx.stroke();
+            }
+            ctx.restore();
+            // C2. Detailed Anatomical Incision Wounds (Paracentesis & Tri-Planar Keratome)
             incisions.forEach(inc => {
                 const woundAngle = inc.angleRad;
                 const wx = centerX + Math.cos(woundAngle) * (eyeRadiusPx * 0.98);
@@ -69074,33 +69737,123 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 ctx.save();
                 ctx.translate(wx, wy);
                 ctx.rotate(woundAngle + Math.PI / 2);
-                if (inc.completed) {
-                    ctx.strokeStyle = '#00d2ff';
-                    ctx.lineWidth = 2.8;
-                    ctx.beginPath();
-                    ctx.moveTo(-wLen, 0);
-                    ctx.lineTo(wLen, 0);
-                    ctx.stroke();
-                    // Internal corneal entry tunnel into AC
-                    ctx.fillStyle = 'rgba(0, 210, 255, 0.25)';
-                    ctx.fillRect(-wLen, -8, wLen * 2, 8);
-                }
-                else if (inc.depthFraction > 0) {
-                    ctx.strokeStyle = '#f59e0b';
-                    ctx.lineWidth = 2.2;
-                    ctx.beginPath();
-                    ctx.moveTo(-wLen * inc.depthFraction, 0);
-                    ctx.lineTo(wLen * inc.depthFraction, 0);
-                    ctx.stroke();
+                if (inc.type === 'clear_corneal') {
+                    // --- 2.4mm Tri-Planar Keratome Architecture ---
+                    if (inc.completed) {
+                        // Watertight Stromal Hydration Glow
+                        ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+                        ctx.fillRect(-wLen * 1.1, -12, wLen * 2.2, 16);
+                        // Plane 1: Vertical Limbal Groove
+                        ctx.strokeStyle = '#10b981';
+                        ctx.lineWidth = 3.2;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen, 0);
+                        ctx.lineTo(wLen, 0);
+                        ctx.stroke();
+                        // Plane 2: Lamellar Stromal Tunnel
+                        ctx.fillStyle = 'rgba(0, 210, 255, 0.35)';
+                        ctx.fillRect(-wLen, -10, wLen * 2, 10);
+                        ctx.strokeStyle = '#0284c7';
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeRect(-wLen, -10, wLen * 2, 10);
+                        // Plane 3: Internal Descemet Entry Lip
+                        ctx.strokeStyle = '#34d399';
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen * 0.95, -10);
+                        ctx.lineTo(wLen * 0.95, -10);
+                        ctx.stroke();
+                        // Wound Label
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 9px "Inter", sans-serif';
+                        ctx.fillStyle = '#34d399';
+                        ctx.fillText('✓ 2.4mm Tri-Planar Port (1:30) - Self-Sealing Valve', 0, 18);
+                    }
+                    else if (inc.depthFraction > 0) {
+                        // In Progress: Step through Plane 1 -> Plane 2 -> Plane 3
+                        const p = inc.plane || 1;
+                        // Plane 1 Notch
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.lineWidth = 3.0;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen, 0);
+                        ctx.lineTo(wLen, 0);
+                        ctx.stroke();
+                        // Plane 2 Tunnel
+                        if (p >= 2) {
+                            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+                            ctx.fillRect(-wLen, -6, wLen * 2, 6);
+                        }
+                        // Plane 3 Lip
+                        if (p >= 3) {
+                            ctx.strokeStyle = '#10b981';
+                            ctx.lineWidth = 2.2;
+                            ctx.beginPath();
+                            ctx.moveTo(-wLen * 0.9, -10);
+                            ctx.lineTo(wLen * 0.9, -10);
+                            ctx.stroke();
+                        }
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 8.5px "Inter", sans-serif';
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.fillText(`✂ ${inc.planeName || 'Plane ' + p + ' / 3'}`, 0, 18);
+                    }
+                    else {
+                        // Untouched Guide Target
+                        ctx.strokeStyle = 'rgba(0, 210, 255, 0.7)';
+                        ctx.setLineDash([3, 3]);
+                        ctx.lineWidth = 2.0;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen, 0);
+                        ctx.lineTo(wLen, 0);
+                        ctx.stroke();
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 8.5px "Inter", sans-serif';
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.fillText('🎯 2.4mm Main Port Target (1:30)', 0, 18);
+                    }
                 }
                 else {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                    ctx.setLineDash([2, 3]);
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    ctx.moveTo(-wLen, 0);
-                    ctx.lineTo(wLen, 0);
-                    ctx.stroke();
+                    // --- 1.0mm MVR Paracentesis Architecture ---
+                    if (inc.completed) {
+                        ctx.strokeStyle = '#10b981';
+                        ctx.lineWidth = 2.8;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen, 0);
+                        ctx.lineTo(wLen, 0);
+                        ctx.stroke();
+                        ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+                        ctx.fillRect(-wLen, -6, wLen * 2, 6);
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 9px "Inter", sans-serif';
+                        ctx.fillStyle = '#34d399';
+                        ctx.fillText('✓ 1.0mm Side-Port (10:00)', 0, -14);
+                    }
+                    else if (inc.depthFraction > 0) {
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.lineWidth = 2.2;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen * inc.depthFraction, 0);
+                        ctx.lineTo(wLen * inc.depthFraction, 0);
+                        ctx.stroke();
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 8.5px "Inter", sans-serif';
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.fillText('✂ Paracentesis Cutting...', 0, -14);
+                    }
+                    else {
+                        ctx.strokeStyle = 'rgba(251, 146, 60, 0.8)';
+                        ctx.setLineDash([3, 3]);
+                        ctx.lineWidth = 2.0;
+                        ctx.beginPath();
+                        ctx.moveTo(-wLen, 0);
+                        ctx.lineTo(wLen, 0);
+                        ctx.stroke();
+                        ctx.rotate(-woundAngle - Math.PI / 2);
+                        ctx.font = 'bold 8.5px "Inter", sans-serif';
+                        ctx.fillStyle = '#fb923c';
+                        ctx.fillText('🎯 1.0mm Side-Port Target (10:00)', 0, -14);
+                    }
                 }
                 ctx.restore();
             });
@@ -69443,6 +70196,295 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                     ctx.restore();
                 });
             }
+            // ==========================================
+            // LAYER 5: INTERACTIVE TARGET POINTERS & GUIDANCE
+            // ==========================================
+            if (showGuides) {
+                const animTime = performance.now();
+                const pulse = (Math.sin(animTime / 220) + 1) / 2; // 0 to 1
+                const bounce = Math.sin(animTime / 180) * 6; // -6 to 6 px bounce
+                // Helper to draw a modern glowing target beacon and pointer arrow
+                const drawTargetBeacon = (tx, ty, titleText, subText, colorTheme = 'cyan') => {
+                    ctx.save();
+                    const primaryColor = colorTheme === 'amber' ? '#f59e0b' :
+                        colorTheme === 'emerald' ? '#10b981' :
+                            colorTheme === 'rose' ? '#f43f5e' : '#00d2ff';
+                    const bgGlow = colorTheme === 'amber' ? 'rgba(245, 158, 11, 0.25)' :
+                        colorTheme === 'emerald' ? 'rgba(16, 185, 129, 0.25)' :
+                            colorTheme === 'rose' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(0, 210, 255, 0.25)';
+                    // 1. Concentric pulsing radar rings
+                    ctx.strokeStyle = primaryColor;
+                    ctx.lineWidth = 2.0;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 14 + pulse * 14, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillStyle = bgGlow;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    // 2. Animated Bouncing Arrow
+                    ctx.save();
+                    const arrowTipX = tx;
+                    const arrowTipY = ty - 18 - bounce;
+                    const badgeX = tx;
+                    const badgeY = arrowTipY - 32;
+                    // Draw downward pointing chevron arrow
+                    ctx.fillStyle = primaryColor;
+                    ctx.beginPath();
+                    ctx.moveTo(arrowTipX, arrowTipY);
+                    ctx.lineTo(arrowTipX - 8, arrowTipY - 14);
+                    ctx.lineTo(arrowTipX - 3, arrowTipY - 14);
+                    ctx.lineTo(arrowTipX - 3, arrowTipY - 24);
+                    ctx.lineTo(arrowTipX + 3, arrowTipY - 24);
+                    ctx.lineTo(arrowTipX + 3, arrowTipY - 14);
+                    ctx.lineTo(arrowTipX + 8, arrowTipY - 14);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    // 3. Floating Instruction Badge
+                    ctx.font = 'bold 10px "Inter", sans-serif';
+                    const titleWidth = ctx.measureText(titleText).width;
+                    ctx.font = '9px "Inter", sans-serif';
+                    const subWidth = ctx.measureText(subText).width;
+                    const badgeWidth = Math.max(titleWidth, subWidth) + 20;
+                    const badgeHeight = 32;
+                    // Clamp badge position within viewport boundaries
+                    const clampedBadgeX = Math.max(badgeWidth / 2 + 10, Math.min(width - badgeWidth / 2 - 10, badgeX));
+                    const clampedBadgeY = Math.max(40, Math.min(height - 60, badgeY));
+                    // Badge Background
+                    ctx.fillStyle = 'rgba(10, 18, 32, 0.94)';
+                    ctx.strokeStyle = primaryColor;
+                    ctx.lineWidth = 1.4;
+                    const rx = clampedBadgeX - badgeWidth / 2;
+                    const ry = clampedBadgeY - badgeHeight / 2;
+                    // Rounded rectangle
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, badgeWidth, badgeHeight, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Title Text
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = 'bold 10px "Inter", sans-serif';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(titleText, clampedBadgeX, clampedBadgeY - 6);
+                    // Subtitle Text
+                    ctx.font = '9px "Inter", sans-serif';
+                    ctx.fillStyle = primaryColor;
+                    ctx.fillText(subText, clampedBadgeX, clampedBadgeY + 7);
+                    ctx.restore();
+                    ctx.restore();
+                };
+                // Determine target by module and currentStepId
+                if (module === 'phaco') {
+                    if (currentStepId === 'paracentesis' || (!currentStepId && !incisions[0]?.completed)) {
+                        const tx = centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
+                        const ty = centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
+                        drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber');
+                    }
+                    else if (currentStepId === 'clear_corneal_incision' || (!currentStepId && !incisions[1]?.completed)) {
+                        const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+                        const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+                        const inc = incisions.find(i => i.type === 'clear_corneal');
+                        const planeTxt = !inc || inc.depthFraction === 0 ? 'Click to cut Plane 1: 300µm Groove' :
+                            inc.depthFraction < 0.7 ? 'Click to cut Plane 2: 1.5mm Tunnel' : 'Click to cut Plane 3: Penetrate AC';
+                        drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan');
+                    }
+                    else if (currentStepId === 'ovd_injection' || (!currentStepId && ovdCoverage.dispersive < 40)) {
+                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.15, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald');
+                    }
+                    else if (currentStepId === 'capsulorhexis' || (!currentStepId && !cccState.completed)) {
+                        if (!cccState.punctured) {
+                            drawTargetBeacon(centerX, centerY, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber');
+                        }
+                        else {
+                            drawTargetBeacon(centerX + (2.6 / 6.0) * (eyeRadiusPx * 0.85), centerY, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan');
+                        }
+                    }
+                    else if (currentStepId === 'hydrodissection' || (!currentStepId && !hydroState.corticalCleavingWaveFormed)) {
+                        const ty = centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
+                        drawTargetBeacon(centerX, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan');
+                    }
+                    else if (currentStepId === 'phaco_chop' || (!currentStepId && nucleusState.remainingMassFraction > 0.05)) {
+                        drawTargetBeacon(centerX, centerY, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber');
+                    }
+                    else if (currentStepId === 'cortex_removal') {
+                        drawTargetBeacon(centerX + eyeRadiusPx * 0.35, centerY, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan');
+                    }
+                }
+                else if (module === 'iol') {
+                    if (currentStepId === 'ovd_bag_refill' || (!currentStepId && !iolState.opticInChamber && iolState.insertionProgressFraction < 0.1)) {
+                        drawTargetBeacon(centerX, centerY, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald');
+                    }
+                    else if (currentStepId === 'cartridge_insertion' || currentStepId === 'haptic_unfolding' || (!currentStepId && !iolState.opticInChamber)) {
+                        const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+                        const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+                        drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan');
+                    }
+                    else if (currentStepId === 'sinskey_dialing' || (!currentStepId && !iolState.trailingHapticInBag)) {
+                        drawTargetBeacon(centerX - eyeRadiusPx * 0.25, centerY + eyeRadiusPx * 0.2, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber');
+                    }
+                    else if (currentStepId === 'viscoelastic_washout') {
+                        drawTargetBeacon(centerX, centerY, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan');
+                    }
+                }
+                else if (module === 'yag') {
+                    if (currentStepId === 'contact_lens_placement' || (!currentStepId && !yagSettings.contactLensFitted)) {
+                        drawTargetBeacon(centerX, centerY, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan');
+                    }
+                    else if (currentStepId === 'aiming_focus') {
+                        drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose');
+                    }
+                    else if (currentStepId === 'offset_adjustment') {
+                        drawTargetBeacon(centerX, centerY, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber');
+                    }
+                    else if (currentStepId === 'cruciate_capsulotomy' || (!currentStepId && yagState.shots.length < 4)) {
+                        // Draw 4 numbered targets on the capsule
+                        const offsets = [
+                            { num: '1', ox: 0, oy: -eyeRadiusPx * 0.25 },
+                            { num: '2', ox: 0, oy: eyeRadiusPx * 0.25 },
+                            { num: '3', ox: -eyeRadiusPx * 0.25, oy: 0 },
+                            { num: '4', ox: eyeRadiusPx * 0.25, oy: 0 }
+                        ];
+                        offsets.forEach(off => {
+                            const sx = centerX + off.ox;
+                            const sy = centerY + off.oy;
+                            ctx.save();
+                            ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                            ctx.strokeStyle = '#ef4444';
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.stroke();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 9px monospace';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(off.num, sx, sy);
+                            ctx.restore();
+                        });
+                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose');
+                    }
+                    else if (currentStepId === 'post_yag_assessment') {
+                        drawTargetBeacon(centerX, centerY, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald');
+                    }
+                }
+                else if (module === 'migs') {
+                    if (currentStepId === 'microscope_and_head_tilt') {
+                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan');
+                    }
+                    else if (currentStepId === 'gonioprism_placement') {
+                        drawTargetBeacon(centerX, centerY, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald');
+                    }
+                    else if (currentStepId === 'viscoelastic_angle_deepening') {
+                        drawTargetBeacon(centerX + eyeRadiusPx * 0.45, centerY, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan');
+                    }
+                    else if (currentStepId === 'stent_1_deployment') {
+                        const s1x = centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+                        const s1y = centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+                        drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber');
+                    }
+                    else if (currentStepId === 'stent_2_deployment') {
+                        const s2x = centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+                        const s2y = centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+                        drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan');
+                    }
+                    else if (currentStepId === 'blood_reflux_and_washout') {
+                        drawTargetBeacon(centerX + eyeRadiusPx * 0.4, centerY, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose');
+                    }
+                }
+            }
+            // ==========================================
+            // LAYER 6: CORNEAL INCISION ARCHITECTURE MINI-HUD
+            // ==========================================
+            if (module === 'phaco' &&
+                (activeInstrument === 'mvr_blade' || activeInstrument === 'keratome_2_4' || currentStepId === 'paracentesis' || currentStepId === 'clear_corneal_incision')) {
+                ctx.save();
+                const hudW = 260;
+                const hudH = 110;
+                const hudX = 14;
+                const hudY = height - hudH - 65; // Position in lower-left above foot pedal
+                // HUD panel background
+                ctx.fillStyle = 'rgba(10, 16, 28, 0.94)';
+                ctx.strokeStyle = '#1e304a';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(hudX, hudY, hudW, hudH, 10);
+                ctx.fill();
+                ctx.stroke();
+                // Title
+                ctx.font = 'bold 10px "Inter", sans-serif';
+                ctx.fillStyle = '#38bdf8';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('TRI-PLANAR INCISION ARCHITECTURE', hudX + 10, hudY + 8);
+                ctx.font = '8px "JetBrains Mono", monospace';
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText('Self-Sealing Pressure Valve Mechanics', hudX + 10, hudY + 22);
+                // Stylized cornea profile diagram
+                const diagX = hudX + 12;
+                const diagY = hudY + 38;
+                const diagW = 236;
+                const diagH = 45;
+                // Outer surface (Epithelium)
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(diagX, diagY + 4);
+                ctx.quadraticCurveTo(diagX + diagW / 2, diagY, diagX + diagW, diagY + 4);
+                ctx.stroke();
+                // Inner surface (Descemet / Endothelium)
+                ctx.strokeStyle = '#0284c7';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(diagX, diagY + diagH);
+                ctx.quadraticCurveTo(diagX + diagW / 2, diagY + diagH - 4, diagX + diagW, diagY + diagH);
+                ctx.stroke();
+                // Stroma shading
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+                ctx.beginPath();
+                ctx.moveTo(diagX, diagY + 4);
+                ctx.quadraticCurveTo(diagX + diagW / 2, diagY, diagX + diagW, diagY + 4);
+                ctx.lineTo(diagX + diagW, diagY + diagH);
+                ctx.quadraticCurveTo(diagX + diagW / 2, diagY + diagH - 4, diagX, diagY + diagH);
+                ctx.closePath();
+                ctx.fill();
+                // Stepped cut path: Plane 1 (Groove) -> Plane 2 (Tunnel) -> Plane 3 (AC Entry)
+                const mainInc = incisions.find(i => i.type === 'clear_corneal');
+                const plane = mainInc?.plane || (activeInstrument === 'keratome_2_4' ? 1 : 0);
+                ctx.strokeStyle = plane >= 1 ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 2.4;
+                ctx.beginPath();
+                ctx.moveTo(diagX + 180, diagY + 2);
+                ctx.lineTo(diagX + 180, diagY + 18); // Plane 1
+                ctx.stroke();
+                ctx.strokeStyle = plane >= 2 ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.moveTo(diagX + 180, diagY + 18);
+                ctx.lineTo(diagX + 90, diagY + 22); // Plane 2
+                ctx.stroke();
+                ctx.strokeStyle = plane >= 3 ? '#10b981' : 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.moveTo(diagX + 90, diagY + 22);
+                ctx.lineTo(diagX + 65, diagY + diagH); // Plane 3
+                ctx.stroke();
+                // Labels
+                ctx.font = '7.5px "Inter", sans-serif';
+                ctx.fillStyle = plane >= 1 ? '#f59e0b' : '#64748b';
+                ctx.fillText('1. Groove (300µm)', diagX + 155, diagY + diagH + 8);
+                ctx.fillStyle = plane >= 2 ? '#f59e0b' : '#64748b';
+                ctx.fillText('2. Tunnel (1.5mm)', diagX + 80, diagY + diagH + 8);
+                ctx.fillStyle = plane >= 3 ? '#10b981' : '#64748b';
+                ctx.fillText('3. AC Entry', diagX + 15, diagY + diagH + 8);
+                ctx.restore();
+            }
         };
         renderOverlay();
         return () => cancelAnimationFrame(animId);
@@ -69459,6 +70501,8 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         yagSettings,
         incisions,
         ovdCoverage,
+        currentStepId,
+        showGuides,
         magnification,
         mousePos,
         laserDefocusZ,
@@ -69519,13 +70563,42 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             onYagFire(normX, normY, laserDefocusZ);
             audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
         }
+        if (module === 'migs') {
+            if (currentStepId === 'microscope_and_head_tilt') {
+                onMigsTilt?.(38, 35);
+                audioEngine.playPedalClick(1);
+            }
+            else if (currentStepId === 'gonioprism_placement' || activeInstrument === 'gonio_lens') {
+                onMigsGonioPlace?.();
+                audioEngine.playPedalClick(2);
+            }
+            else if (currentStepId === 'viscoelastic_angle_deepening' || activeInstrument === 'ovd_provisc') {
+                onMigsOvdAngle?.();
+                audioEngine.playPedalClick(1);
+            }
+            else if (currentStepId === 'stent_1_deployment' || (activeInstrument === 'migs_injector' && migsState?.stents[0] && !migsState.stents[0].deployed)) {
+                onMigsDeployStent?.(0, 2.5, 22, 360);
+                audioEngine.playPedalClick(3);
+            }
+            else if (currentStepId === 'stent_2_deployment' || (activeInstrument === 'migs_injector' && migsState?.stents[1] && !migsState.stents[1].deployed)) {
+                onMigsDeployStent?.(1, 4.0, 25, 360);
+                audioEngine.playPedalClick(3);
+            }
+            else if (currentStepId === 'blood_reflux_and_washout' || activeInstrument === 'ia_handpiece') {
+                onMigsBloodReflux?.();
+                onMigsWashout?.();
+                audioEngine.playPedalClick(2);
+            }
+        }
     }, [
         activeInstrument,
         magnification,
         module,
+        currentStepId,
         cccState.punctured,
         laserDefocusZ,
         yagSettings,
+        migsState,
         onIncisionAdvance,
         onOvdInject,
         onCccPuncture,
@@ -69533,7 +70606,13 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         onIolAdvance,
         onIolDial,
         onIolWashout,
-        onYagFire
+        onYagFire,
+        onMigsTilt,
+        onMigsGonioPlace,
+        onMigsOvdAngle,
+        onMigsDeployStent,
+        onMigsBloodReflux,
+        onMigsWashout
     ]);
     const handlePointerMoveAction = reactExports.useCallback((clientX, clientY, isDown) => {
         const rect = containerRef.current?.getBoundingClientRect();
@@ -69590,12 +70669,17 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
     const handleTouchEnd = reactExports.useCallback(() => {
         setIsMouseDown(false);
     }, []);
-    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: (e) => {
-                            e.stopPropagation();
-                            setShowOptics(!showOptics);
-                        }, title: "Microscope Optics & Illumination Settings", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showOptics
-                            ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
-                            : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [magnification, "x"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] hidden xs:inline uppercase text-slate-400", children: "Optics" })] }), showOptics && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-cyan-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "MICROSCOPE CONTROLS"] }), jsxRuntimeExports.jsx("button", { onClick: () => setShowOptics(false), className: "p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "View Mode" }), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "REAL PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
+    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                                    e.stopPropagation();
+                                    onToggleGuides();
+                                }, title: showGuides ? 'Hide Interactive Guidance Pointers' : 'Show Interactive Guidance Pointers', className: `flex items-center gap-1 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showGuides
+                                    ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-cyan-900/40'
+                                    : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono hidden xs:inline", children: showGuides ? 'Guides: ON' : 'Guides: OFF' }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono xs:hidden", children: showGuides ? 'ON' : 'OFF' })] })), jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                                    e.stopPropagation();
+                                    setShowOptics(!showOptics);
+                                }, title: "Microscope Optics & Illumination Settings", className: `flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showOptics
+                                    ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+                                    : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [magnification, "x"] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] hidden xs:inline uppercase text-slate-400", children: "Optics" })] })] }), showOptics && (jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), className: "flex flex-col gap-2 bg-[#0d1522]/95 backdrop-blur-md p-3 rounded-2xl border border-[#1e2e48] shadow-2xl text-xs text-slate-300 w-64 max-w-[85vw] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-1.5 border-b border-[#1e2e48]/70", children: [jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-cyan-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Camera$1, { className: "w-3.5 h-3.5" }), "MICROSCOPE CONTROLS"] }), jsxRuntimeExports.jsx("button", { onClick: () => setShowOptics(false), className: "p-1 rounded-lg hover:bg-[#15233c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "pb-2 border-b border-[#1e2e48]/70 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[11px] font-semibold text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "View Mode" }), renderMode === 'photo' && (jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded", children: "REAL PHOTO" }))] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-1", children: [jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('photo'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'photo'
                                                     ? 'bg-cyan-600 text-white shadow-md'
                                                     : 'bg-[#101b2d] text-slate-400 hover:text-white'}`, children: "Photo" }), jsxRuntimeExports.jsx("button", { onClick: () => setRenderMode('hybrid'), className: `py-1 rounded-lg text-center font-semibold transition ${renderMode === 'hybrid'
                                                     ? 'bg-cyan-600 text-white shadow-md'
@@ -69605,7 +70689,9 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                                     ? 'Zeiss OPMI Lumera 700 Coaxial Medical Macro'
                                     : module === 'iol'
                                         ? 'High-Resolution Pseudophakic Capsular View'
-                                        : 'Haag-Streit BQ 900 / Ellex Nd:YAG Slit-Lamp Photography' })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500", children: "Source: Clinical Ophthalmic Photography | Barraquer Speculum | Coaxial Retroillumination" })] }), (cccState.zonularDehiscenceOccurred || nucleusState.posteriorCapsulePunctured) && (jsxRuntimeExports.jsxs("div", { className: "absolute top-28 left-1/2 -translate-x-1/2 z-30 bg-red-900/95 border-2 border-red-500 text-white px-5 py-2 rounded-lg shadow-2xl backdrop-blur-md text-sm font-bold flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-2xl", children: "\u26A0\uFE0F" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "text-red-300 uppercase tracking-wide text-xs", children: "Surgical Complication Alert" }), jsxRuntimeExports.jsx("div", { children: nucleusState.posteriorCapsulePunctured
+                                        : module === 'migs'
+                                            ? 'Surgical Direct Gonioscopy | Swan-Jacob Prism (38° Tilt)'
+                                            : 'Haag-Streit BQ 900 / Ellex Nd:YAG Slit-Lamp Photography' })] }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500", children: "Source: Clinical Ophthalmic Photography | Barraquer Speculum | Coaxial Retroillumination" })] }), (cccState.zonularDehiscenceOccurred || nucleusState.posteriorCapsulePunctured) && (jsxRuntimeExports.jsxs("div", { className: "absolute top-28 left-1/2 -translate-x-1/2 z-30 bg-red-900/95 border-2 border-red-500 text-white px-5 py-2 rounded-lg shadow-2xl backdrop-blur-md text-sm font-bold flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-2xl", children: "\u26A0\uFE0F" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "text-red-300 uppercase tracking-wide text-xs", children: "Surgical Complication Alert" }), jsxRuntimeExports.jsx("div", { children: nucleusState.posteriorCapsulePunctured
                                     ? 'POSTERIOR CAPSULE RUPTURE OCCURRED'
                                     : 'ZONULAR DEHISCENCE / RADIAL RUNAWAY' })] })] }))] }));
 };
@@ -69626,6 +70712,28 @@ const YagConsolePanel = ({ settings, capsulotomy, onUpdateSettings, onResetLaser
                                 : 'bg-[#0f1b2c] text-slate-400 hover:bg-[#15253e]'}`, children: p === 1 ? '1: Single' : p === 2 ? '2: Double' : '3: Triple' }, p))) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5 text-rose-400" }), "Posterior Defocus Offset"] }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold text-sm ${settings.focalOffsetMicrons < 90 ? 'text-red-400' : 'text-emerald-400'}`, children: ["+", settings.focalOffsetMicrons, " \u00B5m"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "350", step: "10", value: settings.focalOffsetMicrons, onChange: (e) => onUpdateSettings({ focalOffsetMicrons: Number(e.target.value) }), className: "w-full accent-rose-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer" }), jsxRuntimeExports.jsx("div", { className: "text-[10px] leading-tight text-slate-400", children: settings.focalOffsetMicrons < 90 ? (jsxRuntimeExports.jsx("span", { className: "text-rose-400 font-semibold", children: "\u26A0\uFE0F Inadequate offset! High risk of pitting the IOL optic." })) : settings.focalOffsetMicrons > 300 ? (jsxRuntimeExports.jsx("span", { className: "text-amber-400", children: "\u26A0\uFE0F Deep offset: shockwave may rupture anterior hyaloid face." })) : (jsxRuntimeExports.jsx("span", { className: "text-emerald-400", children: "\u2713 Optimal defocus (+100 to +250 \u00B5m) protects IOL optic." })) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#070c16] p-2.5 rounded-xl border border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5 text-sky-400" }), "Slit-Lamp Beam Optics"] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Beam Width" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-300", children: [settings.slitBeamWidthMm.toFixed(1), " mm"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.5", max: "14.0", step: "0.5", value: settings.slitBeamWidthMm, onChange: (e) => onUpdateSettings({ slitBeamWidthMm: Number(e.target.value) }), className: "w-full accent-sky-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[11px] text-slate-400", children: [jsxRuntimeExports.jsx("span", { children: "Beam Angle" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-300", children: [settings.slitBeamAngleDeg, "\u00B0"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "-60", max: "60", step: "5", value: settings.slitBeamAngleDeg, onChange: (e) => onUpdateSettings({ slitBeamAngleDeg: Number(e.target.value) }), className: "w-full accent-sky-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsx("button", { onClick: () => onUpdateSettings({ contactLensFitted: !settings.contactLensFitted }), className: `w-full py-1.5 rounded-lg border text-center font-medium transition ${settings.contactLensFitted
                             ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300'
                             : 'bg-[#0f1b2c] border-[#1b2c47] text-slate-400'}`, children: settings.contactLensFitted ? 'Abraham Lens: Fitted (+66D Button)' : 'Attach Abraham Contact Lens' })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [capsulotomy.iolPitsCount > 0 && (jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-rose-950/90 border border-rose-600 text-rose-200 text-[11px] flex items-center gap-2", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-4 h-4 text-rose-400 shrink-0" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-bold", children: "IOL Pitting Occurred: " }), capsulotomy.iolPitsCount, " pit(s) identified on optic surface."] })] })), !capsulotomy.vitreousFaceIntact && (jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-red-950/90 border border-red-500 text-white text-[11px] flex items-center gap-2", children: [jsxRuntimeExports.jsx(ShieldAlert, { className: "w-4 h-4 text-red-400 shrink-0" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-bold", children: "Anterior Hyaloid Breakthrough: " }), "Vitreous face disrupted by deep shockwave."] })] }))] }), jsxRuntimeExports.jsx("button", { onClick: onResetLaser, className: "mt-auto py-2 rounded-lg bg-[#0d1626] hover:bg-[#15233c] border border-[#1e2f4a] text-slate-300 hover:text-white font-medium transition text-center", children: "Reset Laser Shot Log" })] }));
+};
+
+const MigsConsolePanel = ({ state, onUpdateTilt, onTriggerBloodReflux, onClose }) => {
+    const stentsDeployedCount = state.stents.filter(s => s.deployed).length;
+    state.hypotonyProtectedByVenousBackpressure;
+    return (jsxRuntimeExports.jsxs("div", { className: "w-80 bg-[#090f1c] border-l border-[#1b2b44] flex flex-col h-full text-slate-200 select-none overflow-y-auto no-scrollbar font-sans p-3.5 space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-3 border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-emerald-950/80 border border-emerald-600/80 text-emerald-400", children: jsxRuntimeExports.jsx(Compass, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h3", { className: "text-xs font-bold text-white tracking-wide uppercase", children: "MIGS Glaucoma Console" }), jsxRuntimeExports.jsx("span", { className: "text-[10px] text-emerald-400 font-mono", children: "Schlemm Venous Bypass" })] })] }), onClose && (jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white", children: jsxRuntimeExports.jsx(X, { className: "w-4 h-4" }) }))] }), jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-r from-emerald-950/40 via-[#0a1b2a] to-emerald-950/40 border border-emerald-600/60 rounded-xl p-3 shadow-lg space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[10px] font-mono", children: [jsxRuntimeExports.jsxs("span", { className: "text-emerald-300 font-bold uppercase flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: "Venous Blood Floor" })] }), jsxRuntimeExports.jsx("span", { className: "bg-emerald-950 text-emerald-400 border border-emerald-700 px-1.5 py-0.2 rounded font-bold", children: "8\u201310 mmHg" })] }), jsxRuntimeExports.jsxs("p", { className: "text-[11px] text-slate-300 leading-relaxed", children: ["Because the micro-stent drains directly into the episcleral venous bloodstream, natural venous pressure (", jsxRuntimeExports.jsx("strong", { className: "text-emerald-300", children: "8.5 mmHg" }), ") prevents hypotony: the eye cannot drain below this blood floor!"] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pt-1 border-t border-emerald-900/60 text-[10px] font-mono", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Hypotony Risk:" }), jsxRuntimeExports.jsxs("span", { className: "text-emerald-400 font-bold flex items-center gap-1", children: [jsxRuntimeExports.jsx(CircleCheck, { className: "w-3 h-3 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: "0% (Protected by Venous Floor)" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1426] border border-[#1b2f4c] rounded-xl p-3 space-y-3", children: [jsxRuntimeExports.jsxs("div", { className: "text-[10px] font-mono uppercase text-slate-400 font-bold flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { children: "Goldmann Hemodynamics:" }), jsxRuntimeExports.jsx(Activity, { className: "w-3.5 h-3.5 text-cyan-400 animate-pulse" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2 text-center", children: [jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-[#070d18] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400", children: "Baseline IOP" }), jsxRuntimeExports.jsxs("div", { className: "text-sm font-bold font-mono text-rose-400 mt-0.5", children: [state.baselineIopMmHg.toFixed(1), " ", jsxRuntimeExports.jsx("span", { className: "text-[9px]", children: "mmHg" })] }), jsxRuntimeExports.jsx("div", { className: "text-[9px] text-rose-400/80 font-mono", children: "Diseased TM" })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded-lg bg-[#070d18] border border-emerald-800/60", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] text-emerald-400 font-semibold", children: "Current IOP" }), jsxRuntimeExports.jsxs("div", { className: "text-sm font-bold font-mono text-emerald-300 mt-0.5", children: [state.currentIopMmHg.toFixed(1), " ", jsxRuntimeExports.jsx("span", { className: "text-[9px]", children: "mmHg" })] }), jsxRuntimeExports.jsx("div", { className: "text-[9px] text-emerald-400/80 font-mono", children: stentsDeployedCount === 0 ? 'Awaiting Stent' : `${stentsDeployedCount} Stent(s) Patent` })] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[10px] font-mono text-slate-300", children: [jsxRuntimeExports.jsx("span", { children: "Outflow Facility (C):" }), jsxRuntimeExports.jsxs("span", { className: "font-bold text-cyan-300", children: [state.outflowFacilityMicrolitersPerMinPerMmHg.toFixed(3), " \u00B5L/min/mmHg"] })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070c16] rounded-full h-1.5 overflow-hidden border border-[#17253a]", children: jsxRuntimeExports.jsx("div", { className: "bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500", style: {
+                                        width: `${Math.min(100, (state.outflowFacilityMicrolitersPerMinPerMmHg / 0.28) * 100)}%`
+                                    } }) }), jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[9px] font-mono text-slate-500", children: [jsxRuntimeExports.jsx("span", { children: "0.08 (Severe)" }), jsxRuntimeExports.jsx("span", { children: "0.18 (Moderate)" }), jsxRuntimeExports.jsx("span", { children: "0.28 (Target)" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1426] border border-[#1b2f4c] rounded-xl p-3 space-y-3", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold text-slate-300 uppercase", children: [jsxRuntimeExports.jsx("span", { children: "Gonioscopic Tilt Alignment:" }), jsxRuntimeExports.jsxs("span", { className: `px-1.5 py-0.2 rounded text-[9px] ${state.gonioViewClarityPercent > 80 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'}`, children: [state.gonioViewClarityPercent, "% Clarity"] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[10px] text-slate-400 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "Microscope Tilt:" }), jsxRuntimeExports.jsxs("span", { className: "text-white font-bold", children: [state.microscopeTiltDeg, "\u00B0 (Target: 38\u00B0)"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "45", value: state.microscopeTiltDeg, onChange: (e) => onUpdateTilt(Number(e.target.value), state.patientHeadTiltDeg), className: "w-full h-1.5 bg-[#070d18] accent-cyan-400 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-[10px] text-slate-400 font-mono", children: [jsxRuntimeExports.jsx("span", { children: "Patient Head Tilt:" }), jsxRuntimeExports.jsxs("span", { className: "text-white font-bold", children: [state.patientHeadTiltDeg, "\u00B0 (Target: 35\u00B0)"] })] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0", max: "45", value: state.patientHeadTiltDeg, onChange: (e) => onUpdateTilt(state.microscopeTiltDeg, Number(e.target.value)), className: "w-full h-1.5 bg-[#070d18] accent-sky-400 rounded-lg cursor-pointer" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => onUpdateTilt(38, 35), className: "w-full py-1.5 rounded-lg bg-[#0e1b30] hover:bg-[#162744] border border-[#22395a] text-cyan-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", children: [jsxRuntimeExports.jsx(Compass, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Auto-Align 38\u00B0/35\u00B0 Goniometry" })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1426] border border-[#1b2f4c] rounded-xl p-3 space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "text-[10px] font-mono uppercase text-slate-400 font-bold flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { children: "Stent Deployment Status:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400", children: [stentsDeployedCount, " / 2 Deployed"] })] }), jsxRuntimeExports.jsx("div", { className: "space-y-1.5", children: state.stents.map((stent, idx) => (jsxRuntimeExports.jsxs("div", { className: `p-2 rounded-lg border flex items-center justify-between text-xs font-mono ${stent.deployed
+                                ? stent.isPatentToVenousStream
+                                    ? 'bg-emerald-950/40 border-emerald-700/80 text-emerald-300'
+                                    : 'bg-amber-950/40 border-amber-700/80 text-amber-300'
+                                : 'bg-[#070d18] border-[#17253a] text-slate-400'}`, children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }), jsxRuntimeExports.jsxs("span", { className: "font-bold", children: ["Stent #", idx + 1, " (", stent.clockPosition.toFixed(1), " o'clock)"] })] }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold", children: stent.deployed
+                                        ? stent.isPatentToVenousStream
+                                            ? 'Patent (In Bloodstream)'
+                                            : 'Seated'
+                                        : 'In Trocar' })] }, stent.id))) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1426] border border-[#1b2f4c] rounded-xl p-3 space-y-2", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-mono uppercase text-slate-400 font-bold", children: "Venous Bloodstream Confirmation:" }), jsxRuntimeExports.jsxs("button", { onClick: onTriggerBloodReflux, disabled: stentsDeployedCount === 0, className: `w-full py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-md ${stentsDeployedCount > 0
+                            ? state.bloodRefluxWaveConfirmed
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+                                : 'bg-rose-700 hover:bg-rose-600 text-white shadow-rose-950/60 animate-pulse'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`, children: [jsxRuntimeExports.jsx(Droplets, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: state.bloodRefluxWaveConfirmed
+                                    ? 'Blood Reflux Wave Verified (Patent!)'
+                                    : 'Trigger Blood Reflux Test (Decompress AC)' })] }), jsxRuntimeExports.jsx("p", { className: "text-[10px] text-slate-400 leading-snug", children: "Confirms direct patency: lowering eye pressure below 8.5 mmHg pulls a retrograde plume of venous blood out of the stent lumen." })] })] }));
 };
 
 const PostOpReportModal = ({ isOpen, onClose, report, onRestartModule, }) => {
@@ -69650,7 +70758,7 @@ const PostOpReportModal = ({ isOpen, onClose, report, onRestartModule, }) => {
                                             ? 'Acceptable clinical result. Review technique refinements below to optimize metrics.'
                                             : 'Complications encountered requiring surgical management review.' })] }), jsxRuntimeExports.jsxs("div", { className: `w-20 h-20 rounded-2xl border-2 flex flex-col items-center justify-center font-black ${getGradeColor(report.grade)}`, children: [jsxRuntimeExports.jsx("span", { className: "text-3xl leading-none", children: report.grade }), jsxRuntimeExports.jsx("span", { className: "text-[10px] uppercase font-mono tracking-wider mt-1", children: "Grade" })] })] }), jsxRuntimeExports.jsxs("div", { className: "p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4", children: [report.module === 'phaco' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-cyan-400" }), "Capsulorhexis (CCC)"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [report.cccCircularity.value, "% Circularity"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cccCircularity.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-cyan-400", style: { width: `${report.cccCircularity.value}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-yellow-400 font-bold", children: [report.cdeScore.value.toFixed(2), " %-sec"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Target for LOCS ", report.cdeScore.expectedGrade, ":", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.cdeScore.rating })] }), jsxRuntimeExports.jsx("div", { className: "w-full bg-[#070d18] h-2 rounded-full overflow-hidden", children: jsxRuntimeExports.jsx("div", { className: "h-full bg-yellow-400", style: { width: `${Math.min(100, (report.cdeScore.value / 25) * 100)}%` } }) })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Activity, { className: "w-4 h-4 text-emerald-400" }), "Corneal Endothelium"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: ["-", report.endotheliumPreservation.estimatedLossPercent.toFixed(1), "% Loss"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Endothelial Status:", ' ', jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.endotheliumPreservation.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Disc, { className: "w-4 h-4 text-sky-400" }), "Posterior Capsule Integrity"] }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold text-xs ${report.posteriorCapsuleState === 'Intact' || report.posteriorCapsuleState === 'Polished'
                                                         ? 'text-emerald-400'
-                                                        : 'text-rose-400'}`, children: report.posteriorCapsuleState })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Capsule Thickness: 4-9 \u00B5m equatorial elastic reserve" })] })] })), report.module === 'iol' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Optic Centration" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [report.iolCentration.offsetMm.toFixed(2), " mm offset"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolCentration.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "360\u00B0 Rhexis Overlap" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400 font-bold", children: [report.rhexisOverlapScore.value, "%"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Status: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.rhexisOverlapScore.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Residual Viscoelastic in AC/Bag" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-400 font-bold", children: [report.viscoelasticRetention.value, "% Retained"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Risk of post-op IOP spike: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.viscoelasticRetention.rating })] })] })] })), report.module === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "Photodisruption Efficiency"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400 font-bold", children: [report.yagEfficiency.totalEnergyMj.toFixed(1), " mJ Total"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: [report.yagEfficiency.totalShots, " shots fired (", report.yagEfficiency.rating, ")"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "IOL Optic Pitting" }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold ${report.iolPittingScore.count === 0 ? 'text-emerald-400' : 'text-rose-400'}`, children: [report.iolPittingScore.count, " Pits"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Result: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolPittingScore.rating })] })] }), jsxRuntimeExports.jsx("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Anterior Hyaloid Membrane" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold ${report.vitreousStatus === 'Preserved Hyaloid Face' ? 'text-emerald-400' : 'text-rose-400'}`, children: report.vitreousStatus })] }) })] }))] }), jsxRuntimeExports.jsxs("div", { className: "px-6 pb-6 space-y-2", children: [jsxRuntimeExports.jsx("div", { className: "text-xs font-bold text-slate-300 uppercase tracking-wider", children: "Clinical Consultant Review" }), jsxRuntimeExports.jsx("div", { className: "bg-[#070d18] p-4 rounded-xl border border-[#1c2e47] space-y-2 text-xs text-slate-300", children: report.clinicalSummary.map((item, idx) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-4 h-4 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsx("span", { children: item })] }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "p-5 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("button", { onClick: onRestartModule, className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111c2e] hover:bg-[#192b45] text-slate-300 hover:text-white border border-[#213554] text-xs font-semibold transition", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Reset Module" })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950/50 transition", children: "Continue Practice" })] })] }) }));
+                                                        : 'text-rose-400'}`, children: report.posteriorCapsuleState })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Capsule Thickness: 4-9 \u00B5m equatorial elastic reserve" })] })] })), report.module === 'iol' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Optic Centration" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [report.iolCentration.offsetMm.toFixed(2), " mm offset"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolCentration.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "360\u00B0 Rhexis Overlap" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-400 font-bold", children: [report.rhexisOverlapScore.value, "%"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Status: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.rhexisOverlapScore.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Residual Viscoelastic in AC/Bag" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-sky-400 font-bold", children: [report.viscoelasticRetention.value, "% Retained"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Risk of post-op IOP spike: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.viscoelasticRetention.rating })] })] })] })), report.module === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "Photodisruption Efficiency"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-rose-400 font-bold", children: [report.yagEfficiency.totalEnergyMj.toFixed(1), " mJ Total"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: [report.yagEfficiency.totalShots, " shots fired (", report.yagEfficiency.rating, ")"] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "IOL Optic Pitting" }), jsxRuntimeExports.jsxs("span", { className: `font-mono font-bold ${report.iolPittingScore.count === 0 ? 'text-emerald-400' : 'text-rose-400'}`, children: [report.iolPittingScore.count, " Pits"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Result: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.iolPittingScore.rating })] })] }), jsxRuntimeExports.jsx("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-slate-300", children: "Anterior Hyaloid Membrane" }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold ${report.vitreousStatus === 'Preserved Hyaloid Face' ? 'text-emerald-400' : 'text-rose-400'}`, children: report.vitreousStatus })] }) })] })), report.module === 'migs' && report.migsStentPlacement && report.iopReduction && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Compass, { className: "w-4 h-4 text-emerald-400" }), "Micro-Stents Deployed"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-emerald-400 font-bold", children: [report.migsStentPlacement.stentsDeployed, " of 2 Placed"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Rating: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.migsStentPlacement.rating })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Activity, { className: "w-4 h-4 text-cyan-400" }), "IOP Reduction (Goldmann)"] }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300 font-bold", children: [report.iopReduction.baselineIop, " \u2192 ", report.iopReduction.finalIop.toFixed(1), " mmHg"] })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Floor: ", jsxRuntimeExports.jsxs("span", { className: "text-emerald-400 font-mono font-semibold", children: [report.iopReduction.venousFloorMmHg, " mmHg (EVP Back-Pressure)"] })] })] }), report.bloodstreamRefluxVerification && (jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [jsxRuntimeExports.jsxs("span", { className: "text-xs font-semibold text-slate-300 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Droplet, { className: "w-4 h-4 text-rose-400" }), "Episcleral Blood Reflux Wave"] }), jsxRuntimeExports.jsx("span", { className: `font-mono font-bold ${report.bloodstreamRefluxVerification.observed ? 'text-emerald-400' : 'text-amber-400'}`, children: report.bloodstreamRefluxVerification.observed ? 'VERIFIED (Patent Lumen)' : 'NOT ELICITED' })] }), jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-400", children: ["Status: ", jsxRuntimeExports.jsx("span", { className: "text-slate-200 font-medium", children: report.bloodstreamRefluxVerification.rating })] })] }))] }))] }), jsxRuntimeExports.jsxs("div", { className: "px-6 pb-6 space-y-2", children: [jsxRuntimeExports.jsx("div", { className: "text-xs font-bold text-slate-300 uppercase tracking-wider", children: "Clinical Consultant Review" }), jsxRuntimeExports.jsx("div", { className: "bg-[#070d18] p-4 rounded-xl border border-[#1c2e47] space-y-2 text-xs text-slate-300", children: report.clinicalSummary.map((item, idx) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-4 h-4 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsx("span", { children: item })] }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "p-5 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("button", { onClick: onRestartModule, className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-[#111c2e] hover:bg-[#192b45] text-slate-300 hover:text-white border border-[#213554] text-xs font-semibold transition", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Reset Module" })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950/50 transition", children: "Continue Practice" })] })] }) }));
 };
 
 const ClinicalReferenceModal = ({ isOpen, onClose, }) => {
@@ -69668,13 +70776,727 @@ const ClinicalReferenceModal = ({ isOpen, onClose, }) => {
                             : 'border-transparent text-slate-400 hover:text-slate-200'}`, children: tab.label }, tab.id))) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs text-slate-300 leading-relaxed", children: [activeTab === 'phaco' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 text-yellow-400" }), "Cumulative Dissipated Energy (CDE) Formula"] }), jsxRuntimeExports.jsx("p", { children: "Cumulative Dissipated Energy quantifies total acoustic ultrasound energy delivered into the eye:" }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-yellow-300", children: "CDE = Phaco Time (sec) \u00D7 (Average US Power [%] / 100) \u00D7 Duty Cycle" }), jsxRuntimeExports.jsx("p", { className: "text-slate-400", children: "Excessive CDE (> 18 %-sec for LOCS III NO3) increases thermal endothelial apoptosis and post-op corneal edema." })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-white text-xs", children: "LOCS III Nuclear Opalescence (NO) Grading" }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-2 font-mono text-[11px]", children: [jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-300 font-bold", children: "NO1 - NO2" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Soft cataract; Low phaco power (20-40%), gentle aspiration." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-400 font-bold", children: "NO3 - NO4" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Moderate/dense nucleus; Stop & chop or quick-chop with burst mode." })] }), jsxRuntimeExports.jsxs("div", { className: "p-2 rounded bg-[#070c16] border border-[#17253a]", children: [jsxRuntimeExports.jsx("div", { className: "text-amber-500 font-bold", children: "NO5 - NO6" }), jsxRuntimeExports.jsx("div", { className: "text-slate-400", children: "Brunescent / black rock cataract; High CDE risk, dispersive OVD recoating." })] })] })] })] })), activeTab === 'ccc' && (jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-4 h-4 text-cyan-400" }), "Continuous Curvilinear Capsulorhexis (CCC) Biomechanics"] }), jsxRuntimeExports.jsx("p", { children: "The capsulorhexis tear vector is governed by a balance of two vectors:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 space-y-1 text-slate-400", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Shearing (Tangential) Force:" }), " Pulling parallel to the tear edge creates a controlled circumferential curve."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-slate-200", children: "Stretching (Radial Outward) Force:" }), " Outward tension towards zonules increases if anterior chamber depth is lost or pull vector points outward."] })] })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h4", { className: "font-bold text-emerald-300 text-xs", children: "Little's Technique for Rescuing Runaway Rhexis" }), jsxRuntimeExports.jsx("p", { children: "When a tear begins extending radially toward the zonules:" }), jsxRuntimeExports.jsxs("ol", { className: "list-decimal pl-5 space-y-1 text-slate-300", children: [jsxRuntimeExports.jsx("li", { children: "Refill the anterior chamber with cohesive viscoelastic to eliminate positive vitreous upthrust and flatten the lens convexity." }), jsxRuntimeExports.jsx("li", { children: "Unfold the capsular flap so it lies completely flat against the anterior lens cortex." }), jsxRuntimeExports.jsx("li", { children: "Grasp the flap with micro-forceps just posterior to the apex of the tear." }), jsxRuntimeExports.jsxs("li", { children: ["Direct vector pull ", jsxRuntimeExports.jsx("strong", { children: "180 degrees directly back toward the center of the pupil" }), "."] }), jsxRuntimeExports.jsx("li", { children: "The tear will redirect centripetally, returning to the desired 5.0\u20135.5 mm circular trajectory." })] })] })] })), activeTab === 'fluidics' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-cyan-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Droplets, { className: "w-4 h-4 text-cyan-400" }), "Fluidics Balance & Surge Physics"] }), jsxRuntimeExports.jsx("div", { className: "font-mono bg-[#070c16] p-2.5 rounded-lg border border-[#17253a] text-cyan-300", children: "dV/dt = Inflow(Bottle Height / Forced Infusion) - Outflow(Aspiration + Incision Leak)" }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Post-Occlusion Surge:" }), " While the tip is occluded by a dense nuclear fragment, vacuum ramps up to the preset limit (e.g. 450 mmHg). Compliance in the tubing causes elastic expansion. When the fragment clears, this stored potential energy instantaneously evacuates fluid from the anterior chamber at high speed (>60 cc/min), causing rapid chamber collapse unless compensated by active fluidics."] })] }) })), activeTab === 'iol' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsx("h3", { className: "font-bold text-cyan-300 text-sm", children: "Foldable Hydrophobic Acrylic IOL Mechanics" }), jsxRuntimeExports.jsx("p", { children: "Modern single-piece acrylic lenses feature open C-loop haptics. The leading haptic must enter the capsular bag directly from the injector nozzle. The trailing haptic is dialed into the equator using a Sinskey hook with clockwise rotation." }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "360-Degree Optic Overlap:" }), " Complete capsular overlap (0.5 mm anterior rim around the 6.0 mm optic) acts as a mechanical barrier preventing lens epithelial cell migration and posterior capsular opacification (PCO)."] }), jsxRuntimeExports.jsxs("p", { children: [jsxRuntimeExports.jsx("strong", { children: "Viscoelastic Washout:" }), " Retained cohesive OVD in the capsular bag blocks the trabecular meshwork postoperatively, causing severe IOP spikes (>45 mmHg). Thorough bimanual / retro-lens aspiration is required."] })] }) })), activeTab === 'yag' && (jsxRuntimeExports.jsx("div", { className: "space-y-4", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("h3", { className: "font-bold text-rose-300 text-sm flex items-center gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-rose-400" }), "1064nm Nd:YAG Laser Photodisruption & Focal Offset"] }), jsxRuntimeExports.jsx("p", { children: "The Nd:YAG laser delivers a sub-nanosecond pulse creating an electric field exceeding the optical dielectric breakdown threshold of aqueous humor (~0.8 mJ). This produces plasma, accompanied by a supersonic shockwave and cavitation micro-bubble." }), jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#070c16] rounded-lg border border-[#17253a] space-y-1", children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-white text-xs", children: "Crucial Defocus Offset Rules:" }), jsxRuntimeExports.jsxs("ul", { className: "list-disc pl-5 text-slate-300 space-y-1", children: [jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-red-400", children: "Zero or Anterior Offset:" }), " Plasma shockwave occurs directly on the posterior IOL surface, producing pitting and crack defects."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-emerald-400", children: "+100 to +250 \u00B5m Posterior Offset:" }), " Safe clinical zone. The acoustic shockwave propagates forward to cleave the opacified capsule without contacting the acrylic optic."] }), jsxRuntimeExports.jsxs("li", { children: [jsxRuntimeExports.jsx("strong", { className: "text-amber-400", children: "> +320 \u00B5m Posterior Offset:" }), " Plasma breakdown disrupts the anterior hyaloid face, leading to vitreous prolapse and floaters."] })] })] })] }) }))] }), jsxRuntimeExports.jsx("div", { className: "p-4 border-t border-[#1b2b44] flex justify-end bg-[#080d19]", children: jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition", children: "Close Guide" }) })] }) }));
 };
 
+const SURGICAL_INSTRUCTIONS = {
+    // =========================================================================
+    // --- MODULE A: PHACOEMULSIFICATION CATARACT SURGERY ---
+    // =========================================================================
+    paracentesis: {
+        id: 'paracentesis',
+        stepNumber: 1,
+        module: 'phaco',
+        title: 'Paracentesis Incision (~1.0mm MVR)',
+        beginnerTitle: 'Step 1: Small Side Door (Paracentesis)',
+        recommendedInstrument: 'mvr_blade',
+        spokenScript: 'Step 1: Make a small side door. Take the 1.0 millimeter blade from the left tray. Look for the flashing orange target at the top-left edge of the eye, at the 10 o\'clock position. Click there to make a tiny slit. This gives your assistant tool a way into the eye.',
+        beginnerSummary: 'Cut a tiny 1-millimeter side slit near the edge of the clear window of the eye (the cornea). This acts as a secondary door so you can use two hands during surgery.',
+        actionCallout: '👉 Select the 1.0mm MVR Blade on the left tray, then CLICK the pulsing orange target at the 10 o\'clock corneal edge.',
+        targetLocationDescription: 'Upper-left edge of the cornea at 10:00 o\'clock (limbus border between clear cornea and white sclera).',
+        whyItsNecessary: 'Why it is necessary: Eye surgery requires two hands. Your right hand holds the main ultrasound tool through the big incision, but you need a second tool (like a spatula or chopper) in your left hand to hold the cataract still, push pieces, and protect the back of the eye. Without this side door, you cannot control the cataract pieces and risk tearing the eye.',
+        clinicalObjective: 'Create a tight, self-sealing 1.0 mm port for the second instrument (chopper/paddle).',
+        techniquePearls: [
+            'Enter just anterior to the limbal vascular arcade at roughly 10 o\'clock (or 2 o\'clock for left-handed surgeons).',
+            'Maintain blade angle parallel to the iris plane to prevent iris laceration or premature corneal penetration.',
+            'A tri-planar or planar corneal entry ensures rapid stromal hydration seal at closure without sutures.'
+        ],
+        hazards: [
+            'Entering too anteriorly causes severe corneal astigmatism and visual distortion.',
+            'Sudden downward plunge can puncture the iris or prematurely tear the delicate front lens capsule.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Peripheral clear cornea stroma at the 10:00 limbus.',
+            instrumentDepthOrSize: '1.0 mm micro-vitreoretinal (MVR) diamond or steel lancet blade.',
+            biomechanicsExplanation: 'The corneal stroma consists of 200 parallel collagen lamellae. An angled entry creates a flap valve: normal intraocular fluid pressure pushes the inner flap against the outer ceiling, sealing it shut watertight without needing stitches.'
+        }
+    },
+    clear_corneal_incision: {
+        id: 'clear_corneal_incision',
+        stepNumber: 2,
+        module: 'phaco',
+        title: 'Tri-Planar Clear Corneal Incision (2.4mm)',
+        beginnerTitle: 'Step 2: Main Tunnel Entry (2.4mm Tri-Planar)',
+        recommendedInstrument: 'keratome_2_4',
+        spokenScript: 'Step 2: Create your main doorway. Switch to the 2.4 millimeter keratome blade. Look for the flashing blue target at the upper-right, at the 1:30 o\'clock position. Click 3 times to step through the three planes: groove the surface, tunnel through the wall, and enter the eye chamber. This creates a self-sealing tunnel that won\'t leak.',
+        beginnerSummary: 'Make a wider 2.4-millimeter stepped tunnel into the front of the eye. It is cut in three distinct stages so it acts like a one-way security flap that seals itself shut without stitches.',
+        actionCallout: '👉 Pick the 2.4mm Keratome blade. CLICK the pulsing blue target at the 1:30 o\'clock position 3 times to complete Plane 1 (Groove), Plane 2 (Tunnel), and Plane 3 (AC Entry).',
+        targetLocationDescription: 'Upper-right corneal edge at 1:30 o\'clock, where clear cornea transitions into the white of the eye.',
+        whyItsNecessary: 'Why it is necessary: Your primary ultrasound pen (phaco handpiece) is 2.4mm thick. You must create an entry tunnel wide enough for the pen to slide through easily, yet tight enough that fluid doesn\'t rush out and collapse the eye. Cutting it in 3 staggered planes creates an automatic valve: inside eye pressure presses the inner flap shut, keeping the eye pressurized and preventing bacteria from entering post-surgery.',
+        clinicalObjective: 'Construct a stable, self-sealing 2.4 mm tri-planar clear corneal tunnel for the phaco handpiece.',
+        techniquePearls: [
+            'Plane 1: Initial vertical groove (depth ~300 µm) at the anterior limbus perpendicular to the surface.',
+            'Plane 2: Lamellar stromal tunnel advancing 1.5–1.75 mm forwards toward the corneal center.',
+            'Plane 3: Dimple down and penetrate Descemet\'s membrane with a crisp, square internal entry.'
+        ],
+        hazards: [
+            'A short tunnel (<1.2 mm) creates a gaping wound, iris prolapse, and severe risk of postoperative infection (endophthalmitis).',
+            'An overly long tunnel (>2.2 mm) causes corneal stretching, visual wrinkles (striae), and restricts tool movement.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Corneal epithelium, collagenous stroma, and Descemet\'s membrane.',
+            instrumentDepthOrSize: '2.4 mm angled slit keratome with calibrated 1.5 mm tunnel depth.',
+            biomechanicsExplanation: 'A square architecture (tunnel length roughly equal to wound width) produces maximum mechanical stability against deformation and eye pressure changes.'
+        }
+    },
+    ovd_injection: {
+        id: 'ovd_injection',
+        stepNumber: 3,
+        module: 'phaco',
+        title: 'OVD Injection (Dispersive & Cohesive)',
+        beginnerTitle: 'Step 3: Protective Jelly Shield (Viscoelastic)',
+        recommendedInstrument: 'ovd_viscoat',
+        spokenScript: 'Step 3: Protect the eye with jelly. Choose the Viscoat syringe on the left. Click inside the pupil to inject a clear protective gel. This coats the fragile inner lining of the cornea so ultrasonic soundwaves and turbulence won\'t damage it.',
+        beginnerSummary: 'Fill the front chamber of the eye with thick, crystal-clear surgical jelly (viscoelastic). This inflates the eye and spreads a safety cushion over delicate cells.',
+        actionCallout: '👉 Select Viscoat (dispersive jelly) or Provisc on the left tray, then CLICK inside the front chamber of the eye to inject the protective cushion.',
+        targetLocationDescription: 'Center of the pupil and the dome directly behind the cornea (the anterior chamber).',
+        whyItsNecessary: 'Why it is necessary: The back surface of your cornea is lined with fragile "endothelial cells" that act like microscopic bilge pumps keeping the cornea clear. Unlike skin or hair, these cells NEVER grow back once lost! If ultrasound vibrates near them or turbulent water washes over them, they die, turning the cornea permanently milky white. The viscous jelly acts like a protective suit of armor and keeps the eyeball round and firm.',
+        clinicalObjective: 'Coat endothelium with dispersive OVD and maintain deep anterior chamber depth with cohesive OVD.',
+        techniquePearls: [
+            'Arshinoff soft-shell technique: Dispersive Viscoat coats and sticks to the endothelium; cohesive Provisc pushes the lens down to give you operating room.',
+            'Flattening anterior capsular curvature prevents runaway radial tears during capsulorhexis.'
+        ],
+        hazards: [
+            'Over-pressurizing the chamber stresses the delicate zonular suspension cords holding the lens.',
+            'Inadequate jelly coverage leaves endothelial cells vulnerable to heat shock and acoustic shockwaves.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Corneal endothelial monolayer and anterior chamber space.',
+            instrumentDepthOrSize: '27-gauge smooth cannula delivering chondroitin sulfate & sodium hyaluronate.',
+            biomechanicsExplanation: 'Viscoelastic behaves as a non-Newtonian fluid: under zero shear it forms a rigid shock-absorbing matrix, but under instrument movement it shears smoothly without resistance.'
+        }
+    },
+    capsulorhexis: {
+        id: 'capsulorhexis',
+        stepNumber: 4,
+        module: 'phaco',
+        title: 'Continuous Curvilinear Capsulorhexis (CCC)',
+        beginnerTitle: 'Step 4: Circular Window in the Lens Bag (Capsulorhexis)',
+        recommendedInstrument: 'utrata_forceps',
+        spokenScript: 'Step 4: Cut a circular window in the lens skin. Take the needle cystotome to poke a small tear in the center, then use the Utrata micro-forceps to steer the flap around the dashed blue circle. Make a smooth 5.2 millimeter circle. If it starts running wild toward the edge, pull back toward the center.',
+        beginnerSummary: 'The cataract lives inside a cellophane-thin transparent bag. You must tear a smooth, perfectly round 5-millimeter circular opening in the front of this bag so you can remove the cataract and slide a new artificial lens inside.',
+        actionCallout: '👉 1. Pick Cystotome and CLICK the center crosshair to puncture the skin. 2. Grab Utrata Forceps and DRAG in a smooth circle along the dashed blue guide ring.',
+        targetLocationDescription: 'Center of the dark pupil, following the 5.2mm glowing blue circle guide.',
+        whyItsNecessary: 'Why it is necessary: If you just randomly poke or shred the bag, sharp tears will zip down the sides to the back of the eye like a run in a nylon stocking! If that happens, the entire cataract falls into the back of the eyeball (vitreous) and you cannot put a replacement lens in place. A smooth, continuous circle distributes tension evenly and has immense structural strength.',
+        clinicalObjective: 'Achieve a continuous 5.0–5.5 mm circular capsular opening centered on the visual axis.',
+        techniquePearls: [
+            'Puncture capsule at center and elevate triangular flap; fold flap flat over adjacent capsule.',
+            'Grasp flap within 1–2 mm of the tearing apex for maximal vector control.',
+            'Direct force tangentially to maintain circular shearing rather than radial stretching.',
+            'Little\'s Rescue Maneuver: If tear runs radially, unfold flap flat and pull 180° directly back toward the center of the pupil.'
+        ],
+        hazards: [
+            'Radial run-out tear into equatorial zonules can cause posterior extension and vitreous loss.',
+            'Too small rhexis (<4.5 mm) increases anterior capsular contraction and optic phimosis.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Anterior lens capsule basement membrane (14 µm thickness, pure Type IV collagen).',
+            instrumentDepthOrSize: 'Bent cystotome 27G needle and Utrata micro-capsulorhexis forceps.',
+            biomechanicsExplanation: 'Shear force (tearing in the plane of the capsule) is 5x safer than stretch force (pulling perpendicular to the surface). Tangential traction prevents runaway vector forces.'
+        }
+    },
+    hydrodissection: {
+        id: 'hydrodissection',
+        stepNumber: 5,
+        module: 'phaco',
+        title: 'Hydrodissection & Free Rotation Test',
+        beginnerTitle: 'Step 5: Loosen the Lens with Water (Hydrodissection)',
+        recommendedInstrument: 'hydro_cannula',
+        spokenScript: 'Step 5: Loosen the cataract with a fluid wave. Select the hydrodissection cannula. Slide the flat tip gently under the edge of your circular opening and click to spray a gentle pulse of balanced salt water. Look for the golden wave rolling across the back. Then verify the cataract spins freely like a dinner plate.',
+        beginnerSummary: 'Squirt a gentle pulse of saline water between the sticky outer shell of the cataract and its clear skin bag. This separates the cataract so it can spin freely 360 degrees.',
+        actionCallout: '👉 Pick the Hydro Cannula on the left tray, then CLICK just under the edge of the circular opening to inject the fluid wave.',
+        targetLocationDescription: 'Underneath the anterior capsular rim at the top or side of your circular window.',
+        whyItsNecessary: 'Why it is necessary: The cataract is naturally glued to its protective bag by thousands of sticky cellular fibers. If you try to chop or turn the cataract while it is glued down, you will rip the fragile micro-threads (zonules) holding the bag to the eye wall, dropping the whole lens into the back of the eye! Water cleaves these bonds safely with zero mechanical stress.',
+        clinicalObjective: 'Cleave cortical-capsular adhesions with a fluid wave and establish free 360° nuclear mobility.',
+        techniquePearls: [
+            'Tent up anterior capsule rim slightly before injecting BSS to prevent capsular block syndrome.',
+            'Observe the golden fluid wave passing across the red reflex retroillumination.',
+            'Depress the central nucleus to decompress anterior chamber fluid before nuclear rotation test.'
+        ],
+        hazards: [
+            'Vigorous injection in an intact capsule without decompression can blow out the posterior capsule (capsular block blowout).',
+            'Forcing rotation before cortical cleaving tears the zonular ligaments.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Cleavage plane between the lens cortex and the posterior capsular membrane.',
+            instrumentDepthOrSize: '27-gauge flattened Chang or Sauter hydrodissection cannula.',
+            biomechanicsExplanation: 'Hydrodynamic fluid pressure seeks the path of least resistance between the rigid cortical fibers and the elastic capsular basement membrane, stripping adhesions hydraulically.'
+        }
+    },
+    phaco_chop: {
+        id: 'phaco_chop',
+        stepNumber: 6,
+        module: 'phaco',
+        title: 'Phaco-Chop Nucleofractis & Aspiration',
+        beginnerTitle: 'Step 6: Pulverize & Vacuum the Hard Lens Core (Phaco Chop)',
+        recommendedInstrument: 'phaco_tip',
+        spokenScript: 'Step 6: Pulverize and vacuum the hard cataract. Select the phaco tip. Step on your foot pedal to Position 3 to engage ultrasonic vibration. Touch the tip to the center of the brown lens core to impale it, chop it into smaller bite-sized quarters, and vacuum them up. Keep your tip in the middle and stay far away from the thin back capsule.',
+        beginnerSummary: 'Use a hollow titanium needle vibrating 40,000 times a second to jackhammer the hard cataract into tiny crumbs while a vacuum sucks them out through the hollow center.',
+        actionCallout: '👉 Pick the Phaco Tip. Click Foot Pedal to Position 3 (Ultrasound). CLICK and HOLD the central cataract core to chop and suck up all 4 quadrants.',
+        targetLocationDescription: 'Center of the pupil in the safe "phaco zone" (iris plane, pupil center, >1.5mm away from the delicate back capsule).',
+        whyItsNecessary: 'Why it is necessary: A cataract is a rock-hard, cloudy natural lens up to 10 millimeters wide. You cannot pull a 10mm hard stone through a tiny 2.4mm keyhole incision without tearing the eye open! The phaco ultrasound needle turns the rock into soup (emulsification) so it fits right through the microscopic straw.',
+        clinicalObjective: 'Divide lens nucleus into manageable quadrants and emulsify with minimal Cumulative Dissipated Energy (CDE).',
+        techniquePearls: [
+            'Foot Pedal Position 1: Water flow on (keeps chamber deep and cool).',
+            'Foot Pedal Position 2: Vacuum suction on (holds cataract chunks against tip).',
+            'Foot Pedal Position 3: Ultrasound jackhammer on (pulverizes hard nucleus).',
+            'Always emulsify within the safe central "phaco zone" at the pupil center.'
+        ],
+        hazards: [
+            'Touching the ultrathin posterior capsule with active ultrasound instantly ruptures it, causing vitreous prolapse.',
+            'Post-occlusion surge: When a chunk clears suddenly, high vacuum can suck the back capsule into the tip if fluidics are poorly balanced.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Hardened lens nucleus core (graded LOCS III NO1 to NO6).',
+            instrumentDepthOrSize: 'Piezoelectric phacoemulsification needle oscillating at 28–45 kHz.',
+            biomechanicsExplanation: 'Phaco works via two mechanisms: mechanical jackhammer impact (physical stroke) and acoustic cavitation (microscopic micro-bubbles collapsing at supersonic speed, liquefying dense cataract protein).'
+        }
+    },
+    cortex_removal: {
+        id: 'cortex_removal',
+        stepNumber: 7,
+        module: 'phaco',
+        title: 'Cortical Remnant Clearance (I/A)',
+        beginnerTitle: 'Step 7: Vacuum the Soft Leftovers (Cortex Removal)',
+        recommendedInstrument: 'ia_handpiece',
+        spokenScript: 'Step 7: Vacuum the soft sticky leftovers. Switch to the Irrigation and Aspiration handpiece. Step on pedal Position 2 to turn on suction. Click around the outer edges to vacuum away the fluffy cortical fibers. Polish the back surface until it looks like a clean window.',
+        beginnerSummary: 'Use a gentle suction wand to vacuum away the remaining soft, cottony fibers stuck to the inside walls of the bag, leaving a squeaky-clean transparent pouch.',
+        actionCallout: '👉 Pick the I/A Handpiece on the tray. Put Foot Pedal in Position 2 (Aspiration). CLICK around the periphery to vacuum all remaining cortical fluff.',
+        targetLocationDescription: 'Equatorial periphery of the capsular bag (all 360 degrees around the outer rim).',
+        whyItsNecessary: 'Why it is necessary: Even after the hard core is gone, sticky cotton-candy-like material (cortex) clings to the bag walls. If you leave these cellular remnants inside, they cause severe eye inflammation, sky-high eye pressure (glaucoma), and trigger cloudy scar tissue that blinds the new implant.',
+        clinicalObjective: 'Evacuate all equatorial cortex and epinucleus leaving a pristine, polished capsular bag.',
+        techniquePearls: [
+            'Engage cortical sheets with suction port facing sideways or anteriorly.',
+            'Strip cortex radially centripetally from equator toward the center before aspirating.',
+            'Polish posterior capsule in low-vacuum mode (20 mmHg) to clear fine haziness.'
+        ],
+        hazards: [
+            'Aspirating the transparent posterior capsule: radial "spider-web" folds mean you grabbed the bag! Release the foot pedal immediately to Position 0 to prevent a catastrophic blowout.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Subcapsular cortical fiber remnants and epinuclear shell.',
+            instrumentDepthOrSize: 'Coaxial 0.3 mm aspiration port with continuous fluid replenishment.',
+            biomechanicsExplanation: 'Hydro-dynamic aspiration relies on establishing occlusion of the soft cortical sheet, building vacuum from 100 to 500 mmHg to pull the fibers free from the capsule.'
+        }
+    },
+    // =========================================================================
+    // --- MODULE B: FOLDABLE INTRAOCULAR LENS (IOL) IMPLANTATION ---
+    // =========================================================================
+    ovd_bag_refill: {
+        id: 'ovd_bag_refill',
+        stepNumber: 8,
+        module: 'iol',
+        title: 'Capsular Bag Refill with Cohesive OVD',
+        beginnerTitle: 'Step 8: Re-Inflate the Lens Bag with Jelly',
+        recommendedInstrument: 'ovd_provisc',
+        spokenScript: 'Step 8: Re-inflate the empty bag. Select the Provisc cohesive jelly. Click inside the capsular bag to pump it full of thick jelly. This opens the bag wide so the new lens can slide in safely without poking a hole in the back.',
+        beginnerSummary: 'Pump thick surgical jelly into the empty, deflated lens bag to inflate it like a tent before sliding the new artificial lens inside.',
+        actionCallout: '👉 Select Provisc (cohesive OVD) on the left tray, then CLICK inside the pupil to inflate the capsular bag.',
+        targetLocationDescription: 'Inside the circular capsulorhexis opening, aiming toward the back and corners of the bag.',
+        whyItsNecessary: 'Why it is necessary: Now that the cataract is gone, the clear bag collapses flat like an empty balloon. If you shove a hard plastic injector nozzle into a collapsed bag, it will spear right through the paper-thin back membrane! Injecting thick jelly acts like a balloon inflator, opening up a safe 3D pocket for the lens to unpack.',
+        clinicalObjective: 'Expand the collapsed capsular bag to provide safe clearance for injector nozzle and IOL unfolding.',
+        techniquePearls: [
+            'Place cannula tip deep at the distal equator before depressing the plunger smoothly.',
+            'Fill both the capsular bag and the anterior chamber to maintain proper operating space.'
+        ],
+        hazards: [
+            'Advancing an IOL injector into a collapsed bag risks mechanical puncture of the posterior capsule.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Empty capsular bag equator and retro-pupillary space.',
+            instrumentDepthOrSize: 'High molecular weight cohesive sodium hyaluronate (ProVisc/Healon).',
+            biomechanicsExplanation: 'Cohesive OVD holds space exceptionally well due to high zero-shear viscosity, maintaining bag volume against external vitreous pressure.'
+        }
+    },
+    cartridge_insertion: {
+        id: 'cartridge_insertion',
+        stepNumber: 9,
+        module: 'iol',
+        title: 'Cartridge Delivery into Bag',
+        beginnerTitle: 'Step 9: Slide the Injector Nozzle into the Eye',
+        recommendedInstrument: 'iol_injector',
+        spokenScript: 'Step 9: Deliver the folded lens. Select the IOL injector. Slide the tapered nozzle through your main incision with the bevel pointing down. Click to smoothly advance the screw plunger and push the folded artificial lens inside.',
+        beginnerSummary: 'Slide the tip of the lens injector through the main 2.4mm incision, aiming the nozzle right into the inflated bag doorway.',
+        actionCallout: '👉 Select the IOL Injector on the left tray. CLICK on the main incision target to insert the nozzle and begin advancing the lens.',
+        targetLocationDescription: 'The 2.4mm main corneal incision at 1:30 o\'clock, aiming towards the center of the pupil.',
+        whyItsNecessary: 'Why it is necessary: An artificial lens is 6 millimeters wide, but our incision is only 2.4 millimeters! The lens is folded up tightly like a microscopic burrito inside a sterile lubricated cartridge. The injector squeezes it through the tiny incision without stretching or tearing the corneal wound.',
+        clinicalObjective: 'Deliver foldable hydrophobic acrylic optic through corneal wound without wound stretching or cartridge twist.',
+        techniquePearls: [
+            'Keep the beveled tip of the injector facing downward toward the lens bag floor.',
+            'Advance the screw plunger smoothly; never force if you meet sudden resistance.'
+        ],
+        hazards: [
+            'Injecting too fast can shoot the spring-loaded lens violently through the back of the eye.',
+            'Incision stretching or wound burn occurs if the cartridge size is mismatched to the wound.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Main 2.4 mm clear corneal tunnel and anterior capsular opening.',
+            instrumentDepthOrSize: 'Monarch or screw-assist IOL delivery injector with D-cartridge.',
+            biomechanicsExplanation: 'Hydrophobic acrylic is a memory polymer: it undergoes elastic deformation when compressed through a 1.8–2.4 mm bore and slowly recovers its planar optic geometry at body temperature (37°C).'
+        }
+    },
+    haptic_unfolding: {
+        id: 'haptic_unfolding',
+        stepNumber: 10,
+        module: 'iol',
+        title: 'Leading Haptic Placement',
+        beginnerTitle: 'Step 10: Unfold the Front Leg into the Corner',
+        recommendedInstrument: 'iol_injector',
+        spokenScript: 'Step 10: Place the front leg. Watch the leading springy arm unfold out of the nozzle directly into the far corner of the bag. Keep the nozzle steady in the center so the lens optic unrolls smoothly flat.',
+        beginnerSummary: 'The artificial lens has two springy C-shaped arms called "haptics" that hold it centered. Guide the first spring arm so it unfurls directly into the far corner pocket of the bag.',
+        actionCallout: '👉 CLICK again with the IOL Injector to push the front arm and central optic fully out into the pupil plane.',
+        targetLocationDescription: 'Far (distal) corner equator of the capsular bag, opposite your incision.',
+        whyItsNecessary: 'Why it is necessary: If the spring arms unfold on top of the iris (the colored part of the eye) instead of inside the bag, they will rub against blood vessels, causing bleeding (hyphema), intense inflammation, and vision distortion. Both arms must seat neatly inside the bag pockets.',
+        clinicalObjective: 'Seat leading haptic directly into the distal capsular bag equator.',
+        techniquePearls: [
+            'Keep nozzle tip within anterior capsular rim so haptic cannot escape over the iris.',
+            'Allow slow controlled unfolding of hydrophobic acrylic material at ocular temperature.'
+        ],
+        hazards: [
+            'Letting the trailing arm get caught in the corneal incision can rip the haptic off the optic.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Distal capsular bag equator.',
+            instrumentDepthOrSize: 'Single-piece foldable hydrophobic acrylic lens with 6.0 mm optic & 13.0 mm total length.',
+            biomechanicsExplanation: 'C-loop haptics exert outward radial spring force against the capsular equator, keeping the lens perfectly centered on the visual axis.'
+        }
+    },
+    sinskey_dialing: {
+        id: 'sinskey_dialing',
+        stepNumber: 11,
+        module: 'iol',
+        title: 'Sinskey Hook 360° Rotational Centering',
+        beginnerTitle: 'Step 11: Spin & Tuck the Back Leg (Sinskey Hook)',
+        recommendedInstrument: 'sinskey_hook',
+        spokenScript: 'Step 11: Tuck the back leg in. Select the tiny Sinskey hook tool. Hook into the corner notch of the lens and rotate it clockwise. Tuck the trailing arm under the edge of the circular opening. Check that the round opening overlaps the lens edge all 360 degrees.',
+        beginnerSummary: 'Use a tiny 0.2mm peg tool (Sinskey hook) to rotate the lens clockwise like turning a steering wheel, tucking the second arm inside the bag and centering the lens right on the pupil.',
+        actionCallout: '👉 Select the Sinskey Hook on the tray. CLICK the edge of the lens to rotate it clockwise and tuck the trailing haptic inside the bag.',
+        targetLocationDescription: 'Near the junction of the central optic and the trailing spring arm (proximal haptic).',
+        whyItsNecessary: 'Why it is necessary: If one arm is inside the bag and the other is outside in the ciliary sulcus (asymmetric placement), the lens will tilt, causing severe blurred vision, double vision, and chronic eye pressure spikes. Furthermore, having the capsulorhexis overlap the lens 360 degrees locks it in place forever.',
+        clinicalObjective: 'Dial trailing haptic into bag, achieve 360° rhexis overlap, and center optic along visual axis.',
+        techniquePearls: [
+            'Place Sinskey hook at the optic-haptic junction notch.',
+            'Rotate clockwise while applying slight downward posterior pressure to tuck the arm under the capsular rim.',
+            'Verify 0.5 mm continuous anterior capsular overlap around all 360 degrees of the 6.0 mm optic.'
+        ],
+        hazards: [
+            'Excessive downward force on an unyielding lens can rip through the posterior capsule.',
+            'Asymmetric haptic placement causes UGH syndrome (Uveitis-Glaucoma-Hyphema).'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Proximal capsular equator and optic-haptic junction.',
+            instrumentDepthOrSize: '0.2 mm angled Sinskey micro-manipulator hook.',
+            biomechanicsExplanation: 'Continuous 360° anterior capsule overlap creates a biological barrier: anterior lens epithelial cells fibrose against the optic edge, shrink-wrapping the lens securely into the capsular plane.'
+        }
+    },
+    viscoelastic_washout: {
+        id: 'viscoelastic_washout',
+        stepNumber: 12,
+        module: 'iol',
+        title: 'Retro-Lens & AC Viscoelastic Washout',
+        beginnerTitle: 'Step 12: Vacuum Out All the Jelly (Washout)',
+        recommendedInstrument: 'ia_handpiece',
+        spokenScript: 'Step 12: Vacuum out all the remaining jelly. Take the I/A suction handpiece. Gently tilt the lens and reach behind it to suck out all the thick jelly trapped in the back. If you leave even a little jelly behind, the patient will wake up with dangerously high eye pressure.',
+        beginnerSummary: 'Reach behind the new lens with the suction tool to thoroughly wash out and vacuum away every drop of surgical jelly from inside the eye.',
+        actionCallout: '👉 Select the I/A Handpiece. Put Foot Pedal in Position 2. CLICK behind the lens optic to vacuum out all residual viscoelastic jelly.',
+        targetLocationDescription: 'Behind the new acrylic lens optic (the retro-lens space) and inside the front chamber angles.',
+        whyItsNecessary: 'Why it is necessary: The surgical jelly that saved the cornea earlier will now destroy the eye if left behind! The microscopic drains of the eye (trabecular meshwork) get completely clogged by thick jelly. Fluid cannot drain out, causing intraocular pressure to skyrocket past 40 or 50 mmHg within hours of surgery, leading to agonizing pain, nausea, and irreversible optic nerve damage (glaucoma).',
+        clinicalObjective: 'Thoroughly evacuate cohesive OVD from retro-lens space and anterior chamber to prevent acute IOP spike.',
+        techniquePearls: [
+            'Rock\'n\'roll maneuver: tilt optic gently with I/A tip to access capsular bag retro-lens space.',
+            'Aspirate all visco behind optic; re-check anterior chamber angles before wound hydration.'
+        ],
+        hazards: [
+            'Retained OVD occludes the trabecular meshwork, causing severe early postoperative IOP spikes (>45 mmHg).'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Retro-optic space and trabecular meshwork outflow drainage angle.',
+            instrumentDepthOrSize: '0.3 mm aspiration port with dynamic chamber infusion.',
+            biomechanicsExplanation: 'High molecular weight hyaluronic acid polymers have high hydraulic resistance; washing them out restores physiologic aqueous humor drainage through Schlemm\'s canal.'
+        }
+    },
+    // =========================================================================
+    // --- MODULE C: ND:YAG LASER POSTERIOR CAPSULOTOMY ---
+    // =========================================================================
+    contact_lens_placement: {
+        id: 'contact_lens_placement',
+        stepNumber: 1,
+        module: 'yag',
+        title: 'Abraham Capsulotomy Lens Placement',
+        beginnerTitle: 'Step 1: Fit the Abraham Magnifying Contact Lens',
+        recommendedInstrument: 'yag_laser',
+        spokenScript: 'Step 1 of YAG Laser: Place the special contact lens on the eye. Put a drop of clear gel on the Abraham contact lens and place it onto the patient\'s cornea. The magnifying button sharpens the laser beam into a tight focus point and keeps the patient from blinking.',
+        beginnerSummary: 'Rest a specialized glass contact lens on the patient\'s numbed eye. This magnifies the view, stops blinking, and focuses laser energy into a pinpoint.',
+        actionCallout: '👉 With the YAG Laser module active, CLICK on the eye to apply the Abraham contact lens.',
+        targetLocationDescription: 'Cornea surface, centered over the pupil.',
+        whyItsNecessary: 'Why it is necessary: Months or years after cataract surgery, microscopic cells grow across the back bag like frosting on glass (a secondary cataract). We use an invisible infrared laser to blast a clear window through the haze. The Abraham contact lens widens the laser cone angle from 16° to 24°, concentrating energy strictly at the cloudy membrane while making it harmless to the cornea in front and the retina in the back.',
+        clinicalObjective: 'Fit Abraham contact lens to stabilize the globe, maximize optical clarity, and reduce breakdown threshold.',
+        techniquePearls: [
+            'Anti-reflective coated +66D planoconvex button provides 1.5x magnification.',
+            'Improves cone angle from 16° to 24°, reducing energy density on corneal endothelium and retina.'
+        ],
+        hazards: [
+            'Air bubbles in coupling methylcellulose create optical distortion and beam defocus.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Corneal tear film and anterior corneal epithelium.',
+            instrumentDepthOrSize: 'Abraham +66D planoconvex YAG capsulotomy contact lens.',
+            biomechanicsExplanation: 'Increasing the convergence angle reduces the focal waist diameter to ~8 µm, drastically lowering the energy needed to spark optical breakdown.'
+        }
+    },
+    aiming_focus: {
+        id: 'aiming_focus',
+        stepNumber: 2,
+        module: 'yag',
+        title: 'Dual HeNe Aiming Beam Convergence',
+        beginnerTitle: 'Step 2: Line Up the Twin Red Laser Aiming Dots',
+        recommendedInstrument: 'yag_laser',
+        spokenScript: 'Step 2: Align the twin red aiming lasers. Move your slit-lamp joystick forward or backward until the two separate red dots merge into a single crisp red point right on the cloudy membrane. When the two dots become one, you know the laser is perfectly in focus.',
+        beginnerSummary: 'Move the microscope focus until two red laser aiming dots overlap into a single sharp dot on the cloudy membrane.',
+        actionCallout: '👉 Move your cursor over the hazy membrane until the twin red aiming dots converge into a single tight red reticle.',
+        targetLocationDescription: 'On the opacified posterior capsule behind the artificial lens.',
+        whyItsNecessary: 'Why it is necessary: The therapeutic laser beam is 1064nm infrared—completely invisible to the human eye! To show you where it will strike, the machine projects two red aiming beams from different angles. When the two red spots merge into one, the invisible laser is focused with pinpoint accuracy. If they are separated, the laser will fire in the wrong depth plane!',
+        clinicalObjective: 'Achieve pinpoint confocal alignment of the twin red HeNe aiming beams on the retro-illuminated capsule.',
+        techniquePearls: [
+            'When out of focus, two distinct red dots appear on screen.',
+            'Fine-tune joystick forward/backward until both dots merge into a single tight high-intensity red reticle.'
+        ],
+        hazards: [
+            'Firing while aiming beams are doubled leads to shockwaves occurring away from target plane, potentially striking the lens optic.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Posterior capsular membrane with Elschnig pearl opacification.',
+            instrumentDepthOrSize: 'Twin 632.8 nm Helium-Neon (HeNe) or diode aiming beams (0.5 mW).',
+            biomechanicsExplanation: 'Dual-beam parallax triangulation guarantees that the optical focal waist coincides exactly with the intersection point of the aiming beams.'
+        }
+    },
+    offset_adjustment: {
+        id: 'offset_adjustment',
+        stepNumber: 3,
+        module: 'yag',
+        title: 'Posterior Focal Offset (+150µm)',
+        beginnerTitle: 'Step 3: Set Laser Safety Distance (+150µm Behind Lens)',
+        recommendedInstrument: 'yag_laser',
+        spokenScript: 'Step 3: Crucial safety setting! Set the posterior offset to plus 150 micrometers. Never fire at zero offset! When the laser sparks, the mini shockwave expands forward. If you don\'t set a safety gap, the shockwave will pit, scratch, and crack the patient\'s expensive artificial lens!',
+        beginnerSummary: 'Dial in a safety gap (+150 microns) so the laser sparks slightly behind the cloudy membrane, preventing scratches on the artificial lens.',
+        actionCallout: '👉 Verify the Laser Defocus Offset is set between +150µm and +200µm in the right console panel.',
+        targetLocationDescription: 'The right machine console: "Defocus Offset" dial set to +150 µm.',
+        whyItsNecessary: 'Why it is necessary: This is the number one rookie mistake in ophthalmology! When a laser spark creates plasma, the plasma sparks and expands FORWARD back toward the incoming laser beam. If your focus is set directly on the capsule (zero offset), the shockwave strikes the posterior surface of the plastic lens, blasting permanent micro-craters (pits) into the optic, creating glare, halos, and permanent vision distortion for the patient.',
+        clinicalObjective: 'Ensure acoustic photodisruption focus is positioned behind the capsule to preserve the IOL optic.',
+        techniquePearls: [
+            'Aqueous dielectric breakdown creates plasma that expands backward toward the laser source.',
+            'Posterior offset of +150 to +250 µm ensures the shockwave advances forward to open the capsule without touching the acrylic lens.'
+        ],
+        hazards: [
+            'Zero or anterior offset causes catastrophic pitting, cracking, and glare on the IOL optic.',
+            'Defocus > 320 µm risks breaking the anterior vitreous face.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Retro-capsular fluid interface, 150 µm behind the posterior IOL surface.',
+            instrumentDepthOrSize: 'Coaxial motorized optical defocus element (+100 to +300 µm).',
+            biomechanicsExplanation: 'Optical breakdown generates dielectric plasma at temperatures >10,000°K, emitting a supersonic acoustic cavitation shockwave that cleaves tissue mechanically.'
+        }
+    },
+    cruciate_capsulotomy: {
+        id: 'cruciate_capsulotomy',
+        stepNumber: 4,
+        module: 'yag',
+        title: 'Cruciate Pattern Laser Breakdown',
+        beginnerTitle: 'Step 4: Zap in a Cross Pattern (Cruciate Cuts)',
+        recommendedInstrument: 'yag_laser',
+        spokenScript: 'Step 4: Zap the membrane in a cross pattern. Fire your laser pulses starting at the outer edges: 12 o\'clock at the top, 6 o\'clock at the bottom, then 9 and 3 o\'clock. Cutting in a cross releases the tension, making the cloudy flaps curl up and roll out of the visual axis naturally.',
+        beginnerSummary: 'Fire short laser pulses in a cross shape (+) starting from the outer edges to release tension so the cloudy curtain curls open and falls away.',
+        actionCallout: '👉 CLICK on the numbered cross targets on the cloudy membrane: 1 (Top 12h) -> 2 (Bottom 6h) -> 3 (Left 9h) -> 4 (Right 3h).',
+        targetLocationDescription: 'The 4 arms of the cross (+) in the hazy pupil area outside the central line of sight.',
+        whyItsNecessary: 'Why it is necessary: If you blast directly in the dead center first, any accidental lens pit will land right in the patient\'s central vision line! Furthermore, the cloudy capsule is under tight drum-skin tension. By cutting the edges first like cutting the ropes of a tent, the tension pulls the central flaps wide open automatically, clearing vision using minimum laser energy.',
+        clinicalObjective: 'Deliver cruciate pattern cuts to release capsular tension and clear central opacified Elschnig pearls.',
+        techniquePearls: [
+            'Begin peripherally at 12 o\'clock, then 6, 3, and 9 o\'clock along the cruciate arms.',
+            'Releasing equatorial tension allows the central capsular flaps to curl out of the visual axis naturally.',
+            'Use lowest effective energy (1.0 to 1.5 mJ per burst).'
+        ],
+        hazards: [
+            'Firing directly in the central visual axis first risks severe central pits if alignment shifts.',
+            'Excessive total energy (>60 mJ) induces transient IOP spike and cystoid macular edema (CME).'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Posterior capsular collagen sheet and Elschnig pearl clusters.',
+            instrumentDepthOrSize: 'Q-switched Nd:YAG 1064 nm pulses of 4 nanosecond duration, 1.2–1.8 mJ energy.',
+            biomechanicsExplanation: 'Supersonic shockwave expansion cleaves the inelastic collagenous capsule; intrinsic capsular tension draws the four triangular quadrants away from the pupil center like opening a stage curtain.'
+        }
+    },
+    post_yag_assessment: {
+        id: 'post_yag_assessment',
+        stepNumber: 5,
+        module: 'yag',
+        title: 'Visual Axis Clearance & IOP Check',
+        beginnerTitle: 'Step 5: Check Clear Vision Window & Eye Pressure',
+        recommendedInstrument: 'yag_laser',
+        spokenScript: 'Step 5: Inspect your work and check pressure. Verify you have created a clean 4 millimeter circular window with no loose tags hanging in the center. Check that the gel bag behind the eye is intact, and apply eye drops to prevent post-laser pressure spikes.',
+        beginnerSummary: 'Inspect the eye to ensure a crystal-clear 4mm central window is open, no tags are dangling, the lens has zero pits, and give drops to keep eye pressure normal.',
+        actionCallout: '👉 Verify the visual axis is clear, confirm 0 IOL pits, and finalize the procedure.',
+        targetLocationDescription: 'Central 4mm optical zone of the pupil and the anterior vitreous face.',
+        whyItsNecessary: 'Why it is necessary: Loose tags hanging in the pupil will swing back and forth like a pendulum, creating ghostly double vision and annoying glare for the patient. Also, laser shockwaves release microscopic debris that can clog eye drains for 1 to 4 hours post-op, requiring prophylactic pressure-lowering drops (apraclonidine or brimonidine).',
+        clinicalObjective: 'Assess visual axis clarity, verify IOL integrity, and evaluate vitreous hyaloid status.',
+        techniquePearls: [
+            'Ideal aperture matches or slightly exceeds photopic pupil diameter (3.5–4.0 mm).',
+            'Confirm zero optic pits under high-magnification retroillumination.',
+            'Administer topical apraclonidine or brimonidine to prevent post-laser IOP spikes.'
+        ],
+        hazards: [
+            'Capsular tags hanging directly across the visual axis cause monocular diplopia and glare.',
+            'Undetected vitreous prolapse through a ruptured anterior hyaloid face increases retinal detachment risk.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Anterior hyaloid face of the vitreous body and trabecular meshwork.',
+            instrumentDepthOrSize: 'Slit-lamp retroillumination biomicroscopy and Goldmann tonometry.',
+            biomechanicsExplanation: 'Maintaining an intact anterior vitreous face keeps the vitreous gel compartmentalized, preventing inflammatory cytokines and macular traction.'
+        }
+    },
+    // =========================================================================
+    // --- MODULE D: MIGS TRABECULAR MICRO-BYPASS STENT SURGERY ---
+    // =========================================================================
+    microscope_and_head_tilt: {
+        id: 'microscope_and_head_tilt',
+        stepNumber: 1,
+        module: 'migs',
+        title: 'Operating Microscope & Patient Head Tilt',
+        beginnerTitle: 'Step 1: Tilt the Microscope & Patient Head',
+        recommendedInstrument: 'none',
+        spokenScript: 'Step 1 of MIGS Glaucoma Stent Surgery: Angle the microscope and patient head. Because the drainage angle of the eye is hidden around the side curve behind the cornea, light from straight above cannot see it. Tilt the microscope 35 to 40 degrees towards yourself, and tilt the patient\'s head 30 to 35 degrees away. Click the alignment beacon to set optimal direct gonioscopic optical trajectory.',
+        beginnerSummary: 'Tilt the surgical microscope toward you (35°-40°) and rotate the patient\'s head slightly away (30°-35°) to aim your line of sight directly into the hidden drainage corner of the eye.',
+        actionCallout: '👉 CLICK the Tilt Alignment control on the angle HUD to align the microscope and patient head to 38°/35°.',
+        targetLocationDescription: 'Microscope ocular axis and patient cervical rotation angle.',
+        whyItsNecessary: 'Why it is necessary: Normal light from a surgical microscope shines straight down into the pupil. But the eye\'s microscopic drainage canal (Schlemm\'s canal) is tucked sideways around the 360-degree perimeter of the corneal rim! If you look straight down, total internal reflection inside the curved cornea completely hides the drain! Tilting the microscope and head lets you peek sideways into the drainage angle.',
+        clinicalObjective: 'Overcome corneal total internal reflection to permit direct gonioscopic visualization of the nasal iridocorneal angle.',
+        techniquePearls: [
+            'Microscope tilted roughly 35°–45° toward the surgeon.',
+            'Patient head rotated 30°–35° away from the operative eye.',
+            'Maintain coaxial illumination to illuminate the trabecular meshwork without corneal glare.'
+        ],
+        hazards: [
+            'Insufficient tilt produces corneal reflex glare and renders Schlemm canal ostia invisible.',
+            'Excessive tilt can cause patient neck strain or dislodge the sterile surgical drape.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Iridocorneal filtration angle in the nasal quadrant.',
+            instrumentDepthOrSize: 'Zeiss/Leica surgical microscope gonio-tilt mechanism.',
+            biomechanicsExplanation: 'The critical angle for the human air-cornea interface is approximately 46°. Rays reflected from the angle recess strike the corneal epithelium at >46° and undergo total internal reflection; tilting eliminates this optical barrier.'
+        }
+    },
+    gonioprism_placement: {
+        id: 'gonioprism_placement',
+        stepNumber: 2,
+        module: 'migs',
+        title: 'Surgical Gonioprism Lens Placement',
+        beginnerTitle: 'Step 2: Place the Prism Lens onto the Cornea',
+        recommendedInstrument: 'gonio_lens',
+        spokenScript: 'Step 2: Apply the Swan-Jacob surgical gonioprism. Select the gonio lens from your tray. Place a drop of cohesive viscoelastic on the front surface of the cornea, then gently couple the flat lens onto the eye. Look for the golden-brown pigmented band: that is the diseased trabecular meshwork.',
+        beginnerSummary: 'Couple a specialized magnifying glass prism (Swan-Jacob lens) directly onto the clear cornea using a jelly cushion to reveal the internal drains of the eye in crisp detail.',
+        actionCallout: '👉 Select the Swan-Jacob Gonioprism on the tray, then CLICK the center of the cornea to lock the high-definition angle view.',
+        targetLocationDescription: 'Anterior corneal surface and nasal iridocorneal angle.',
+        whyItsNecessary: 'Why it is necessary: Even with tilt, the curved cornea bends light like a dome mirror. A surgical gonioprism is an optical glass wedge that cancels the optical curvature of the cornea. It turns the curved surface into an optically flat window, revealing the four key landmarks: Schwalbe\'s line, the pigmented trabecular meshwork, the scleral spur, and the ciliary body band.',
+        clinicalObjective: 'Cancel corneal optical power to achieve sub-millimeter visualization of trabecular meshwork pigmentation and collector channel hotspots.',
+        techniquePearls: [
+            'Use cohesive OVD as a fluid-coupling interface between gonioprism and cornea to prevent air bubbles.',
+            'Avoid pressing hard on the cornea, which creates corneal striae (wrinkles) that blur the angle.',
+            'Identify the amber pigmented trabecular meshwork band positioned just posterior to bright white Schwalbe\'s line.'
+        ],
+        hazards: [
+            'Air bubbles trapped under the gonioprism cause optical distortion and blind spots.',
+            'Excessive corneal indentation collapses the anterior chamber angle and empties Schlemm canal.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Anterior chamber angle: Schwalbe line, non-pigmented TM, pigmented TM, scleral spur.',
+            instrumentDepthOrSize: 'Direct Swan-Jacob or Volk surgical gonioprism with cohesive OVD interface.',
+            biomechanicsExplanation: 'Index of refraction matching: corneal tissue (n = 1.376) couples directly with glass prism (n = 1.52), allowing light to exit perpendicular to the prism face without refraction.'
+        }
+    },
+    viscoelastic_angle_deepening: {
+        id: 'viscoelastic_angle_deepening',
+        stepNumber: 3,
+        module: 'migs',
+        title: 'Viscoelastic Angle Deepening',
+        beginnerTitle: 'Step 3: Deepen the Drainage Corner with Jelly',
+        recommendedInstrument: 'ovd_provisc',
+        spokenScript: 'Step 3: Deepen the drainage corner with thick cohesive jelly. Select Provisc on the tray. Inject a gentle bolus into the nasal angle. Watch the iris push backward away from the cornea, opening up a spacious cavern for the stent injector.',
+        beginnerSummary: 'Inject thick cohesive surgical jelly into the drainage angle to push the colored iris backward, creating plenty of open room to safely work without touching delicate tissues.',
+        actionCallout: '👉 Select Provisc on the tray, then CLICK the nasal angle target to expand the iridocorneal recess.',
+        targetLocationDescription: 'Nasal anterior chamber angle recess between the peripheral cornea and iris root.',
+        whyItsNecessary: 'Why it is necessary: In many glaucoma patients, the iris sits very close to the drainage meshwork (a crowded or narrow angle). If you attempt to slide an injector into a crowded angle, the sharp metal tip will gouge into the iris, causing bleeding (hyphema) and severe inflammation. Injecting cohesive jelly acts like an architectural pillar, pushing the iris back and giving you a wide, safe runway.',
+        clinicalObjective: 'Deepen the anterior chamber angle recess and stabilize the pigmented trabecular meshwork target plane.',
+        techniquePearls: [
+            'Inject cohesive OVD specifically into the nasal quadrant to widen the angle recess.',
+            'Ensure the angle is open to at least Shaffer Grade IV (>35° iridocorneal separation).',
+            'Do not over-pressurize the anterior chamber, which compresses Schlemm canal flat.'
+        ],
+        hazards: [
+            'Extreme over-pressurization collapses Schlemm canal, preventing micro-stent lumen penetration.',
+            'Touching the iris root causes bleeding that obscures the pigmented trabecular band.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Nasal angle recess and trabecular meshwork face.',
+            instrumentDepthOrSize: 'Cohesive sodium hyaluronate (ProVisc/Healon GV) 27G cannula.',
+            biomechanicsExplanation: 'Cohesive OVD exerts hydrostatic space-maintenance pressure, displacing the compliant iris diaphragm posteriorly without stripping the endothelial monolayer.'
+        }
+    },
+    stent_1_deployment: {
+        id: 'stent_1_deployment',
+        stepNumber: 4,
+        module: 'migs',
+        title: 'Micro-Stent 1 Insertion into Schlemm Canal',
+        beginnerTitle: 'Step 4: Click to Inject Stent 1 into the Bloodstream Drain',
+        recommendedInstrument: 'migs_injector',
+        spokenScript: 'Step 4: Deploy Micro-Stent number 1. Select the iStent inject pen. Guide the microscopic tip across the eye to the nasal golden-brown meshwork band at 2:30 o\'clock. Approach at a 15 to 20 degree angle. Pierce through the meshwork right into Schlemm\'s canal and click the deployment button! The stent now channels fluid straight into the bloodstream.',
+        beginnerSummary: 'Advance the microscopic injector pen across the eye, pierce the clogged brown filter band at a 15°-20° angle into the hidden venous canal, and click to deploy the first titanium micro-stent.',
+        actionCallout: '👉 Select the iStent Injector Pen. CLICK the flashing green beacon at 2:30 o\'clock on the pigmented meshwork to seat Micro-Stent 1.',
+        targetLocationDescription: 'Pigmented trabecular meshwork at 2:30 o\'clock in the nasal quadrant, directly over a primary collector channel ostium.',
+        whyItsNecessary: 'Why it is necessary: Here is the core secret: In glaucoma, 70% to 90% of the clog is in the trabecular meshwork filter itself! But the veins right behind it (Schlemm\'s canal and episcleral veins) are wide open and healthy! By punching this microscopic titanium snorkel directly through the clog, eye fluid bypasses the blockage completely and dumps directly into the bloodstream! And because the venous bloodstream has an automatic backpressure of 8 to 10 mmHg, the eye can never over-drain or collapse!',
+        clinicalObjective: 'Penetrate trabecular meshwork and seat Stent 1 lumen securely into Schlemm canal lumen with direct collector channel communication.',
+        techniquePearls: [
+            'Enter the anterior chamber through the temporal clear corneal incision.',
+            'Approach the pigmented trabecular meshwork at an angle of 15°–20° tangential to the scleral curvature.',
+            'Depress the delivery sleeve button to seat the micro-stent thorax into the TM and release the 360µm flange into Schlemm canal.'
+        ],
+        hazards: [
+            'Superficial placement leaves the stent floating free in the anterior chamber with zero pressure reduction.',
+            'Overshooting too deep punctures the outer scleral wall, causing severe choroidal hemorrhage.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Pigmented trabecular meshwork into Schlemm canal lumen (nasal quadrant).',
+            instrumentDepthOrSize: 'Heparin-coated medical-grade titanium micro-stent (height 360 µm, diameter 230 µm, central lumen 80 µm).',
+            biomechanicsExplanation: 'The stent establishes an uninterrupted low-resistance lumen from the pressurized anterior chamber directly into the low-pressure venous collector channels, completely eliminating trabecular outflow resistance.'
+        }
+    },
+    stent_2_deployment: {
+        id: 'stent_2_deployment',
+        stepNumber: 5,
+        module: 'migs',
+        title: 'Micro-Stent 2 Insertion (Bilateral Bypass)',
+        beginnerTitle: 'Step 5: Click to Inject Stent 2 (2 Clock Hours Away)',
+        recommendedInstrument: 'migs_injector',
+        spokenScript: 'Step 5: Deploy the second micro-stent. Retract the injector tip slightly, slide 2 clock hours down to 4:00 o\'clock, and target the adjacent collector channel. Press gently into the pigmented meshwork and click to deploy Stent 2. Having two stents doubles your outflow capacity and guarantees dramatic eye pressure reduction.',
+        beginnerSummary: 'Move the injector 2 clock hours down the drainage ring to 4:00 o\'clock and deploy the second micro-stent into a neighboring collector channel.',
+        actionCallout: '👉 With the iStent Injector Pen still selected, CLICK the flashing cyan beacon at 4:00 o\'clock to deploy Micro-Stent 2.',
+        targetLocationDescription: 'Pigmented trabecular meshwork at 4:00 o\'clock in the nasal-inferior quadrant (~2.0mm distance from Stent 1).',
+        whyItsNecessary: 'Why it is necessary: Schlemm\'s canal has discrete outflow collector channels spaced around the eye like highway exit ramps. Placing two micro-stents spaced 2 clock hours (~2 mm) apart taps into multiple collector channel networks across the nasal quadrant. This drops eye pressure twice as effectively and provides backup insurance in case one channel ever scars down.',
+        clinicalObjective: 'Deploy second micro-stent spaced 2–3 clock hours from Stent 1 to recruit additional downstream collector channel networks.',
+        techniquePearls: [
+            'Retract injector sleeve, rotate 2 clock hours (~60°) inferiorly along the trabecular band.',
+            'Target adjacent episcleral venous collector channel ostia for maximum outflow facility.',
+            'Verify both stents exhibit visible inlet heads upright in the anterior chamber angle.'
+        ],
+        hazards: [
+            'Placing stents too close together (<1 clock hour) taps the same collector channel with zero additional benefit.',
+            'Inadvertent cyclodialysis occurs if the injector plunges beneath the scleral spur into the ciliary body.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Inferior-nasal trabecular meshwork and Schlemm canal at 4:00 o\'clock.',
+            instrumentDepthOrSize: 'Multi-stent delivery trocar preloaded with second heparin-coated titanium micro-stent.',
+            biomechanicsExplanation: 'Recruiting multiple collector channels increases total outflow facility (C) from 0.08 to >0.26 µL/min/mmHg, allowing rapid equilibration toward the episcleral venous floor.'
+        }
+    },
+    blood_reflux_and_washout: {
+        id: 'blood_reflux_and_washout',
+        stepNumber: 6,
+        module: 'migs',
+        title: 'Episcleral Blood Reflux & Viscoelastic Washout',
+        beginnerTitle: 'Step 6: Confirm Blood Reflux (8-10 mmHg Floor) & Washout',
+        recommendedInstrument: 'ia_handpiece',
+        spokenScript: 'Step 6: Verify blood reflux and clean the eye. Take the I/A suction handpiece. Gently tap the corneal wound to let a tiny drop of fluid out. Watch the miraculous blood reflux wave! Bright red blood seeps backwards through both stents from the bloodstream into the eye. This proves your stents are connected directly to the bloodstream! Wash out all remaining jelly, and your glaucoma surgery is complete.',
+        beginnerSummary: 'Gently lower eye pressure to watch bright red blood seep backwards through the stents from the bloodstream (proving direct connection and the 8-10 mmHg safety floor), then vacuum out all remaining jelly.',
+        actionCallout: '👉 Select the I/A Handpiece, put Foot Pedal in Position 2. CLICK to confirm the blood reflux wave and vacuum out all viscoelastic jelly.',
+        targetLocationDescription: 'Nasal trabecular meshwork stent lumens and anterior chamber angle.',
+        whyItsNecessary: 'Why it is necessary: The Blood Reflux Wave is the definitive holy grail test in glaucoma surgery! When you temporarily lower the eye pressure slightly below 8 to 10 mmHg, venous blood from the body\'s bloodstream flows backward out of Schlemm\'s canal into the stent inlet! Seeing that bright red blood plume proves 100% that your stents are in the bloodstream! And because the blood pressure will always push back at 8 to 10 mmHg, the patient\'s eye pressure can never drop too low (protecting against hypotony)!',
+        clinicalObjective: 'Demonstrate patent communication with episcleral venous bloodstream via transient blood reflux wave, and thoroughly aspirate cohesive OVD.',
+        techniquePearls: [
+            'Gently decompress the anterior chamber by pressing the posterior lip of the paracentesis.',
+            'Observe immediate retrograde plume of blood through the stent lumen (the "blood wave").',
+            'Re-pressurize the anterior chamber to ~14–16 mmHg to stop the reflux and check angle architecture.'
+        ],
+        hazards: [
+            'Failure to observe blood reflux indicates misplaced stent (buried in sclera or floating in AC).',
+            'Leaving residual cohesive OVD produces severe post-op IOP spikes (>40 mmHg) overriding stent efficacy.'
+        ],
+        detailedAnatomy: {
+            tissueTarget: 'Episcleral venous plexus, Schlemm canal, and trabecular micro-stents.',
+            instrumentDepthOrSize: 'Coaxial I/A handpiece with irrigation/aspiration port.',
+            biomechanicsExplanation: 'When IOP < EVP (Episcleral Venous Pressure: 8.0–10.0 mmHg), hydrostatic gradient reverses, drawing venous erythrocytes backwards through collector channels and stent bore. When IOP > EVP, aqueous humor flows into venous circulation.'
+        }
+    }
+};
+
+const SurgicalGuidesModal = ({ isOpen, onClose, initialModule = 'phaco' }) => {
+    const [selectedModule, setSelectedModule] = reactExports.useState(initialModule);
+    if (!isOpen)
+        return null;
+    const pdfFiles = {
+        phaco: {
+            fileName: 'Cataract_Phacoemulsification_Surgery_Guide.pdf',
+            title: 'Cataract Phacoemulsification Surgery',
+            desc: '7-step beginner guide: Paracentesis, Tri-Planar Wound (300µm groove, 1.5mm tunnel, Descemet entry), OVD shield, Capsulorhexis, Hydrodissection, Phaco-Chop, and Cortex I/A.',
+            icon: Layers$1,
+            color: 'text-cyan-400 border-cyan-500 bg-cyan-950/40'
+        },
+        iol: {
+            fileName: 'Foldable_IOL_Implantation_Guide.pdf',
+            title: 'Foldable Intraocular Lens (IOL) Implantation',
+            desc: '5-step beginner guide: Bag re-inflation with Provisc, cartridge insertion through 2.4mm incision, leading haptic seating, Sinskey dialing & 360° overlap, and retro-lens OVD washout.',
+            icon: Disc,
+            color: 'text-sky-400 border-sky-500 bg-sky-950/40'
+        },
+        yag: {
+            fileName: 'Nd_YAG_Laser_Posterior_Capsulotomy_Guide.pdf',
+            title: 'Nd:YAG Laser Posterior Capsulotomy',
+            desc: '5-step beginner guide: Abraham +66D contact lens, HeNe aiming beam alignment, crucial +150µm posterior defocus offset to avoid lens pits, cruciate cutting pattern, and IOP management.',
+            icon: Sparkles,
+            color: 'text-rose-400 border-rose-500 bg-rose-950/40'
+        },
+        migs: {
+            fileName: 'MIGS_Trabecular_Micro_Stent_Glaucoma_Guide.pdf',
+            title: 'MIGS: Trabecular Micro-Bypass Glaucoma Stent Surgery',
+            desc: '6-step beginner guide: Gonioprism placement, iridocorneal angle landmarks, Schlemm canal stent insertion, episcleral venous blood reflux test, and physiological 8-10 mmHg backpressure floor.',
+            icon: Compass,
+            color: 'text-emerald-400 border-emerald-500 bg-emerald-950/40'
+        },
+        master: {
+            fileName: 'Comprehensive_Ophthalmic_Surgical_Manual.pdf',
+            title: 'Comprehensive Master Surgical Compendium',
+            desc: 'Complete all-in-one clinical field manual uniting all three surgical procedures, anatomical SVG diagrams, fluidics equations, and complication rescue protocols.',
+            icon: BookOpen,
+            color: 'text-cyan-400 border-cyan-500 bg-cyan-950/40'
+        }
+    };
+    const getInstructionsForModule = (mod) => {
+        return Object.values(SURGICAL_INSTRUCTIONS).filter(inst => inst.module === mod);
+    };
+    const currentPdf = pdfFiles[selectedModule];
+    // Helper to open PDF or HTML
+    const getAssetUrl = (relativePath) => {
+        const base = window.location.pathname.endsWith('/')
+            ? window.location.pathname
+            : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        return `${base}${relativePath.replace(/^\.?\//, '')}`;
+    };
+    return (jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md select-none animate-fadeIn", children: jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1220] border border-[#1e2f4a] rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col text-slate-200", children: [jsxRuntimeExports.jsxs("div", { className: "p-4 sm:p-5 border-b border-[#1b2b44] flex items-center justify-between bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-700 text-cyan-400", children: jsxRuntimeExports.jsx(BookOpen, { className: "w-5 h-5" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h2", { className: "text-base sm:text-lg font-bold text-white tracking-wide", children: "OPHTHALMIC SURGICAL MANUALS & PDF GUIDES" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400", children: "Beginner-friendly step-by-step guides with detailed incisions, clinical rationale & diagrams" })] })] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1.5 rounded-lg hover:bg-[#16253c] text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-5 h-5" }) })] }), jsxRuntimeExports.jsx("div", { className: "flex border-b border-[#1b2b44] bg-[#080d18] px-3 sm:px-4 gap-1 sm:gap-2 text-xs overflow-x-auto no-scrollbar", children: [
+                        { id: 'phaco', label: '1. Phacoemulsification PDF', icon: Layers$1 },
+                        { id: 'iol', label: '2. Foldable IOL PDF', icon: Disc },
+                        { id: 'yag', label: '3. Nd:YAG Laser PDF', icon: Sparkles },
+                        { id: 'migs', label: '4. MIGS Glaucoma PDF', icon: Compass },
+                        { id: 'master', label: '★ Master Compendium', icon: BookOpen }
+                    ].map(tab => {
+                        const Icon = tab.icon;
+                        const isSel = selectedModule === tab.id;
+                        return (jsxRuntimeExports.jsxs("button", { onClick: () => setSelectedModule(tab.id), className: `py-3 px-3 font-semibold transition border-b-2 flex items-center gap-2 shrink-0 ${isSel
+                                ? 'border-cyan-400 text-cyan-300 bg-[#0e1726]'
+                                : 'border-transparent text-slate-400 hover:text-slate-200'}`, children: [jsxRuntimeExports.jsx(Icon, { className: `w-3.5 h-3.5 ${isSel ? 'text-cyan-400' : 'text-slate-500'}` }), jsxRuntimeExports.jsx("span", { children: tab.label })] }, tab.id));
+                    }) }), jsxRuntimeExports.jsxs("div", { className: "p-4 bg-gradient-to-r from-[#0d1b30] via-[#0d223c] to-[#0a1728] border-b border-[#1b2f4c] flex flex-col sm:flex-row sm:items-center justify-between gap-3", children: [jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "text-sm font-bold text-white flex items-center gap-2", children: [jsxRuntimeExports.jsx(FileText, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: currentPdf.title })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-300 mt-0.5 line-clamp-2", children: currentPdf.desc })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [jsxRuntimeExports.jsxs("a", { href: getAssetUrl(`guides/${currentPdf.fileName}`), download: currentPdf.fileName, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 transition active:scale-95", children: [jsxRuntimeExports.jsx(Download, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Download PDF" })] }), jsxRuntimeExports.jsxs("a", { href: getAssetUrl(`guides/${currentPdf.fileName.replace('.pdf', '.html')}`), target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#101b2d] hover:bg-[#16253c] border border-[#1e2f4a] text-slate-300 hover:text-white text-xs font-semibold transition", title: "Open Printable HTML Version in New Tab", children: [jsxRuntimeExports.jsx(Printer, { className: "w-4 h-4 text-slate-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Print / View" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs leading-relaxed", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 font-bold text-cyan-300 text-sm", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Summary for Beginners (No Experience Required)" })] }), jsxRuntimeExports.jsxs("p", { className: "text-slate-300 text-xs", children: [selectedModule === 'phaco' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: ["In cataract surgery, we replace the eye's cloudy natural lens with a clear artificial one. The procedure is performed through a tiny ", jsxRuntimeExports.jsx("strong", { children: "2.4mm self-sealing tunnel" }), " cut in three staggered planes into the clear window of the eye (cornea). We inject a protective gel to shield delicate cells, tear a smooth circular 5.2mm window in the lens capsule bag, loosen the lens with water, pulverize the rock-hard cataract using ultrasonic sound waves (phacoemulsification), and vacuum away the fluffy remnants."] })), selectedModule === 'iol' && (jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: "After removing the cataract, we must insert a new artificial lens (IOL) so light can focus on the retina. Because the new lens is 6.0mm wide and our incision is only 2.4mm, the lens is folded like a tiny taco inside an injector cartridge. We re-inflate the natural bag with jelly, inject the folded lens, watch its spring arms (haptics) seat into the bag corners, dial it clockwise with a Sinskey hook to achieve 360\u00B0 anterior capsule overlap, and vacuum out all the jelly to prevent high eye pressure." })), selectedModule === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: ["Months or years after cataract surgery, microscopic cells can grow across the back bag like frost on glass (Posterior Capsule Opacification, or PCO). We use an invisible infrared Nd:YAG laser to zap a crystal-clear window through the cloudy membrane. A specialized Abraham contact lens magnifies the view, twin red HeNe aiming beams converge to guarantee sharp focus, and a ", jsxRuntimeExports.jsx("strong", { children: "+150\u00B5m posterior defocus offset" }), " ensures the laser spark occurs safely behind the artificial lens, preventing scratches or pits!"] })), selectedModule === 'master' && (jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: "The Master Compendium integrates all three surgical workflows into a unified reference document with complete anatomical SVG illustrations, fluidic calculations, Cumulative Dissipated Energy (CDE) parameters, and complications prevention protocols." }))] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-slate-300 uppercase tracking-wider text-[11px]", children: "Step-by-Step Surgical Steps & Clinical Rationale:" }), getInstructionsForModule(selectedModule === 'master' ? 'phaco' : selectedModule).map((step, idx) => (jsxRuntimeExports.jsxs("div", { className: "bg-[#090f1c] rounded-xl border border-[#18283f] overflow-hidden space-y-0", children: [jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#0e1726] border-b border-[#18283f] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "font-mono text-[10px] font-bold uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded", children: ["STEP ", step.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs", children: step.beginnerTitle })] }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono text-cyan-300 bg-[#070c16] px-2 py-0.5 rounded border border-[#17253a]", children: ["Tool: ", step.recommendedInstrument.replace('_', ' ')] })] }), jsxRuntimeExports.jsxs("div", { className: "p-3.5 space-y-2 text-xs", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#101b2d] p-2.5 rounded-lg border border-[#1a2d48] text-slate-200", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-bold uppercase text-amber-400 font-mono", children: "What You Do:" }), jsxRuntimeExports.jsx("div", { className: "text-white mt-0.5 leading-relaxed", children: step.actionCallout })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#071222] p-2.5 rounded-lg border border-[#152a48] text-slate-300", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-bold uppercase text-sky-400 font-mono", children: "Why It Is Strictly Necessary:" }), jsxRuntimeExports.jsx("div", { className: "text-slate-300 mt-0.5 leading-relaxed", children: step.whyItsNecessary })] }), step.detailedAnatomy && (jsxRuntimeExports.jsxs("div", { className: "p-2.5 rounded-lg bg-[#060c18] border border-[#132238] space-y-1 text-[11px]", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Target Tissue: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: step.detailedAnatomy.tissueTarget })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Tissue Biomechanics: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-300", children: step.detailedAnatomy.biomechanicsExplanation })] })] })), jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2 text-rose-300 text-[11px] pt-1", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-rose-400", children: "Critical Hazard: " }), jsxRuntimeExports.jsx("span", { children: step.hazards[0] })] })] })] })] }, idx)))] })] }), jsxRuntimeExports.jsxs("div", { className: "p-4 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("div", { className: "text-[11px] text-slate-400", children: ["PDF files are stored in ", jsxRuntimeExports.jsx("span", { className: "font-mono text-cyan-300", children: "guides/" }), " and available for offline review."] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition", children: "Close Guide" })] })] }) }));
+};
+
 // Web Speech API - Ophthalmic Surgical Consultant Text-To-Speech (TTS) Engine
 class SurgicalTtsEngine {
     synth = null;
     currentUtterance = null;
     selectedVoice = null;
     isMuted = false;
-    isAutoNarrateEnabled = true;
+    isAutoNarrateEnabled = false;
     speechRate = 0.95; // Calm, deliberate surgical speaking rate
     speechPitch = 1.0;
     speechVolume = 1.0;
@@ -69793,12 +71615,13 @@ class SurgicalTtsEngine {
 }
 const ttsEngine = new SurgicalTtsEngine();
 
-const SurgicalInstructionBanner = ({ currentInstruction, }) => {
+const SurgicalInstructionBanner = ({ currentInstruction, onSelectInstrument, showGuides = true, onToggleGuides }) => {
     const [isSpeaking, setIsSpeaking] = reactExports.useState(false);
-    const [autoNarrate, setAutoNarrate] = reactExports.useState(true);
+    const [autoNarrate, setAutoNarrate] = reactExports.useState(false);
     const [isExpanded, setIsExpanded] = reactExports.useState(false);
     const [isMinimized, setIsMinimized] = reactExports.useState(false);
     const [speechRate, setSpeechRate] = reactExports.useState(0.95);
+    const [isBeginnerMode, setIsBeginnerMode] = reactExports.useState(true);
     // Subscribe to TTS speaking state
     reactExports.useEffect(() => {
         const unsubscribe = ttsEngine.subscribe((speaking) => {
@@ -69809,7 +71632,6 @@ const SurgicalInstructionBanner = ({ currentInstruction, }) => {
     // When step changes, read aloud if autoNarrate is enabled
     reactExports.useEffect(() => {
         if (autoNarrate && currentInstruction) {
-            // Small delay to allow audio context transition
             const timer = setTimeout(() => {
                 ttsEngine.speak(currentInstruction.spokenScript);
             }, 400);
@@ -69828,322 +71650,416 @@ const SurgicalInstructionBanner = ({ currentInstruction, }) => {
         setSpeechRate(rate);
         ttsEngine.setRate(rate);
     };
-    return (jsxRuntimeExports.jsx("div", { className: "absolute top-2 left-2 right-2 sm:right-auto sm:top-3 sm:left-3 sm:max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-[#1e2f4a] shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-cyan-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3.5 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
-                                        ? 'bg-cyan-950 border-cyan-400 text-cyan-300 shadow-md shadow-cyan-900/50'
-                                        : 'bg-[#101b2e] border-[#1c2c44] text-slate-400'}`, children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3.5 sm:h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-2.5 sm:h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-3.5 sm:h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-cyan-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "text-[10px] sm:text-[11px] text-cyan-300/80 font-medium truncate mt-0.5 hidden xs:block", children: ["Target: ", currentInstruction.clinicalObjective] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-1.5 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: toggleSpeak, title: isSpeaking ? 'Stop Voice Narration' : 'Read Instruction Aloud (TTS)', className: `px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl font-bold flex items-center gap-1 sm:gap-1.5 transition text-xs shadow-md ${isSpeaking
-                                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 animate-pulse'
-                                        : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/50'}`, children: [isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current" }), jsxRuntimeExports.jsx("span", { className: "text-[11px] sm:text-xs", children: isSpeaking ? 'Stop' : 'Voice' })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
-                                        const next = !autoNarrate;
-                                        setAutoNarrate(next);
-                                        ttsEngine.setAutoNarrate(next);
-                                    }, title: autoNarrate ? 'Auto-Voice Enabled: Automatically reads each step' : 'Auto-Voice Disabled', className: `px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl border text-[10px] sm:text-[11px] font-medium transition items-center gap-1 hidden xs:flex ${autoNarrate
-                                        ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
-                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, children: [jsxRuntimeExports.jsx(Radio, { className: `w-3 h-3 ${autoNarrate ? 'text-emerald-400' : 'text-slate-500'}` }), jsxRuntimeExports.jsx("span", { children: autoNarrate ? 'Auto' : 'Off' })] }), jsxRuntimeExports.jsx("button", { onClick: () => setIsExpanded(!isExpanded), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Clinical Pearls & Hazards", children: isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(true), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Minimize Banner to Pill (Saves space)", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) })] })] }), jsxRuntimeExports.jsx("div", { className: "p-3 bg-[#080f1c]/90 text-[11px] text-slate-300 leading-relaxed font-sans border-b border-[#162338]", children: jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("p", { className: "italic text-slate-200", children: ["\"", currentInstruction.spokenScript, "\""] })] }) }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3.5 bg-[#060c17] space-y-2.5 text-[11px] border-t border-[#162338] animate-fadeIn", children: [jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-cyan-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-cyan-300" }), "Surgical Technique & Vector Pearls:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#132034]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-amber-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-amber-400" }), "Hazards to Avoid:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-400", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { className: "text-amber-200/90", children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("span", { children: "Voice Cadence:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "font-mono", children: [speechRate.toFixed(2), "x"] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "1.25", step: "0.05", value: speechRate, onChange: (e) => handleRateChange(Number(e.target.value)), className: "w-24 accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer" })] })] })] }))] })) }));
+    const toolDisplayNames = {
+        mvr_blade: '1.0mm MVR Blade',
+        keratome_2_4: '2.4mm Keratome Blade',
+        ovd_viscoat: 'Viscoat Protective Jelly',
+        ovd_provisc: 'Provisc Cohesive Jelly',
+        cystotome: 'Needle Cystotome',
+        utrata_forceps: 'Utrata Micro-Forceps',
+        hydro_cannula: 'Hydrodissection Cannula',
+        phaco_tip: 'Phaco Ultrasound Needle',
+        ia_handpiece: 'Irrigation & Suction Wand',
+        iol_injector: 'Foldable IOL Injector',
+        sinskey_hook: 'Sinskey Dialing Hook',
+        yag_laser: 'Nd:YAG Q-Switched Laser',
+        none: 'Hands Free'
+    };
+    return (jsxRuntimeExports.jsx("div", { className: "absolute top-2 left-2 right-2 sm:right-auto sm:top-3 sm:left-3 sm:max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-[#1e2f4a] shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-cyan-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
+                                        ? 'bg-rose-950 border-rose-400 text-rose-300 shadow-md shadow-rose-900/50 animate-pulse'
+                                        : 'bg-[#101b2e] border-[#1c2c44] text-slate-400 hover:text-cyan-300'}`, title: isSpeaking ? 'Stop Spoken Voice' : 'Play Attending Voice Narration', children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3.5 sm:h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2.5 sm:h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-3.5 sm:h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs sm:text-[13px] truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] sm:text-[11px] text-cyan-300 font-medium truncate mt-0.5", children: currentInstruction.beginnerSummary })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: () => setIsBeginnerMode(!isBeginnerMode), className: `px-2 py-1 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 ${isBeginnerMode
+                                        ? 'bg-amber-950/80 border-amber-600 text-amber-300'
+                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, title: isBeginnerMode ? 'Beginner Guide Mode Active (Simple Plain English)' : 'Clinical Specialist Mode Active', children: jsxRuntimeExports.jsx("span", { children: isBeginnerMode ? 'Beginner' : 'Surgeon' }) }), onToggleGuides && (jsxRuntimeExports.jsx("button", { onClick: onToggleGuides, className: `p-1.5 rounded-lg border text-[10px] transition ${showGuides
+                                        ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-500'}`, title: showGuides ? 'Visual Target Guidance is ON' : 'Visual Target Guidance is OFF', children: jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5" }) })), jsxRuntimeExports.jsx("button", { onClick: () => setIsExpanded(!isExpanded), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Anatomical Details & Why It's Necessary", children: isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(true), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Minimize Banner", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) })] })] }), jsxRuntimeExports.jsxs("div", { className: "p-3 bg-gradient-to-r from-amber-950/30 via-[#0a1426] to-[#071120] border-b border-[#1a2d48] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1 rounded bg-amber-500/20 text-amber-400 shrink-0 mt-0.5", children: jsxRuntimeExports.jsx(Compass, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] uppercase font-mono tracking-wider text-amber-400 font-bold", children: "WHAT TO DO RIGHT NOW:" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-white font-medium leading-relaxed mt-0.5", children: currentInstruction.actionCallout })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-[#13233a] text-[11px]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3 h-3 text-cyan-400 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px]", children: "Target:" }), jsxRuntimeExports.jsx("span", { className: "text-cyan-200 font-medium text-[11px] truncate max-w-[200px] xs:max-w-none", children: currentInstruction.targetLocationDescription })] }), onSelectInstrument && currentInstruction.recommendedInstrument !== 'none' && (jsxRuntimeExports.jsxs("button", { onClick: () => onSelectInstrument(currentInstruction.recommendedInstrument), className: "flex items-center gap-1 px-2 py-0.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 text-[10px] font-mono font-semibold transition active:scale-95 shadow-sm", title: "Click to automatically equip this instrument", children: [jsxRuntimeExports.jsx(Wrench, { className: "w-2.5 h-2.5 text-cyan-400" }), jsxRuntimeExports.jsxs("span", { children: ["Select ", toolDisplayNames[currentInstruction.recommendedInstrument] || currentInstruction.recommendedInstrument] })] }))] })] }), jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 bg-[#070e1c] border-b border-[#162338] text-[11px] leading-relaxed text-slate-300 flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-bold text-sky-300 mr-1", children: "Why this is necessary:" }), jsxRuntimeExports.jsx("span", { className: "text-slate-300", children: currentInstruction.whyItsNecessary })] })] }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3.5 bg-[#050b16] space-y-3 text-[11px] border-t border-[#162338] animate-fadeIn max-h-[350px] overflow-y-auto", children: [currentInstruction.detailedAnatomy && (jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1424] p-2.5 rounded-xl border border-[#1b2f4c] space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-cyan-300 flex items-center gap-1.5 text-xs", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-cyan-400" }), "Micro-Surgical Anatomy & Wound Architecture:"] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px]", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Target Tissue: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.tissueTarget })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Instrument / Calibration: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.instrumentDepthOrSize })] })] }), jsxRuntimeExports.jsxs("div", { className: "text-slate-300 text-[10.5px] pt-1 border-t border-[#16253c]", children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-cyan-400", children: "Biomechanics: " }), currentInstruction.detailedAnatomy.biomechanicsExplanation] })] })), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-emerald-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-emerald-400" }), "Surgical Pearls & Best Practices:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#132034]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-rose-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-rose-400" }), "Hazards & What Happens If You Do It Wrong:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-rose-200/90", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2", children: jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            const next = !autoNarrate;
+                                            setAutoNarrate(next);
+                                            ttsEngine.setAutoNarrate(next);
+                                        }, className: `px-2 py-0.5 rounded border text-[10px] font-medium transition flex items-center gap-1 ${autoNarrate
+                                            ? 'bg-emerald-950/80 border-emerald-600 text-emerald-300'
+                                            : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, children: [jsxRuntimeExports.jsx(Radio, { className: "w-2.5 h-2.5" }), jsxRuntimeExports.jsxs("span", { children: ["Auto-Voice: ", autoNarrate ? 'ON' : 'OFF'] })] }) }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "Speed:" }), jsxRuntimeExports.jsxs("span", { className: "font-mono text-cyan-300", children: [speechRate.toFixed(2), "x"] }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.8", max: "1.25", step: "0.05", value: speechRate, onChange: (e) => handleRateChange(Number(e.target.value)), className: "w-20 accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer" })] })] })] }))] })) }));
 };
 
-const SURGICAL_INSTRUCTIONS = {
-    // --- Module A: Phacoemulsification ---
-    paracentesis: {
-        id: 'paracentesis',
-        stepNumber: 1,
-        module: 'phaco',
-        title: 'Paracentesis Incision (~1.0mm MVR)',
-        recommendedInstrument: 'mvr_blade',
-        spokenScript: 'Step 1: Paracentesis. Select the 1.0 millimeter MVR blade from your surgical tray. Enter the clear cornea at the 10 o\'clock limbus, angled parallel to the iris plane to create a self-sealing wound for your second instrument.',
-        clinicalObjective: 'Create a tight, self-sealing 1.0 mm port for the second instrument (chopper/paddle).',
-        techniquePearls: [
-            'Enter just anterior to the limbal vascular arcade at roughly 10 o\'clock (or 2 o\'clock).',
-            'Maintain blade angle parallel to iris plane to avoid iris trauma or premature corneal penetration.',
-            'A tri-planar or planar corneal entry ensures rapid stromal hydration seal at closure.'
-        ],
-        hazards: [
-            'Avoid entering too anteriorly (risk of corneal astigmatism and striae).',
-            'Avoid sudden downward plunge that could lacerate the anterior lens capsule or iris.'
-        ]
-    },
-    clear_corneal_incision: {
-        id: 'clear_corneal_incision',
-        stepNumber: 2,
-        module: 'phaco',
-        title: 'Tri-Planar Clear Corneal Incision (2.4mm)',
-        recommendedInstrument: 'keratome_2_4',
-        spokenScript: 'Step 2: Clear Corneal Incision. Switch to the 2.4 millimeter keratome. Create a tri-planar stepped incision: groove the anterior limbus, tunnel 1.5 millimeters into the corneal stroma, and dimple down to enter the anterior chamber without damaging the iris.',
-        clinicalObjective: 'Construct a stable, self-sealing 2.4 mm tri-planar clear corneal tunnel for the phaco handpiece.',
-        techniquePearls: [
-            'Plane 1: Initial vertical groove (depth ~300 µm) at the anterior limbus.',
-            'Plane 2: Lamellar stromal tunnel advancing 1.5–1.75 mm towards corneal center.',
-            'Plane 3: Dimple down and penetrate the Descemet membrane with a crisp internal corneal entry.'
-        ],
-        hazards: [
-            'Short tunnel length (<1.2 mm) creates wound leak, iris prolapse, and post-op endophthalmitis risk.',
-            'Overly long tunnel (>2.2 mm) induces corneal striae and limits instrument excursion.'
-        ]
-    },
-    ovd_injection: {
-        id: 'ovd_injection',
-        stepNumber: 3,
-        module: 'phaco',
-        title: 'OVD Injection (Dispersive & Cohesive)',
-        recommendedInstrument: 'ovd_viscoat',
-        spokenScript: 'Step 3: Ophthalmic Viscosurgical Device injection. First, inject dispersive Viscoat to coat and protect the delicate corneal endothelium. Next, inject cohesive Provisc to deepen the anterior chamber and flatten anterior capsular convexity.',
-        clinicalObjective: 'Coat endothelium with dispersive OVD and maintain deep anterior chamber depth with cohesive OVD.',
-        techniquePearls: [
-            'Arshinoff soft-shell technique: dispersive OVD coats endothelium first; cohesive OVD pushes lens-iris diaphragm posteriorly.',
-            'Flattening anterior capsule curvature reduces centrifugal vector run-out tension during capsulorhexis.'
-        ],
-        hazards: [
-            'Over-pressurization of the anterior chamber can induce zonular stress or anterior capsule blow-out.',
-            'Inadequate dispersive coverage leaves endothelium vulnerable to ultrasonic cavitation turbulence.'
-        ]
-    },
-    capsulorhexis: {
-        id: 'capsulorhexis',
-        stepNumber: 4,
-        module: 'phaco',
-        title: 'Continuous Curvilinear Capsulorhexis (CCC)',
-        recommendedInstrument: 'utrata_forceps',
-        spokenScript: 'Step 4: Continuous Curvilinear Capsulorhexis. Use the cystotome to puncture the central anterior capsule and raise a triangular flap. Grasp the flap with Utrata micro-forceps. Direct the shear vector tangentially in a circle to fashion an ideal 5.2 millimeter opening overlapping the IOL optic edge. If the tear runs out radially toward the zonules, execute Little\'s rescue technique by pulling 180 degrees back toward the center.',
-        clinicalObjective: 'Achieve a continuous 5.0–5.5 mm circular capsular opening centered on the visual axis.',
-        techniquePearls: [
-            'Puncture capsule at center and elevate triangular flap; fold flap flat over adjacent capsule.',
-            'Grasp flap within 1–2 mm of the tearing apex for maximal vector control.',
-            'Direct force tangentially to maintain circular shearing rather than radial stretching.',
-            'Little\'s Rescue Maneuver: If tear runs radially, unfold flap flat and pull 180° directly back toward the center of the pupil.'
-        ],
-        hazards: [
-            'Radial run-out tear into equatorial zonules can cause posterior extension and vitreous loss.',
-            'Too small rhexis (<4.5 mm) increases anterior capsular contraction and optic phimosis.'
-        ]
-    },
-    hydrodissection: {
-        id: 'hydrodissection',
-        stepNumber: 5,
-        module: 'phaco',
-        title: 'Hydrodissection & Free Rotation Test',
-        recommendedInstrument: 'hydro_cannula',
-        spokenScript: 'Step 5: Hydrodissection. Place the 27-gauge flattened cannula directly beneath the anterior capsular rim. Inject a gentle pulse of balanced salt solution to propagate a fluid wave across the posterior capsule. Verify free 360-degree rotation of the lens nucleus.',
-        clinicalObjective: 'Cleave cortical-capsular adhesions with a fluid wave and establish free 360° nuclear mobility.',
-        techniquePearls: [
-            'Tent up anterior capsule rim slightly before injecting BSS to prevent capsular block syndrome.',
-            'Observe the golden fluid wave passing across the red reflex retroillumination.',
-            'Depress the central nucleus to decompress anterior chamber fluid before nuclear rotation test.'
-        ],
-        hazards: [
-            'Vigorous injection in an intact capsule without decompression can rupture the posterior capsule (capsular block).',
-            'Forcing rotation without cortical cleaving creates massive zonular traction.'
-        ]
-    },
-    phaco_chop: {
-        id: 'phaco_chop',
-        stepNumber: 6,
-        module: 'phaco',
-        title: 'Phaco-Chop Nucleofractis & Aspiration',
-        recommendedInstrument: 'phaco_tip',
-        spokenScript: 'Step 6: Phaco-Chop Nucleofractis. Depress foot pedal to position 1 for continuous irrigation, position 2 for aspiration, and position 3 for ultrasound power. Impale the nucleus with the phaco tip, place the Nagahara chopper at the nuclear equator, and pull horizontally to cleave the cataract into quadrants. Emulsify each quadrant while monitoring chamber depth to avoid post-occlusion surge. Never apply ultrasound within one millimeter of the posterior capsule.',
-        clinicalObjective: 'Divide lens nucleus into manageable quadrants and emulsify with minimal Cumulative Dissipated Energy (CDE).',
-        techniquePearls: [
-            'Position 1: Continuous infusion keeps anterior chamber stable.',
-            'Position 2: Aspiration builds vacuum to hold nuclear fragment against tip.',
-            'Position 3: Burst or pulse phaco ultrasound delivers short bursts with low thermal dissipation.',
-            'Perform emulsification within the safe central "phaco zone" (iris plane, pupil center).'
-        ],
-        hazards: [
-            'Post-occlusion surge when fragment clears can collapse anterior chamber and tear posterior capsule.',
-            'Applying phaco power within 1.0 mm of posterior capsule or endothelium causes irreversible tissue rupture.'
-        ]
-    },
-    cortex_removal: {
-        id: 'cortex_removal',
-        stepNumber: 7,
-        module: 'phaco',
-        title: 'Cortical Remnant Clearance (I/A)',
-        recommendedInstrument: 'ia_handpiece',
-        spokenScript: 'Step 7: Cortex clearance. Engage the coaxial irrigation/aspiration handpiece. Strip 360 degrees of equatorial cortical fibers toward the center using position 2 aspiration. Polish the posterior capsule gently at low vacuum.',
-        clinicalObjective: 'Evacuate all equatorial cortex and epinucleus leaving a pristine, polished capsular bag.',
-        techniquePearls: [
-            'Occlude cortical sheet with aspiration port facing anteriorly or sideways.',
-            'Strip cortex radially centripetally from equator into the deep pupillary center before aspirating.',
-            'Switch to capsule vacuum polishing mode (vacuum ~20 mmHg) for central posterior capsule sheen.'
-        ],
-        hazards: [
-            'Aspirating posterior capsule directly: radial folds ("spider-web" sign) indicate capsular entrapment; immediately release pedal to position 0!'
-        ]
-    },
-    // --- Module B: Foldable IOL Implantation ---
-    ovd_bag_refill: {
-        id: 'ovd_bag_refill',
-        stepNumber: 1,
-        module: 'iol',
-        title: 'Capsular Bag Refill with Cohesive OVD',
-        recommendedInstrument: 'ovd_provisc',
-        spokenScript: 'Step 1: Capsular Bag Refill. Inject cohesive viscoelastic directly into the capsular bag equator to inflate the bag and deepen the anterior chamber prior to lens delivery.',
-        clinicalObjective: 'Expand the collapsed capsular bag to provide safe clearance for injector nozzle and IOL unfolding.',
-        techniquePearls: [
-            'Place cannula tip at distal equator and inject cohesive ProVisc smoothly.',
-            'Ensure capsular bag is completely unwrinkled and anterior chamber depth is normalized.'
-        ],
-        hazards: [
-            'Injecting without OVD cushion risks bag puncture by the rigid cartridge nozzle.'
-        ]
-    },
-    cartridge_insertion: {
-        id: 'cartridge_insertion',
-        stepNumber: 2,
-        module: 'iol',
-        title: 'Cartridge Delivery into Bag',
-        recommendedInstrument: 'iol_injector',
-        spokenScript: 'Step 2: Cartridge Delivery. Introduce the Monarch injector nozzle through the clear corneal incision. Advance the screw plunger smoothly to deliver the foldable hydrophobic acrylic intraocular lens into the capsular bag.',
-        clinicalObjective: 'Deliver foldable hydrophobic acrylic optic through corneal wound without wound stretching or cartridge twist.',
-        techniquePearls: [
-            'Bevel of injector nozzle oriented downward facing posterior capsule.',
-            'Advance plunger smoothly; monitor leading haptic emergence.'
-        ],
-        hazards: [
-            'Rapid uncontrolled injection can cause traumatic haptic strike through the posterior capsule.'
-        ]
-    },
-    haptic_unfolding: {
-        id: 'haptic_unfolding',
-        stepNumber: 3,
-        module: 'iol',
-        title: 'Leading Haptic Placement',
-        recommendedInstrument: 'iol_injector',
-        spokenScript: 'Step 3: Leading Haptic Placement. Ensure the leading C-loop haptic unfolds directly into the distal capsular bag equator, while the optic unfolds smoothly in the pupillary plane.',
-        clinicalObjective: 'Seat leading haptic directly into the distal capsular bag equator.',
-        techniquePearls: [
-            'Keep nozzle tip within anterior capsular rim so haptic cannot escape over the iris.',
-            'Allow slow controlled unfolding of hydrophobic acrylic material at ocular temperature.'
-        ],
-        hazards: [
-            'Trailing haptic trapped in incision wound requires gentle disengagement.'
-        ]
-    },
-    sinskey_dialing: {
-        id: 'sinskey_dialing',
-        stepNumber: 4,
-        module: 'iol',
-        title: 'Sinskey Hook 360° Rotational Centering',
-        recommendedInstrument: 'sinskey_hook',
-        spokenScript: 'Step 4: Sinskey Hook Dialing. Use the 0.2 millimeter Sinskey hook to dial the trailing haptic clockwise into the proximal capsular equator. Confirm 360-degree anterior capsular overlap and center the optic on the Purkinje visual axis.',
-        clinicalObjective: 'Dial trailing haptic into bag, achieve 360° rhexis overlap, and center optic along visual axis.',
-        techniquePearls: [
-            'Place Sinskey hook at optic-haptic junction.',
-            'Rotate clockwise while exerting slight downward posterior pressure into the bag.',
-            'Verify 0.5 mm continuous anterior capsular overlap around all 360 degrees of the 6.0 mm optic.'
-        ],
-        hazards: [
-            'Asymmetric haptic placement (one in bag, one in ciliary sulcus) causes chronic uveitis-glaucoma-hyphema (UGH) syndrome and optic tilt.'
-        ]
-    },
-    viscoelastic_washout: {
-        id: 'viscoelastic_washout',
-        stepNumber: 5,
-        module: 'iol',
-        title: 'Retro-Lens & AC Viscoelastic Washout',
-        recommendedInstrument: 'ia_handpiece',
-        spokenScript: 'Step 5: Viscoelastic Washout. Place the I/A handpiece behind the optic in the retro-lens space to evacuate trapped cohesive viscoelastic. Thorough washout prevents postoperative intraocular pressure spikes above 40 millimeters of mercury.',
-        clinicalObjective: 'Thoroughly evacuate cohesive OVD from retro-lens space and anterior chamber to prevent acute IOP spike.',
-        techniquePearls: [
-            'Rock\'n\'roll maneuver: tilt optic gently with I/A tip to access capsular bag retro-lens space.',
-            'Aspirate all visco behind optic; re-check anterior chamber angles before wound hydration.'
-        ],
-        hazards: [
-            'Retained OVD occludes the trabecular meshwork, causing severe early postoperative IOP spikes (>45 mmHg).'
-        ]
-    },
-    // --- Module C: Nd:YAG Laser Posterior Capsulotomy ---
-    contact_lens_placement: {
-        id: 'contact_lens_placement',
-        stepNumber: 1,
-        module: 'yag',
-        title: 'Abraham Capsulotomy Lens Placement',
-        recommendedInstrument: 'yag_laser',
-        spokenScript: 'Step 1: Contact Lens Placement. Apply coupling gel and place the Abraham capsulotomy contact lens onto the cornea. The anti-reflective coated central button increases optical magnification and converges laser energy into a tighter focal waist.',
-        clinicalObjective: 'Fit Abraham contact lens to stabilize the globe, maximize optical clarity, and reduce breakdown threshold.',
-        techniquePearls: [
-            'Anti-reflective coated +66D planoconvex button provides 1.5x magnification.',
-            'Improves cone angle from 16° to 24°, reducing energy density on corneal endothelium and retina.'
-        ],
-        hazards: [
-            'Air bubbles in coupling methylcellulose create optical distortion and beam defocus.'
-        ]
-    },
-    aiming_focus: {
-        id: 'aiming_focus',
-        stepNumber: 2,
-        module: 'yag',
-        title: 'Dual HeNe Aiming Beam Convergence',
-        recommendedInstrument: 'yag_laser',
-        spokenScript: 'Step 2: Dual HeNe Aiming Focus. Adjust the slit-lamp joystick so that the two red Helium-Neon aiming laser spots converge precisely into a single sharp spot on the opacified posterior capsule.',
-        clinicalObjective: 'Achieve pinpoint confocal alignment of the twin red HeNe aiming beams on the retro-illuminated capsule.',
-        techniquePearls: [
-            'When out of focus, two distinct red dots appear on screen.',
-            'Fine-tune joystick forward/backward until both dots merge into a single tight high-intensity red reticle.'
-        ],
-        hazards: [
-            'Firing while aiming beams are doubled leads to shockwaves occurring away from target plane.'
-        ]
-    },
-    offset_adjustment: {
-        id: 'offset_adjustment',
-        stepNumber: 3,
-        module: 'yag',
-        title: 'Posterior Focal Offset (+150µm)',
-        recommendedInstrument: 'yag_laser',
-        spokenScript: 'Step 3: Posterior Defocus Offset. Set the laser focal offset to plus 150 to plus 200 micrometers posterior to the capsule. Never fire at zero offset, as optical breakdown will pit and scratch the posterior surface of the intraocular lens.',
-        clinicalObjective: 'Ensure acoustic photodisruption focus is positioned behind the capsule to preserve the IOL optic.',
-        techniquePearls: [
-            'Aqueous dielectric breakdown creates plasma that expands backward toward the laser source.',
-            'Posterior offset of +150 to +250 µm ensures the shockwave advances forward to open the capsule without touching the acrylic lens.'
-        ],
-        hazards: [
-            'Zero or anterior offset causes catastrophic pitting, cracking, and glare on the IOL optic.',
-            'Defocus > 320 µm risks breaking the anterior vitreous face.'
-        ]
-    },
-    cruciate_capsulotomy: {
-        id: 'cruciate_capsulotomy',
-        stepNumber: 4,
-        module: 'yag',
-        title: 'Cruciate Pattern Laser Breakdown',
-        recommendedInstrument: 'yag_laser',
-        spokenScript: 'Step 4: Cruciate Capsulotomy. Fire laser pulses in a cross-shaped cruciate pattern, starting outside the visual axis at the 12, 6, 3, and 9 o\'clock meridians to relax capsular tension. Optical breakdown creates plasma and a supersonic acoustic cavitation shockwave that cleaves the Elschnig pearls.',
-        clinicalObjective: 'Deliver cruciate pattern cuts to release capsular tension and clear central opacified Elschnig pearls.',
-        techniquePearls: [
-            'Begin peripherally at 12 o\'clock, then 6, 3, and 9 o\'clock along the cruciate arms.',
-            'Releasing equatorial tension allows the central capsular flaps to curl out of the visual axis naturally.',
-            'Use lowest effective energy (1.0 to 1.5 mJ per burst).'
-        ],
-        hazards: [
-            'Firing directly in the central visual axis first risks severe central pits if alignment shifts.',
-            'Excessive total energy (>60 mJ) induces transient IOP spike and cystoid macular edema (CME).'
-        ]
-    },
-    post_yag_assessment: {
-        id: 'post_yag_assessment',
-        stepNumber: 5,
-        module: 'yag',
-        title: 'Visual Axis Clearance & IOP Check',
-        recommendedInstrument: 'yag_laser',
-        spokenScript: 'Step 5: Visual Axis Assessment. Verify that a clean 3.5 to 4.0 millimeter central optical aperture is created, free of floating capsular tags. Ensure the anterior hyaloid face is intact and check for potential postoperative IOP elevation.',
-        clinicalObjective: 'Assess visual axis clarity, verify IOL integrity, and evaluate vitreous hyaloid status.',
-        techniquePearls: [
-            'Ideal aperture matches or slightly exceeds photopic pupil diameter (3.5–4.0 mm).',
-            'Confirm zero optic pits under high-magnification retroillumination.',
-            'Administer topical apraclonidine or brimonidine to prevent post-laser IOP spikes.'
-        ],
-        hazards: [
-            'Capsular tags hanging directly across the visual axis cause monocular diplopia and glare.'
-        ]
-    }
+const SplashScreen = ({ onComplete }) => {
+    const TOTAL_DURATION_SEC = 20;
+    const [secondsRemaining, setSecondsRemaining] = reactExports.useState(TOTAL_DURATION_SEC);
+    const [currentPhaseIndex, setCurrentPhaseIndex] = reactExports.useState(0);
+    const canvasRef = reactExports.useRef(null);
+    const telemetryPhases = [
+        {
+            title: 'MICROSURGICAL SUBSYSTEM INITIALIZATION',
+            desc: 'Synchronizing High-Resolution Stereo Coaxial Illumination & 3D Cornea Meshes...',
+            badge: 'OPTICS 25x OK',
+            tag: 'SYSTEM BOOT'
+        },
+        {
+            title: 'ANTERIOR SEGMENT BIOMETRIC MAPPING',
+            desc: 'Axial Length: 23.45mm • ACD: 3.15mm • Pupil Dilation: 8.2mm • Pachymetry: 540µm',
+            badge: 'LOCS III NO3',
+            tag: 'BIOMETRICS'
+        },
+        {
+            title: 'ACTIVE FLUIDICS CASSETTE CALIBRATION',
+            desc: 'Dynamic Forced Infusion (Target: 30 mmHg) • Vacuum Sensor Limit: 650 mmHg',
+            badge: 'SURGE GUARD ON',
+            tag: 'FLUIDICS'
+        },
+        {
+            title: 'ND:YAG 1064nm PHOTODISRUPTION ARRAY',
+            desc: 'Dual Red HeNe Aiming Laser Convergence • Posterior Offset Lock: +150 µm Defocus',
+            badge: 'ZERO PIT SHIELD',
+            tag: 'LASER READY'
+        },
+        {
+            title: 'PAL OPTIC SURGICAL SUITE READY',
+            desc: 'Preparing 3 Advanced Surgical Modules: Phacoemulsification, Foldable IOL, Nd:YAG Laser',
+            badge: '100% CALIBRATED',
+            tag: 'ENTER SUITE'
+        }
+    ];
+    // 20-second countdown ticker
+    reactExports.useEffect(() => {
+        const timer = setInterval(() => {
+            setSecondsRemaining((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    onComplete();
+                    return 0;
+                }
+                const next = prev - 1;
+                // Update phase every 4 seconds
+                const elapsed = TOTAL_DURATION_SEC - next;
+                const phase = Math.min(telemetryPhases.length - 1, Math.floor(elapsed / 4));
+                setCurrentPhaseIndex(phase);
+                return next;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [onComplete]);
+    // Keyboard shortcut: Space or Enter or Escape to skip intro
+    reactExports.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
+                e.preventDefault();
+                onComplete();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onComplete]);
+    // Canvas futuristic biometric laser scan animation
+    reactExports.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas)
+            return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+        let animId;
+        let angle = 0;
+        const render = () => {
+            animId = requestAnimationFrame(render);
+            const width = canvas.width;
+            const height = canvas.height;
+            ctx.clearRect(0, 0, width, height);
+            const cx = width / 2;
+            const cy = height / 2;
+            const baseR = Math.min(width, height) * 0.38;
+            // Rotating laser scanner sweep beam
+            angle += 0.025;
+            const sweepX = cx + Math.cos(angle) * (baseR * 1.05);
+            const sweepY = cy + Math.sin(angle) * (baseR * 1.05);
+            // Sweep gradient sector
+            const sweepGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, baseR * 1.05);
+            sweepGrad.addColorStop(0, 'rgba(0, 210, 255, 0.25)');
+            sweepGrad.addColorStop(0.7, 'rgba(0, 180, 255, 0.08)');
+            sweepGrad.addColorStop(1, 'rgba(0, 210, 255, 0)');
+            ctx.save();
+            ctx.fillStyle = sweepGrad;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, baseR * 1.05, angle - 0.5, angle);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            // Outer corneal ring
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+            ctx.stroke();
+            // Dashed limbus ring
+            ctx.save();
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 6]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseR * 0.78, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+            // Pupil circle
+            ctx.fillStyle = '#020617';
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseR * 0.42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Iris radiating fibers
+            ctx.save();
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 48; i++) {
+                const a = (i / 48) * Math.PI * 2;
+                const x1 = cx + Math.cos(a) * (baseR * 0.45);
+                const y1 = cy + Math.sin(a) * (baseR * 0.45);
+                const x2 = cx + Math.cos(a) * (baseR * 0.75);
+                const y2 = cy + Math.sin(a) * (baseR * 0.75);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            ctx.restore();
+            // Crosshair reticle
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx - baseR * 1.15, cy);
+            ctx.lineTo(cx + baseR * 1.15, cy);
+            ctx.moveTo(cx, cy - baseR * 1.15);
+            ctx.lineTo(cx, cy + baseR * 1.15);
+            ctx.stroke();
+            // Laser Sweep Tip
+            ctx.fillStyle = '#38bdf8';
+            ctx.shadowColor = '#00d2ff';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(sweepX, sweepY, 4, 0, Math.PI * 2);
+            ctx.fill();
+        };
+        render();
+        return () => cancelAnimationFrame(animId);
+    }, []);
+    const progressPercent = ((TOTAL_DURATION_SEC - secondsRemaining) / TOTAL_DURATION_SEC) * 100;
+    const currentPhase = telemetryPhases[currentPhaseIndex];
+    return (jsxRuntimeExports.jsxs("div", { className: "fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-[#040812] text-slate-200 select-none overflow-hidden font-sans", children: [jsxRuntimeExports.jsxs("div", { className: "w-full max-w-5xl flex items-center justify-between pt-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5", children: [jsxRuntimeExports.jsx("div", { className: "p-2 rounded-xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-lg shadow-cyan-950/60", children: jsxRuntimeExports.jsx(Eye, { className: "w-5 h-5" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-bold", children: "PAL OPTIC LABS \u2022 OPHTHALMOLOGY" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-400 font-medium", children: "Virtual Microsurgical Operating Theater 2026.1" })] })] }), jsxRuntimeExports.jsxs("button", { onClick: onComplete, className: "flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-cyan-800/80 text-cyan-300 hover:text-white font-bold text-xs transition shadow-lg active:scale-95 group", title: "Skip Intro to Main Menu (or press Space / Escape)", children: [jsxRuntimeExports.jsx("span", { children: "Skip Intro to Menu" }), jsxRuntimeExports.jsx(ChevronRight, { className: "w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center my-auto relative w-full max-w-lg", children: [jsxRuntimeExports.jsx("div", { className: "absolute w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none animate-pulse" }), jsxRuntimeExports.jsxs("div", { className: "relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center", children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, width: 320, height: 320, className: "w-full h-full pointer-events-none drop-shadow-2xl" }), jsxRuntimeExports.jsxs("div", { className: "absolute flex flex-col items-center justify-center pointer-events-none", children: [jsxRuntimeExports.jsx("span", { className: "text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow", children: "PAL OPTIC" }), jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono tracking-widest text-cyan-400 uppercase font-bold mt-0.5", children: "SURGICAL SUITE" })] })] }), jsxRuntimeExports.jsxs("div", { className: "mt-6 w-full bg-[#0a1222]/90 border border-[#1b2f4c] rounded-2xl p-4 shadow-2xl backdrop-blur-md space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-[10px] font-mono font-bold", children: [jsxRuntimeExports.jsxs("span", { className: "text-cyan-400 flex items-center gap-1.5 uppercase", children: [jsxRuntimeExports.jsx(Activity, { className: "w-3.5 h-3.5 animate-pulse text-cyan-400" }), currentPhase.tag] }), jsxRuntimeExports.jsx("span", { className: "bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded", children: currentPhase.badge })] }), jsxRuntimeExports.jsx("div", { className: "text-xs sm:text-sm font-bold text-white leading-snug", children: currentPhase.title }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-300 leading-relaxed font-mono", children: currentPhase.desc })] })] }), jsxRuntimeExports.jsxs("div", { className: "w-full max-w-xl flex flex-col items-center space-y-3 pb-4", children: [jsxRuntimeExports.jsx("div", { className: "w-full bg-[#0d1627] rounded-full h-2.5 overflow-hidden border border-[#1b2b44] p-0.5", children: jsxRuntimeExports.jsx("div", { className: "bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-1000 ease-linear shadow-lg shadow-cyan-500/50", style: { width: `${progressPercent}%` } }) }), jsxRuntimeExports.jsxs("div", { className: "w-full flex items-center justify-between text-xs text-slate-400 font-mono", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" }), jsxRuntimeExports.jsx("span", { children: "Calibrating Simulation Engine..." })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "Entering Menu in:" }), jsxRuntimeExports.jsxs("span", { className: "text-sm font-bold text-cyan-300 bg-[#09101d] px-2 py-0.5 rounded border border-[#17253a]", children: ["00:", secondsRemaining.toString().padStart(2, '0')] })] })] })] })] }));
+};
+
+const SurgeryMainMenu = ({ onSelectSurgery, onOpenVideoOverlay, onOpenPdfGuides, onOpenReference }) => {
+    const surgeries = [
+        {
+            id: 'phaco',
+            num: 'SURGERY 01',
+            title: 'Cataract Phacoemulsification & Foldable IOL',
+            subtitle: 'Complete 12-Step Ultrasonic Emulsification & In-The-Bag Acrylic Optic Delivery',
+            badge: '12-STEP UNIFIED PROTOCOL',
+            accentColor: 'cyan',
+            themeBorder: 'border-cyan-500/50 hover:border-cyan-400',
+            themeBg: 'bg-gradient-to-b from-cyan-950/30 to-[#0a1222]',
+            themeButton: 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/60',
+            icon: Layers$1,
+            summary: 'The complete gold-standard cataract procedure combining Phacoemulsification and Foldable IOL Implantation: 2.4mm tri-planar self-sealing corneal entry, dispersive OVD endothelial shield, 5.2mm continuous capsulorhexis, hydrodissection wave, phaco-chop nucleus fragmentation, cortical remnant clearance, cohesive OVD bag inflation, screw-drive folded acrylic IOL injection, Sinskey hook 360° rotational overlap, and thorough retro-lens viscoelastic washout.',
+            highlights: [
+                'Phase 1 (Steps 1–7): 3-Plane Corneal Tunnel → 5.2mm CCC → Phaco-Chop Ultrasonic Cavitation',
+                'Phase 2 (Steps 8–12): Cohesive Bag Refill → Foldable IOL Delivery → Sinskey 360° Dialing',
+                'Real Surgical Video Overlay (cataract.mp4) Included with Multi-Chapter Tracking'
+            ],
+            pdfGuideName: 'Cataract_Phacoemulsification_Surgery_Guide.pdf'
+        },
+        {
+            id: 'yag',
+            num: 'SURGERY 02',
+            title: 'Nd:YAG Laser Posterior Capsulotomy',
+            subtitle: 'Q-Switched Slit-Lamp Photodisruption for PCO',
+            badge: '5-STEP PROTOCOL',
+            accentColor: 'rose',
+            themeBorder: 'border-rose-500/50 hover:border-rose-400',
+            themeBg: 'bg-gradient-to-b from-rose-950/30 to-[#0a1222]',
+            themeButton: 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/60',
+            icon: Sparkles,
+            summary: 'Treat secondary cataracts (posterior capsule opacification) by photodisrupting a pristine central optical aperture behind the artificial lens. Features Abraham +66D contact lens stabilization, twin HeNe laser triangulation, and +150µm posterior defocus offset to guarantee zero IOL pitting.',
+            highlights: [
+                'Crucial +150µm Posterior Defocus Offset Prevents Acrylic Optic Pitting',
+                'Dual HeNe Laser Triangulation for Sub-Millimeter Focus',
+                'Cruciate Pattern (+) Cuts Release Tension & Clear Visual Axis Without Vitreous Breakthrough'
+            ],
+            pdfGuideName: 'Nd_YAG_Laser_Posterior_Capsulotomy_Guide.pdf'
+        },
+        {
+            id: 'migs',
+            num: 'SURGERY 03',
+            title: 'MIGS: Trabecular Micro-Bypass Stent',
+            subtitle: "Direct Schlemm's Canal Venous Bypass & 8–10 mmHg Backpressure Floor",
+            badge: '6-STEP PROTOCOL',
+            accentColor: 'emerald',
+            themeBorder: 'border-emerald-500/50 hover:border-emerald-400',
+            themeBg: 'bg-gradient-to-b from-emerald-950/30 to-[#0a1222]',
+            themeButton: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60',
+            icon: Compass,
+            summary: "Bypass the diseased, clogged trabecular meshwork by implanting biocompatible titanium micro-bypass stents directly into Schlemm's canal and venous collector channels. Aqueous humor flows straight into the episcleral venous bloodstream, where natural blood pressure creates an unbreakable 8 to 10 mmHg backpressure floor, permanently preventing hypotony.",
+            highlights: [
+                'Micro-Stent Bypasses 90% of Glaucoma Resistance in Trabecular Meshwork',
+                'Direct Venous Connection: Episcleral Bloodstream Creates 8–10 mmHg Floor',
+                'Episcleral Blood Reflux Wave Verifies 100% Patent Outflow'
+            ],
+            pdfGuideName: 'MIGS_Trabecular_Micro_Stent_Glaucoma_Guide.pdf'
+        }
+    ];
+    return (jsxRuntimeExports.jsxs("div", { className: "min-h-screen w-screen bg-[#050811] text-slate-200 select-none overflow-y-auto font-sans p-4 sm:p-6 flex flex-col justify-between", children: [jsxRuntimeExports.jsxs("header", { className: "max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-xl shadow-cyan-950/50", children: jsxRuntimeExports.jsx(Eye, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "text-[11px] font-mono tracking-widest text-cyan-400 uppercase font-bold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { children: "PAL OPTIC MEDICAL SPECIALTY SUITE" }), jsxRuntimeExports.jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping" })] }), jsxRuntimeExports.jsx("h1", { className: "text-xl sm:text-2xl font-black text-white tracking-tight", children: "Ophthalmic Surgical Operations Hub" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides('master'), className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(BookOpen, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Master PDF Manual" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(Award, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "Clinical Compendium" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "max-w-6xl w-full mx-auto my-6 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold", children: "RESIDENCY & FELLOWSHIP SIMULATION" }), jsxRuntimeExports.jsx("h2", { className: "text-lg sm:text-xl font-bold text-white mt-1.5", children: "Select an Ophthalmic Surgical Procedure to Begin" }), jsxRuntimeExports.jsx("p", { className: "text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed", children: "Practice anterior segment micro-surgery with real fluidics differential equations, progressive 3-plane incisions, tactile sound synthesis, real surgical video overlays, and attending voice coaching." })] }), jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2 shrink-0", children: jsxRuntimeExports.jsxs("span", { className: "text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-700/80 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleCheck, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Surgical Suites Ready" })] }) })] }), jsxRuntimeExports.jsx("div", { className: "max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5 my-2", children: surgeries.map((surg) => {
+                    const Icon = surg.icon;
+                    return (jsxRuntimeExports.jsxs("div", { className: `rounded-2xl border ${surg.themeBorder} ${surg.themeBg} backdrop-blur-md p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group relative overflow-hidden`, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-3 border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold", children: surg.num }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-[#09101d] text-cyan-300 border border-[#1b2b44] px-2 py-0.5 rounded font-bold", children: surg.badge })] }), jsxRuntimeExports.jsxs("div", { className: "mt-4 flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-[#09101d] border border-[#1e2f4a] group-hover:border-cyan-400 text-cyan-400 transition-colors shadow-md", children: jsxRuntimeExports.jsx(Icon, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h3", { className: "text-base font-bold text-white group-hover:text-cyan-300 transition-colors", children: surg.title }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-400", children: surg.subtitle })] })] }), jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-300 leading-relaxed mt-4", children: surg.summary }), jsxRuntimeExports.jsx("div", { className: "mt-4 pt-3 border-t border-[#17253a] space-y-1.5 text-[11px]", children: surg.highlights.map((hl, i) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-bold", children: "\u2713" }), jsxRuntimeExports.jsx("span", { children: hl })] }, i))) })] }), jsxRuntimeExports.jsxs("div", { className: "mt-6 pt-4 border-t border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onSelectSurgery(surg.id), className: `w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95 ${surg.themeButton}`, children: [jsxRuntimeExports.jsxs("span", { children: ["Launch ", surg.title.split(' ')[0], " Simulator"] }), jsxRuntimeExports.jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-1 transition-transform" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenVideoOverlay(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-cyan-500/80 text-cyan-300 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Watch Real Surgical Video for ${surg.title}`, children: [jsxRuntimeExports.jsx(Video, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Video Overlay" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-sky-500/80 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Open Field Guide PDF for ${surg.title}`, children: [jsxRuntimeExports.jsx(FileText, { className: "w-3.5 h-3.5 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "PDF Guide" })] })] })] })] }, surg.id));
+                }) }), jsxRuntimeExports.jsxs("footer", { className: "max-w-6xl w-full mx-auto mt-6 pt-4 border-t border-[#1b2b44] flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "PAL OPTIC Simulator v2026.1" }), jsxRuntimeExports.jsx("span", { children: "\u2022" }), jsxRuntimeExports.jsx("span", { children: "Chrome/Edge WebGL 3D & 2D Composite Viewports" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-mono", children: "TTS Autoplay: OFF (Manual Activation)" }), jsxRuntimeExports.jsx("span", { children: "\u2022" }), jsxRuntimeExports.jsx("span", { children: "High-Resolution Real Eye Photography" })] })] })] }));
+};
+
+const SurgicalVideoOverlayModal = ({ isOpen, onClose, currentSurgery, videoUrls, onUpdateVideoUrl }) => {
+    const [activeModule, setActiveModule] = reactExports.useState(currentSurgery);
+    const [isEditingUrl, setIsEditingUrl] = reactExports.useState(false);
+    const [inputUrl, setInputUrl] = reactExports.useState('');
+    const [isMiniMode, setIsMiniMode] = reactExports.useState(false);
+    const [opacity, setOpacity] = reactExports.useState(0.96);
+    if (!isOpen)
+        return null;
+    const surgeryInfo = {
+        phaco: {
+            title: 'Cataract Phacoemulsification & Foldable IOL Surgery Video',
+            badge: 'SURGERY 1',
+            color: 'text-cyan-400 border-cyan-500 bg-cyan-950/40',
+            chapters: [
+                { label: '01: Paracentesis (10h)', time: '0:00' },
+                { label: '02: Tri-Planar Cornea (2.4mm)', time: '0:45' },
+                { label: '03: OVD Soft-Shell Shield', time: '1:30' },
+                { label: '04: Capsulorhexis (5.2mm CCC)', time: '2:15' },
+                { label: '05: Hydrodissection Wave', time: '3:20' },
+                { label: '06: Phaco-Chop & Cavitation', time: '4:10' },
+                { label: '07: Cortex Removal (I/A)', time: '6:30' },
+                { label: '08: Capsular Bag OVD Refill', time: '7:45' },
+                { label: '09: Cartridge IOL Delivery', time: '8:20' },
+                { label: '10: Distal Haptic Placement', time: '9:00' },
+                { label: '11: Sinskey Hook 360° Overlap', time: '9:40' },
+                { label: '12: Retro-Lens Visco Washout', time: '10:30' }
+            ]
+        },
+        iol: {
+            title: 'Cataract & Foldable IOL Implantation Video',
+            badge: 'SURGERY 1 (PHASE 2)',
+            color: 'text-sky-400 border-sky-500 bg-sky-950/40',
+            chapters: [
+                { label: '08: Capsular Bag OVD Refill', time: '7:45' },
+                { label: '09: Cartridge IOL Delivery', time: '8:20' },
+                { label: '10: Distal Haptic Placement', time: '9:00' },
+                { label: '11: Sinskey Hook 360° Overlap', time: '9:40' },
+                { label: '12: Retro-Lens Visco Washout', time: '10:30' }
+            ]
+        },
+        yag: {
+            title: 'Nd:YAG Laser Posterior Capsulotomy Video',
+            badge: 'SURGERY 2',
+            color: 'text-rose-400 border-rose-500 bg-rose-950/40',
+            chapters: [
+                { label: '01: Abraham Contact Lens Fit', time: '0:00' },
+                { label: '02: HeNe Aiming Beam Focus', time: '0:30' },
+                { label: '03: +150µm Defocus Offset Check', time: '1:00' },
+                { label: '04: Cruciate Pattern Cross Cuts', time: '1:30' },
+                { label: '05: Visual Axis Clearance Check', time: '2:20' }
+            ]
+        },
+        migs: {
+            title: 'MIGS: Trabecular Micro-Bypass Glaucoma Stent Video',
+            badge: 'SURGERY 3',
+            color: 'text-emerald-400 border-emerald-500 bg-emerald-950/40',
+            chapters: [
+                { label: '01: Microscope 40° & Head Tilt', time: '0:00' },
+                { label: '02: Swan-Jacob Gonioprism Place', time: '0:35' },
+                { label: '03: Cohesive OVD Angle Deepening', time: '1:10' },
+                { label: '04: Micro-Stent 1 Insertion (2:30)', time: '1:50' },
+                { label: '05: Micro-Stent 2 Insertion (4:00)', time: '2:35' },
+                { label: '06: Venous Blood Reflux Wave & Washout', time: '3:20' }
+            ]
+        }
+    };
+    const currentInfo = surgeryInfo[activeModule] || surgeryInfo['phaco'];
+    const currentUrl = videoUrls[activeModule] || (activeModule === 'iol' ? videoUrls['phaco'] : (activeModule === 'migs' ? 'istent.mp4' : ''));
+    // Helper to parse embeddable video URL (YouTube, Vimeo, or direct MP4)
+    const getEmbedUrl = (rawUrl) => {
+        if (!rawUrl || !rawUrl.trim()) {
+            return { type: 'empty', url: '' };
+        }
+        const trimmed = rawUrl.trim();
+        // YouTube regex parser
+        const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+        if (ytMatch && ytMatch[1]) {
+            return {
+                type: 'iframe',
+                url: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0&modestbranding=1`
+            };
+        }
+        // Vimeo regex parser
+        const vimeoMatch = trimmed.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
+        if (vimeoMatch && vimeoMatch[1]) {
+            return {
+                type: 'iframe',
+                url: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
+            };
+        }
+        // Direct video file (.mp4, .webm, .ogg)
+        if (trimmed.endsWith('.mp4') || trimmed.endsWith('.webm') || trimmed.endsWith('.ogg')) {
+            const resolved = (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/'))
+                ? trimmed
+                : `${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1)}${trimmed}`;
+            return { type: 'video', url: resolved };
+        }
+        // Fallback: try as iframe or direct link
+        return { type: 'iframe', url: trimmed };
+    };
+    const embedInfo = getEmbedUrl(currentUrl);
+    const handleSaveCustomUrl = () => {
+        if (inputUrl.trim()) {
+            onUpdateVideoUrl(activeModule, inputUrl.trim());
+            setIsEditingUrl(false);
+            setInputUrl('');
+        }
+    };
+    return (jsxRuntimeExports.jsx("div", { className: `fixed z-50 transition-all duration-300 ${isMiniMode
+            ? 'bottom-4 right-4 w-96 max-w-[90vw] shadow-2xl'
+            : 'inset-0 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md'}`, style: { opacity }, children: jsxRuntimeExports.jsxs("div", { className: `bg-[#0b1220] border border-[#1e2f4a] rounded-2xl overflow-hidden shadow-2xl flex flex-col text-slate-200 select-none ${isMiniMode ? 'w-full' : 'w-full max-w-4xl max-h-[92vh]'}`, children: [jsxRuntimeExports.jsxs("div", { className: "p-3 sm:p-4 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44] flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: "p-1.5 sm:p-2 rounded-xl bg-cyan-950/80 border border-cyan-700 text-cyan-400 shrink-0", children: jsxRuntimeExports.jsx(Video, { className: "w-4 h-4" }) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { className: "text-[9px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-1.5 py-0.2 rounded font-bold shrink-0", children: currentInfo.badge }), jsxRuntimeExports.jsx("h3", { className: "font-bold text-white text-xs sm:text-sm truncate", children: currentInfo.title })] }), !isMiniMode && (jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-400 truncate mt-0.5", children: "Real Surgical Footage & Technique Video Overlay" }))] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [!isMiniMode && (jsxRuntimeExports.jsxs("div", { className: "hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#070c16] border border-[#162338] text-[10px] text-slate-400 mr-1", children: [jsxRuntimeExports.jsx("span", { children: "Opacity:" }), jsxRuntimeExports.jsx("input", { type: "range", min: "0.4", max: "1.0", step: "0.05", value: opacity, onChange: (e) => setOpacity(Number(e.target.value)), className: "w-14 accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer" })] })), jsxRuntimeExports.jsx("button", { onClick: () => setIsMiniMode(!isMiniMode), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white transition", title: isMiniMode ? 'Expand to Full Modal' : 'Minimize to Floating Picture-in-Picture', children: isMiniMode ? jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) : jsxRuntimeExports.jsx(Minimize2, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "p-1.5 rounded-lg hover:bg-rose-900/60 border border-transparent hover:border-rose-700 text-slate-400 hover:text-white transition", children: jsxRuntimeExports.jsx(X, { className: "w-4 h-4" }) })] })] }), !isMiniMode && (jsxRuntimeExports.jsx("div", { className: "flex border-b border-[#1b2b44] bg-[#080d18] px-3 sm:px-4 gap-1 text-xs overflow-x-auto no-scrollbar", children: [
+                        { id: 'phaco', label: '1. Cataract & Foldable IOL', icon: Layers$1 },
+                        { id: 'yag', label: '2. Nd:YAG Laser Capsulotomy', icon: Sparkles },
+                        { id: 'migs', label: '3. MIGS Glaucoma Stent', icon: Compass }
+                    ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isSel = activeModule === tab.id || (tab.id === 'phaco' && activeModule === 'iol');
+                        return (jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                setActiveModule(tab.id);
+                                setIsEditingUrl(false);
+                            }, className: `py-2.5 px-3 font-semibold transition border-b-2 flex items-center gap-1.5 shrink-0 ${isSel
+                                ? 'border-cyan-400 text-cyan-300 bg-[#0e1726]'
+                                : 'border-transparent text-slate-400 hover:text-slate-200'}`, children: [jsxRuntimeExports.jsx(Icon, { className: `w-3.5 h-3.5 ${isSel ? 'text-cyan-400' : 'text-slate-500'}` }), jsxRuntimeExports.jsx("span", { children: tab.label })] }, tab.id));
+                    }) })), jsxRuntimeExports.jsx("div", { className: "relative w-full bg-black aspect-video flex items-center justify-center overflow-hidden", children: embedInfo.type === 'iframe' ? (jsxRuntimeExports.jsx("iframe", { src: embedInfo.url, title: currentInfo.title, className: "w-full h-full border-0", allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true })) : embedInfo.type === 'video' ? (jsxRuntimeExports.jsx("video", { src: embedInfo.url, controls: true, autoPlay: true, className: "w-full h-full object-contain" })) : (
+                    /* Ready For Video Placement Card */
+                    jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center p-6 text-center space-y-3 max-w-md", children: [jsxRuntimeExports.jsx("div", { className: "w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/80 flex items-center justify-center text-cyan-400 shadow-xl shadow-cyan-950/60 animate-pulse", children: jsxRuntimeExports.jsx(Video, { className: "w-7 h-7" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("h4", { className: "text-sm font-bold text-white", children: ["Awaiting Surgical Video Link for ", currentInfo.title] }), jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-400 mt-1 leading-relaxed", children: "Ready to stream! You can paste any YouTube URL, Vimeo link, or MP4 video address below, or share the link in chat." })] }), jsxRuntimeExports.jsxs("button", { onClick: () => setIsEditingUrl(true), className: "flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 transition active:scale-95", children: [jsxRuntimeExports.jsx(PenLine, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Paste Video Link Now" })] })] })) }), (!isMiniMode || isEditingUrl) && (jsxRuntimeExports.jsx("div", { className: "p-3 bg-[#080e1a] border-t border-[#162338] text-xs", children: isEditingUrl ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("input", { type: "text", placeholder: "Paste YouTube, Vimeo, or MP4 URL here...", value: inputUrl, onChange: (e) => setInputUrl(e.target.value), className: "flex-1 bg-[#0b1424] border border-cyan-700/80 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400", autoFocus: true, onKeyDown: (e) => e.key === 'Enter' && handleSaveCustomUrl() }), jsxRuntimeExports.jsxs("button", { onClick: handleSaveCustomUrl, className: "flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition", children: [jsxRuntimeExports.jsx(Check, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Set" })] }), jsxRuntimeExports.jsx("button", { onClick: () => setIsEditingUrl(false), className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition", children: "Cancel" })] })) : (jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0 text-slate-400 text-[11px] truncate", children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-slate-300", children: "Active Source:" }), jsxRuntimeExports.jsx("span", { className: "font-mono text-cyan-300 truncate max-w-[320px]", children: currentUrl || 'No video assigned yet (ready for your link)' })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                    setInputUrl(currentUrl);
+                                    setIsEditingUrl(true);
+                                }, className: "flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#101b2d] hover:bg-[#16253c] border border-[#1e2f4a] text-cyan-300 hover:text-white text-[11px] font-semibold transition shrink-0", children: [jsxRuntimeExports.jsx(PenLine, { className: "w-3 h-3 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: currentUrl ? 'Change Link' : 'Add Link' })] })] })) })), !isMiniMode && (jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#060b14] border-t border-[#162338] space-y-1.5 text-xs", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono", children: "Key Surgical Phase Bookmarks:" }), jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-1.5", children: currentInfo.chapters.map((chap, idx) => (jsxRuntimeExports.jsx("span", { className: "px-2 py-0.5 rounded-md bg-[#0e1726] border border-[#1b2b44] text-[10px] text-slate-300 font-mono", children: chap.label }, idx))) })] }))] }) }));
 };
 
 const App = () => {
+    // Screen mode: 'splash' -> 'menu' -> 'sim'
+    const [screenMode, setScreenMode] = reactExports.useState('splash');
+    // Video Overlay State (Defaulting to real surgical video files in public folder)
+    const [isVideoOpen, setIsVideoOpen] = reactExports.useState(false);
+    const [videoUrls, setVideoUrls] = reactExports.useState({
+        phaco: 'cataract.mp4',
+        iol: 'cataract.mp4',
+        yag: 'yag.mp4',
+        migs: 'istent.mp4'
+    });
     // Active Module & Step State
     const [module, setModule] = reactExports.useState('phaco');
     const [phacoStep, setPhacoStep] = reactExports.useState('paracentesis');
     const [iolStep, setIolStep] = reactExports.useState('ovd_bag_refill');
     const [yagStep, setYagStep] = reactExports.useState('aiming_focus');
+    const [migsStep, setMigsStep] = reactExports.useState('microscope_and_head_tilt');
     // Step Arrays for Navigation
     const phacoStepsList = [
         'paracentesis',
@@ -70168,6 +72084,14 @@ const App = () => {
         'cruciate_capsulotomy',
         'post_yag_assessment'
     ];
+    const migsStepsList = [
+        'microscope_and_head_tilt',
+        'gonioprism_placement',
+        'viscoelastic_angle_deepening',
+        'stent_1_deployment',
+        'stent_2_deployment',
+        'blood_reflux_and_washout'
+    ];
     // Active Tool & Pedal
     const [activeInstrument, setActiveInstrument] = reactExports.useState('mvr_blade');
     const [pedalPosition, setPedalPosition] = reactExports.useState(0);
@@ -70178,6 +72102,8 @@ const App = () => {
     // Modals
     const [isReportOpen, setIsReportOpen] = reactExports.useState(false);
     const [isReferenceOpen, setIsReferenceOpen] = reactExports.useState(false);
+    const [isGuidesOpen, setIsGuidesOpen] = reactExports.useState(false);
+    const [showGuides, setShowGuides] = reactExports.useState(true);
     // Elapsed operative time
     const [elapsedSeconds, setElapsedSeconds] = reactExports.useState(0);
     // Engines Refs
@@ -70185,6 +72111,7 @@ const App = () => {
     const cataractEngineRef = reactExports.useRef(new CataractPhysicsEngine('NO3'));
     const iolEngineRef = reactExports.useRef(new IolPhysicsEngine());
     const yagEngineRef = reactExports.useRef(new YagLaserPhysicsEngine());
+    const migsEngineRef = reactExports.useRef(new MigsStentPhysicsEngine());
     // UI Mirror States
     const [fluidics, setFluidics] = reactExports.useState(fluidicsEngineRef.current.getState());
     const [cataractGrade, setCataractGrade] = reactExports.useState('NO3');
@@ -70226,9 +72153,15 @@ const App = () => {
             const rec = SURGICAL_INSTRUCTIONS[yagStep]?.recommendedInstrument || 'yag_laser';
             setActiveInstrument(rec);
         }
+        else if (module === 'migs') {
+            const rec = SURGICAL_INSTRUCTIONS[migsStep]?.recommendedInstrument || 'gonio_lens';
+            setActiveInstrument(rec);
+        }
     }, [module]);
     // Master Simulation & Audio Loop
     reactExports.useEffect(() => {
+        if (screenMode !== 'sim')
+            return;
         let animId = 0;
         let lastTime = performance.now();
         const loop = () => {
@@ -70250,14 +72183,16 @@ const App = () => {
         };
         animId = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(animId);
-    }, [activeInstrument, pedalPosition, phacoSettings.powerPercent]);
+    }, [screenMode, activeInstrument, pedalPosition, phacoSettings.powerPercent]);
     // Operative timer ticker
     reactExports.useEffect(() => {
+        if (screenMode !== 'sim')
+            return;
         const timer = setInterval(() => {
             setElapsedSeconds(s => s + 1);
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [screenMode]);
     // Step Navigation Handlers
     const handlePrevStep = () => {
         if (module === 'phaco') {
@@ -70275,12 +72210,26 @@ const App = () => {
                 setIolStep(nextStep);
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
+            else {
+                // Step 8 -> Step 7: Transition back to Cortex Removal (I/A)
+                setModule('phaco');
+                setPhacoStep('cortex_removal');
+                setActiveInstrument('ia_handpiece');
+            }
         }
-        else {
+        else if (module === 'yag') {
             const idx = yagStepsList.indexOf(yagStep);
             if (idx > 0) {
                 const nextStep = yagStepsList[idx - 1];
                 setYagStep(nextStep);
+                setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
+            }
+        }
+        else if (module === 'migs') {
+            const idx = migsStepsList.indexOf(migsStep);
+            if (idx > 0) {
+                const nextStep = migsStepsList[idx - 1];
+                setMigsStep(nextStep);
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
         }
@@ -70293,6 +72242,12 @@ const App = () => {
                 setPhacoStep(nextStep);
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
+            else {
+                // Step 7 -> Step 8: Transition into Capsular Bag Refill & IOL Delivery
+                setModule('iol');
+                setIolStep('ovd_bag_refill');
+                setActiveInstrument('ovd_provisc');
+            }
         }
         else if (module === 'iol') {
             const idx = iolStepsList.indexOf(iolStep);
@@ -70302,7 +72257,7 @@ const App = () => {
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
         }
-        else {
+        else if (module === 'yag') {
             const idx = yagStepsList.indexOf(yagStep);
             if (idx < yagStepsList.length - 1) {
                 const nextStep = yagStepsList[idx + 1];
@@ -70310,17 +72265,28 @@ const App = () => {
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
         }
+        else if (module === 'migs') {
+            const idx = migsStepsList.indexOf(migsStep);
+            if (idx < migsStepsList.length - 1) {
+                const nextStep = migsStepsList[idx + 1];
+                setMigsStep(nextStep);
+                setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
+            }
+        }
     };
     // Incision handling
     const handleIncisionAdvance = reactExports.useCallback((type) => {
-        cataractEngineRef.current.advanceIncision(type, 0.4);
-        if (type === 'paracentesis') {
-            setPhacoStep('clear_corneal_incision');
-            setActiveInstrument('keratome_2_4');
-        }
-        else {
-            setPhacoStep('ovd_injection');
-            setActiveInstrument('ovd_viscoat');
+        cataractEngineRef.current.advanceIncision(type, type === 'paracentesis' ? 0.55 : 0.35);
+        const inc = cataractEngineRef.current.incisions.find(i => i.type === type);
+        if (inc?.completed) {
+            if (type === 'paracentesis') {
+                setPhacoStep('clear_corneal_incision');
+                setActiveInstrument('keratome_2_4');
+            }
+            else {
+                setPhacoStep('ovd_injection');
+                setActiveInstrument('ovd_viscoat');
+            }
         }
     }, []);
     // OVD injection
@@ -70385,7 +72351,12 @@ const App = () => {
     }, [phacoSettings.powerPercent, phacoSettings.dutyCyclePercent]);
     // I/A Cortex removal
     const handleIaAspirate = reactExports.useCallback(() => {
-        cataractEngineRef.current.aspirateCortex(0.04);
+        cataractEngineRef.current.aspirateCortex(0.06);
+        if (cataractEngineRef.current.nucleus.cortexRemnantsAspiratedFraction >= 0.95) {
+            setModule('iol');
+            setIolStep('ovd_bag_refill');
+            setActiveInstrument('ovd_provisc');
+        }
     }, []);
     // IOL Advance & Dialing
     const handleIolAdvance = reactExports.useCallback(() => {
@@ -70411,16 +72382,80 @@ const App = () => {
     const handleYagFire = reactExports.useCallback((x, y, zMicrons) => {
         yagEngineRef.current.fireLaser(x, y, zMicrons);
     }, []);
+    // MIGS Stent Actions
+    const handleMigsTilt = reactExports.useCallback((headDeg, scopeDeg) => {
+        migsEngineRef.current.setPatientHeadTilt(headDeg);
+        migsEngineRef.current.setMicroscopeTilt(scopeDeg);
+        setTick(t => t + 1);
+        if (migsEngineRef.current.state.gonioViewClarityPercent >= 70 && migsStep === 'microscope_and_head_tilt') {
+            setMigsStep('gonioprism_placement');
+            setActiveInstrument('gonio_lens');
+        }
+    }, [migsStep]);
+    const handleMigsGonioPlace = reactExports.useCallback(() => {
+        migsEngineRef.current.placeGonioprism(true);
+        setTick(t => t + 1);
+        if (migsStep === 'gonioprism_placement') {
+            setMigsStep('viscoelastic_angle_deepening');
+            setActiveInstrument('ovd_provisc');
+        }
+    }, [migsStep]);
+    const handleMigsOvdAngle = reactExports.useCallback(() => {
+        migsEngineRef.current.deepenAngleWithOvd();
+        setTick(t => t + 1);
+        if (migsStep === 'viscoelastic_angle_deepening') {
+            setMigsStep('stent_1_deployment');
+            setActiveInstrument('migs_injector');
+        }
+    }, [migsStep]);
+    const handleMigsDeployStent = reactExports.useCallback((stentIdx, clockHour, angleDeg, depthMicrons) => {
+        migsEngineRef.current.deployStent(stentIdx, clockHour, angleDeg, depthMicrons);
+        audioEngine.playPedalClick(1);
+        setTick(t => t + 1);
+        const deployedCount = migsEngineRef.current.state.stents.filter(s => s.deployed).length;
+        if (deployedCount === 1 && migsStep === 'stent_1_deployment') {
+            setMigsStep('stent_2_deployment');
+        }
+        else if (deployedCount >= 2 && migsStep === 'stent_2_deployment') {
+            setMigsStep('blood_reflux_and_washout');
+            setActiveInstrument('ia_handpiece');
+        }
+    }, [migsStep]);
+    const handleMigsBloodReflux = reactExports.useCallback(() => {
+        migsEngineRef.current.triggerBloodRefluxTest();
+        audioEngine.playPedalClick(2);
+        setTick(t => t + 1);
+    }, []);
+    const handleMigsWashout = reactExports.useCallback(() => {
+        migsEngineRef.current.washOutViscoelastic(0.35);
+        audioEngine.playPedalClick(1);
+        setTick(t => t + 1);
+    }, []);
     // Reset Module
     const handleRestartModule = () => {
         fluidicsEngineRef.current = new FluidicsEngine();
         cataractEngineRef.current = new CataractPhysicsEngine(cataractGrade);
         iolEngineRef.current = new IolPhysicsEngine();
         yagEngineRef.current = new YagLaserPhysicsEngine();
+        migsEngineRef.current = new MigsStentPhysicsEngine();
         setPedalPosition(0);
+        if (module === 'iol') {
+            setModule('phaco');
+            setActiveInstrument('mvr_blade');
+        }
+        else if (module === 'phaco') {
+            setActiveInstrument('mvr_blade');
+        }
+        else if (module === 'yag') {
+            setActiveInstrument('yag_laser');
+        }
+        else {
+            setActiveInstrument('gonio_lens');
+        }
         setPhacoStep('paracentesis');
         setIolStep('ovd_bag_refill');
         setYagStep('aiming_focus');
+        setMigsStep('microscope_and_head_tilt');
         setElapsedSeconds(0);
         setIsReportOpen(false);
     };
@@ -70432,8 +72467,11 @@ const App = () => {
         else if (module === 'iol') {
             return SURGICAL_INSTRUCTIONS[iolStep] || SURGICAL_INSTRUCTIONS['ovd_bag_refill'];
         }
-        else {
+        else if (module === 'yag') {
             return SURGICAL_INSTRUCTIONS[yagStep] || SURGICAL_INSTRUCTIONS['aiming_focus'];
+        }
+        else {
+            return SURGICAL_INSTRUCTIONS[migsStep] || SURGICAL_INSTRUCTIONS['microscope_and_head_tilt'];
         }
     };
     // Compile Comprehensive Report Card
@@ -70495,7 +72533,7 @@ const App = () => {
                 critiques.push(`Residual OVD detected (${iolState.viscoelasticRetainedPercent}%). Risk of postoperative IOP spike >40 mmHg.`);
             }
         }
-        else {
+        else if (module === 'yag') {
             if (yagCaps.iolPitsCount === 0) {
                 critiques.push('Pristine optic preservation: Zero IOL pits or shockwave cracks.');
             }
@@ -70516,6 +72554,36 @@ const App = () => {
             else {
                 score -= 10;
                 critiques.push('Incomplete capsulotomy aperture. Enlarge cruciate cuts outside visual axis.');
+            }
+        }
+        else {
+            // module === 'migs'
+            const migs = migsEngineRef.current.state;
+            const deployed = migs.stents.filter(s => s.deployed);
+            migs.stents.filter(s => s.deployed && s.isPatentToVenousStream);
+            if (deployed.length >= 2) {
+                critiques.push(`Successfully deployed dual trabecular micro-stents into Schlemm's canal with collector channel alignment.`);
+            }
+            else if (deployed.length === 1) {
+                score -= 15;
+                critiques.push('Single micro-stent deployed. Target physiological outflow requires dual-stent placement.');
+            }
+            else {
+                score -= 40;
+                critiques.push('No micro-stents placed into trabecular meshwork.');
+            }
+            if (migs.bloodRefluxWaveConfirmed) {
+                critiques.push(`Venous blood reflux wave verified direct communication with episcleral venous system (${migs.episcleralVenousPressureMmHg} mmHg physiological floor confirmed).`);
+            }
+            else {
+                score -= 10;
+                critiques.push('Episcleral venous blood reflux test was not elicited to confirm patent distal drainage.');
+            }
+            if (migs.currentIopMmHg <= 18) {
+                critiques.push(`IOP reduced from ${migs.baselineIopMmHg} mmHg to target ${migs.currentIopMmHg.toFixed(1)} mmHg. Back-pressure floor prevents hypotony.`);
+            }
+            else {
+                critiques.push(`Residual IOP remains elevated at ${migs.currentIopMmHg.toFixed(1)} mmHg. Verify viscoelastic washout.`);
             }
         }
         score = Math.max(25, Math.min(100, score));
@@ -70561,22 +72629,79 @@ const App = () => {
                 rating: yagCaps.iolPitsCount === 0 ? 'Zero Pits' : yagCaps.iolPitsCount < 3 ? 'Minor Pitting' : 'Severe Visual Axis Damage'
             },
             vitreousStatus: yagCaps.vitreousFaceIntact ? 'Preserved Hyaloid Face' : 'Breakthrough with Float',
+            migsStentPlacement: {
+                stentsDeployed: migsEngineRef.current.state.stents.filter(s => s.deployed).length,
+                targetCollectorOstiaHit: migsEngineRef.current.state.stents.some(s => s.isPatentToVenousStream),
+                rating: migsEngineRef.current.state.stents.filter(s => s.deployed && s.isPatentToVenousStream).length >= 2
+                    ? 'Optimal Bilateral Placement'
+                    : migsEngineRef.current.state.stents.some(s => s.isPatentToVenousStream)
+                        ? 'Single Stent Patent'
+                        : 'Miscalibrated Seating'
+            },
+            iopReduction: {
+                baselineIop: migsEngineRef.current.state.baselineIopMmHg,
+                finalIop: migsEngineRef.current.state.currentIopMmHg,
+                venousFloorMmHg: migsEngineRef.current.state.episcleralVenousPressureMmHg,
+                rating: migsEngineRef.current.state.currentIopMmHg <= 18
+                    ? 'Superb Physiological Titration'
+                    : migsEngineRef.current.state.currentIopMmHg <= 24
+                        ? 'Moderate Pressure Drop'
+                        : 'Elevated Residual IOP'
+            },
+            bloodstreamRefluxVerification: {
+                observed: migsEngineRef.current.state.bloodRefluxWaveConfirmed,
+                rating: migsEngineRef.current.state.bloodRefluxWaveConfirmed
+                    ? 'Patent Venous Communication (Fluid Wave OK)'
+                    : 'No Blood Wave (Check Stent Lumen)'
+            },
             clinicalSummary: critiques
         };
     };
-    return (jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-screen w-screen bg-[#060a12] text-slate-200 select-none overflow-hidden font-sans", children: [jsxRuntimeExports.jsx(TopVitalsBar, { module: module, phacoStep: phacoStep, iolStep: iolStep, yagStep: yagStep, fluidics: fluidics, cde: cataractEngineRef.current.totalCde, vitals: vitals, elapsedSeconds: elapsedSeconds, onOpenReport: () => setIsReportOpen(true), onOpenReference: () => setIsReferenceOpen(true), isMuted: isMuted, onToggleMute: () => {
+    // 1. Cinematic 20-Second Splash Screen
+    if (screenMode === 'splash') {
+        return jsxRuntimeExports.jsx(SplashScreen, { onComplete: () => setScreenMode('menu') });
+    }
+    // 2. Main 3-Surgery Hub Menu
+    if (screenMode === 'menu') {
+        return (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(SurgeryMainMenu, { onSelectSurgery: (mod) => {
+                        setModule(mod);
+                        setScreenMode('sim');
+                    }, onOpenVideoOverlay: (mod) => {
+                        setModule(mod);
+                        setIsVideoOpen(true);
+                    }, onOpenPdfGuides: (mod) => {
+                        setModule(mod === 'master' ? 'phaco' : mod);
+                        setIsGuidesOpen(true);
+                    }, onOpenReference: () => setIsReferenceOpen(true) }), jsxRuntimeExports.jsx(SurgicalVideoOverlayModal, { isOpen: isVideoOpen, onClose: () => setIsVideoOpen(false), currentSurgery: module, videoUrls: videoUrls, onUpdateVideoUrl: (mod, url) => setVideoUrls(prev => ({ ...prev, [mod]: url })) }), jsxRuntimeExports.jsx(ClinicalReferenceModal, { isOpen: isReferenceOpen, onClose: () => setIsReferenceOpen(false) }), jsxRuntimeExports.jsx(SurgicalGuidesModal, { isOpen: isGuidesOpen, onClose: () => setIsGuidesOpen(false), initialModule: module })] }));
+    }
+    // 3. High-Fidelity Active Surgery Simulation
+    return (jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-screen w-screen bg-[#060a12] text-slate-200 select-none overflow-hidden font-sans", children: [jsxRuntimeExports.jsx(TopVitalsBar, { module: module, phacoStep: phacoStep, iolStep: iolStep, yagStep: yagStep, migsStep: migsStep, fluidics: fluidics, cde: cataractEngineRef.current.totalCde, vitals: vitals, elapsedSeconds: elapsedSeconds, onOpenReport: () => setIsReportOpen(true), onOpenReference: () => setIsReferenceOpen(true), onOpenGuides: () => setIsGuidesOpen(true), onOpenMenu: () => setScreenMode('menu'), onOpenVideo: () => setIsVideoOpen(true), isMuted: isMuted, onToggleMute: () => {
                     setIsMuted(!isMuted);
                     audioEngine.setMuted(!isMuted);
-                }, onToggleTools: () => setIsToolsOpen(!isToolsOpen), isToolsOpen: isToolsOpen, onToggleConsole: () => setIsConsoleOpen(!isConsoleOpen), isConsoleOpen: isConsoleOpen, activeInstrument: activeInstrument }), jsxRuntimeExports.jsxs("div", { className: "bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium hidden md:inline", children: "Workflows:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('phaco'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'phaco'
+                }, onToggleTools: () => setIsToolsOpen(!isToolsOpen), isToolsOpen: isToolsOpen, onToggleConsole: () => setIsConsoleOpen(!isConsoleOpen), isConsoleOpen: isConsoleOpen, activeInstrument: activeInstrument }), jsxRuntimeExports.jsxs("div", { className: "bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium hidden md:inline", children: "Surgeries:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            if (module !== 'phaco' && module !== 'iol') {
+                                                setModule('phaco');
+                                                setPhacoStep('paracentesis');
+                                                setActiveInstrument('mvr_blade');
+                                            }
+                                        }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'phaco' || module === 'iol'
                                             ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "1. Phacoemulsification" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "1. Phaco" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('iol'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'iol'
-                                            ? 'bg-sky-600 text-white shadow-md shadow-sky-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Disc, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "2. Foldable IOL" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "2. IOL" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => { setModule('yag'); }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'yag'
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Layers$1, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "1. Cataract & Foldable IOL (12 Steps)" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "1. Cataract & IOL" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            setModule('yag');
+                                            setYagStep('aiming_focus');
+                                            setActiveInstrument('yag_laser');
+                                        }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'yag'
                                             ? 'bg-rose-600 text-white shadow-md shadow-rose-950/60'
-                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "3. Nd:YAG Laser" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "3. YAG" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("button", { onClick: handlePrevStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Previous Surgical Step", children: jsxRuntimeExports.jsx(ChevronLeft, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] sm:text-[11px] font-mono text-cyan-300 px-1 font-semibold whitespace-nowrap", children: ["Step ", getCurrentInstruction().stepNumber, " / ", module === 'phaco' ? 7 : 5] }), jsxRuntimeExports.jsx("button", { onClick: handleNextStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Next Surgical Step", children: jsxRuntimeExports.jsx(ChevronRight, { className: "w-3.5 h-3.5" }) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setIsToolsOpen(true), className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-cyan-800/60 text-cyan-300 transition text-[11px] font-mono shadow-sm active:scale-95", title: "Click to Open Tools Menu (Hamburger Drawer)", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-500 hidden sm:inline", children: "Tool:" }), jsxRuntimeExports.jsx("span", { className: "font-bold uppercase text-white truncate max-w-[85px] xs:max-w-[120px] sm:max-w-none", children: activeInstrument.replace('_', ' ') })] }), jsxRuntimeExports.jsxs("button", { onClick: handleRestartModule, className: "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition active:scale-95", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-3 h-3" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "Reset Eye" }), jsxRuntimeExports.jsx("span", { className: "xs:hidden", children: "Reset" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex overflow-hidden relative", children: [jsxRuntimeExports.jsx(InstrumentTray, { module: module, activeInstrument: activeInstrument, onSelectInstrument: (inst) => setActiveInstrument(inst), isOpenMobile: isToolsOpen, onCloseMobile: () => setIsToolsOpen(false) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col relative overflow-hidden h-full", children: [jsxRuntimeExports.jsx(SurgicalInstructionBanner, { currentInstruction: getCurrentInstruction(), onSelectInstrument: (tool) => setActiveInstrument(tool) }), jsxRuntimeExports.jsx(SurgicalViewport, { module: module, activeInstrument: activeInstrument, pedalPosition: pedalPosition, fluidics: fluidics, cccState: cataractEngineRef.current.ccc, hydroState: cataractEngineRef.current.hydro, nucleusState: cataractEngineRef.current.nucleus, iolState: iolEngineRef.current.state, yagState: yagEngineRef.current.capsulotomy, yagSettings: yagEngineRef.current.settings, incisions: cataractEngineRef.current.incisions, ovdCoverage: {
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "2. Nd:YAG Laser (5 Steps)" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "2. Nd:YAG" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            setModule('migs');
+                                            setMigsStep('microscope_and_head_tilt');
+                                            setActiveInstrument('gonio_lens');
+                                        }, className: `px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 active:scale-95 ${module === 'migs'
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                                            : 'text-slate-400 hover:text-white'}`, children: [jsxRuntimeExports.jsx(Compass, { className: "w-3.5 h-3.5 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "3. MIGS Glaucoma Stent (6 Steps)" }), jsxRuntimeExports.jsx("span", { className: "sm:hidden", children: "3. MIGS Stent" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsx("button", { onClick: handlePrevStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Previous Surgical Step", children: jsxRuntimeExports.jsx(ChevronLeft, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] sm:text-[11px] font-mono text-cyan-300 px-1 font-semibold whitespace-nowrap", children: ["Step ", getCurrentInstruction().stepNumber, " / ", module === 'yag' ? 5 : module === 'migs' ? 6 : 12] }), jsxRuntimeExports.jsx("button", { onClick: handleNextStep, className: "p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition", title: "Next Surgical Step", children: jsxRuntimeExports.jsx(ChevronRight, { className: "w-3.5 h-3.5" }) })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setIsToolsOpen(true), className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-cyan-800/60 text-cyan-300 transition text-[11px] font-mono shadow-sm active:scale-95", title: "Click to Open Tools Menu (Hamburger Drawer)", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-500 hidden sm:inline", children: "Tool:" }), jsxRuntimeExports.jsx("span", { className: "font-bold uppercase text-white truncate max-w-[85px] xs:max-w-[120px] sm:max-w-none", children: activeInstrument.replace('_', ' ') })] }), jsxRuntimeExports.jsxs("button", { onClick: handleRestartModule, className: "flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-[#0e1726] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 hover:text-white text-xs transition active:scale-95", children: [jsxRuntimeExports.jsx(RotateCcw, { className: "w-3 h-3" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "Reset Eye" }), jsxRuntimeExports.jsx("span", { className: "xs:hidden", children: "Reset" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex overflow-hidden relative", children: [jsxRuntimeExports.jsx(InstrumentTray, { module: module, activeInstrument: activeInstrument, onSelectInstrument: (inst) => setActiveInstrument(inst), isOpenMobile: isToolsOpen, onCloseMobile: () => setIsToolsOpen(false) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col relative overflow-hidden h-full", children: [jsxRuntimeExports.jsx(SurgicalInstructionBanner, { currentInstruction: getCurrentInstruction(), onSelectInstrument: (tool) => setActiveInstrument(tool), showGuides: showGuides, onToggleGuides: () => setShowGuides(g => !g) }), jsxRuntimeExports.jsx(SurgicalViewport, { module: module, activeInstrument: activeInstrument, pedalPosition: pedalPosition, fluidics: fluidics, cccState: cataractEngineRef.current.ccc, hydroState: cataractEngineRef.current.hydro, nucleusState: cataractEngineRef.current.nucleus, iolState: iolEngineRef.current.state, yagState: yagEngineRef.current.capsulotomy, yagSettings: yagEngineRef.current.settings, incisions: cataractEngineRef.current.incisions, ovdCoverage: {
                                     dispersive: cataractEngineRef.current.ovdDispersiveCoverage,
                                     cohesive: cataractEngineRef.current.ovdCohesiveDepth
-                                }, onIncisionAdvance: handleIncisionAdvance, onOvdInject: handleOvdInject, onCccPuncture: handleCccPuncture, onCccDrag: handleCccDrag, onHydroPulse: handleHydroPulse, onHydroRotate: (deg) => cataractEngineRef.current.testNucleusRotation(deg), onPhacoApply: handlePhacoApply, onIaAspirate: handleIaAspirate, onIolAdvance: handleIolAdvance, onIolDial: handleIolDial, onIolWashout: handleIolWashout, onYagFire: handleYagFire }), jsxRuntimeExports.jsx(FootPedalControl, { pedalPosition: pedalPosition, onPedalChange: (pos) => setPedalPosition(pos), disabled: module === 'yag' })] }), jsxRuntimeExports.jsx("div", { className: "hidden lg:flex h-full", children: module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
+                                }, currentStepId: module === 'phaco' ? phacoStep : module === 'iol' ? iolStep : module === 'yag' ? yagStep : migsStep, showGuides: showGuides, onToggleGuides: () => setShowGuides(g => !g), onIncisionAdvance: handleIncisionAdvance, onOvdInject: handleOvdInject, onCccPuncture: handleCccPuncture, onCccDrag: handleCccDrag, onHydroPulse: handleHydroPulse, onHydroRotate: (deg) => cataractEngineRef.current.testNucleusRotation(deg), onPhacoApply: handlePhacoApply, onIaAspirate: handleIaAspirate, onIolAdvance: handleIolAdvance, onIolDial: handleIolDial, onIolWashout: handleIolWashout, onYagFire: handleYagFire, migsState: migsEngineRef.current.state, onMigsTilt: handleMigsTilt, onMigsGonioPlace: handleMigsGonioPlace, onMigsOvdAngle: handleMigsOvdAngle, onMigsDeployStent: handleMigsDeployStent, onMigsBloodReflux: handleMigsBloodReflux, onMigsWashout: handleMigsWashout }), jsxRuntimeExports.jsx(FootPedalControl, { pedalPosition: pedalPosition, onPedalChange: (pos) => setPedalPosition(pos), disabled: module === 'yag' })] }), jsxRuntimeExports.jsx("div", { className: "hidden lg:flex h-full", children: module === 'yag' ? (jsxRuntimeExports.jsx(YagConsolePanel, { settings: yagEngineRef.current.settings, capsulotomy: yagEngineRef.current.capsulotomy, onUpdateSettings: (newSet) => {
                                 Object.assign(yagEngineRef.current.settings, newSet);
                                 setTick(t => t + 1);
                             }, onResetLaser: () => {
@@ -70586,7 +72711,11 @@ const App = () => {
                                 yagEngineRef.current.settings.burstCount = 0;
                                 yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
                                 setTick(t => t + 1);
-                            } })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
+                            } })) : module === 'migs' ? (jsxRuntimeExports.jsx(MigsConsolePanel, { state: migsEngineRef.current.state, onUpdateTilt: (scope, head) => {
+                                migsEngineRef.current.setMicroscopeTilt(scope);
+                                migsEngineRef.current.setPatientHeadTilt(head);
+                                setTick(t => t + 1);
+                            }, onTriggerBloodReflux: handleMigsBloodReflux })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
                                 setPhacoSettings(prev => ({ ...prev, ...newSet }));
                             }, onUpdateFluidics: (bottle, vac, flow) => {
                                 fluidicsEngineRef.current.setBottleHeight(bottle);
@@ -70606,7 +72735,11 @@ const App = () => {
                                 yagEngineRef.current.settings.burstCount = 0;
                                 yagEngineRef.current.settings.totalEnergyDeliveredMj = 0;
                                 setTick(t => t + 1);
-                            }, onClose: () => setIsConsoleOpen(false) })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
+                            }, onClose: () => setIsConsoleOpen(false) })) : module === 'migs' ? (jsxRuntimeExports.jsx(MigsConsolePanel, { state: migsEngineRef.current.state, onUpdateTilt: (scope, head) => {
+                                migsEngineRef.current.setMicroscopeTilt(scope);
+                                migsEngineRef.current.setPatientHeadTilt(head);
+                                setTick(t => t + 1);
+                            }, onTriggerBloodReflux: handleMigsBloodReflux, onClose: () => setIsConsoleOpen(false) })) : (jsxRuntimeExports.jsx(PhacoMachinePanel, { fluidics: fluidics, settings: phacoSettings, cataractGrade: cataractGrade, onUpdateSettings: (newSet) => {
                                 setPhacoSettings(prev => ({ ...prev, ...newSet }));
                             }, onUpdateFluidics: (bottle, vac, flow) => {
                                 fluidicsEngineRef.current.setBottleHeight(bottle);
@@ -70616,7 +72749,7 @@ const App = () => {
                             }, onGradeChange: (g) => {
                                 setCataractGrade(g);
                                 cataractEngineRef.current.cataractGrade = g;
-                            }, onClose: () => setIsConsoleOpen(false) })) })] }), jsxRuntimeExports.jsx(PostOpReportModal, { isOpen: isReportOpen, onClose: () => setIsReportOpen(false), report: generateReportCard(), onRestartModule: handleRestartModule }), jsxRuntimeExports.jsx(ClinicalReferenceModal, { isOpen: isReferenceOpen, onClose: () => setIsReferenceOpen(false) })] }));
+                            }, onClose: () => setIsConsoleOpen(false) })) })] }), jsxRuntimeExports.jsx(SurgicalVideoOverlayModal, { isOpen: isVideoOpen, onClose: () => setIsVideoOpen(false), currentSurgery: module, videoUrls: videoUrls, onUpdateVideoUrl: (mod, url) => setVideoUrls(prev => ({ ...prev, [mod]: url })) }), jsxRuntimeExports.jsx(PostOpReportModal, { isOpen: isReportOpen, onClose: () => setIsReportOpen(false), report: generateReportCard(), onRestartModule: handleRestartModule }), jsxRuntimeExports.jsx(ClinicalReferenceModal, { isOpen: isReferenceOpen, onClose: () => setIsReferenceOpen(false) }), jsxRuntimeExports.jsx(SurgicalGuidesModal, { isOpen: isGuidesOpen, onClose: () => setIsGuidesOpen(false), initialModule: module })] }));
 };
 
 clientExports.createRoot(document.getElementById('root')).render(jsxRuntimeExports.jsx(reactExports.StrictMode, { children: jsxRuntimeExports.jsx(App, {}) }));

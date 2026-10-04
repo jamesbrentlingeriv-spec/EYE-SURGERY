@@ -25,11 +25,14 @@ function copyDirRecursive(src, dest) {
   }
 }
 
-// 1. Copy dist to docs for GitHub Pages /docs support
+// 1. Copy all public assets to dist first
+copyDirRecursive(path.join(ROOT_DIR, 'public'), DIST_DIR);
+
+// 2. Copy dist to docs for GitHub Pages /docs support
 console.log('[Sync] Copying dist to docs...');
 copyDirRecursive(DIST_DIR, DOCS_DIR);
 
-// 2. Copy production web files to root for GitHub Pages / (root) support
+// 3. Copy production web files to root for GitHub Pages / (root) support
 console.log('[Sync] Copying web production bundle to repo root...');
 fs.copyFileSync(path.join(DIST_DIR, 'index.html'), path.join(ROOT_DIR, 'index.html'));
 fs.copyFileSync(path.join(DIST_DIR, '404.html'), path.join(ROOT_DIR, '404.html'));
@@ -37,8 +40,21 @@ fs.copyFileSync(path.join(DIST_DIR, 'index.css'), path.join(ROOT_DIR, 'index.css
 fs.copyFileSync(path.join(DIST_DIR, 'manifest.json'), path.join(ROOT_DIR, 'manifest.json'));
 fs.copyFileSync(path.join(DIST_DIR, 'sw.js'), path.join(ROOT_DIR, 'sw.js'));
 fs.copyFileSync(path.join(DIST_DIR, '.nojekyll'), path.join(ROOT_DIR, '.nojekyll'));
+copyDirRecursive(path.join(ROOT_DIR, 'public', 'guides'), path.join(DIST_DIR, 'guides'));
+copyDirRecursive(path.join(ROOT_DIR, 'public', 'guides'), path.join(DOCS_DIR, 'guides'));
+copyDirRecursive(path.join(ROOT_DIR, 'public', 'guides'), path.join(ROOT_DIR, 'guides'));
 copyDirRecursive(path.join(DIST_DIR, 'assets'), path.join(ROOT_DIR, 'assets'));
 copyDirRecursive(path.join(DIST_DIR, 'images'), path.join(ROOT_DIR, 'images'));
 copyDirRecursive(path.join(DIST_DIR, 'icons'), path.join(ROOT_DIR, 'icons'));
+// Copy video files
+const publicVideos = ['cataract.mp4', 'yag.mp4', 'istent.mp4'];
+for (const vid of publicVideos) {
+  const srcVid = path.join(ROOT_DIR, 'public', vid);
+  if (fs.existsSync(srcVid)) {
+    fs.copyFileSync(srcVid, path.join(ROOT_DIR, vid));
+    fs.copyFileSync(srcVid, path.join(DIST_DIR, vid));
+    fs.copyFileSync(srcVid, path.join(DOCS_DIR, vid));
+  }
+}
 
 console.log('[Sync] Completed successfully! Root, docs/, and dist/ are all prepared for GitHub Pages.');

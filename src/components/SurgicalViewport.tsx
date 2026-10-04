@@ -11,10 +11,11 @@ import {
   IolPositionState,
   YagCapsulotomyState,
   YagLaserSettings,
-  IncisionPoint
+  IncisionPoint,
+  MigsState
 } from '../types/ophthalmic';
 import { audioEngine } from '../audio/SoundSynthesizer';
-import { ZoomIn, ZoomOut, Eye, Camera, Image, Layers, Sparkles, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, Camera, X, Crosshair } from 'lucide-react';
 
 interface SurgicalViewportProps {
   module: SurgicalModule;
@@ -29,6 +30,9 @@ interface SurgicalViewportProps {
   yagSettings: YagLaserSettings;
   incisions: IncisionPoint[];
   ovdCoverage: { dispersive: number; cohesive: number };
+  currentStepId?: string;
+  showGuides?: boolean;
+  onToggleGuides?: () => void;
   onIncisionAdvance: (type: 'paracentesis' | 'clear_corneal') => void;
   onOvdInject: (type: 'viscoat' | 'provisc') => void;
   onCccPuncture: (x: number, y: number) => void;
@@ -41,6 +45,13 @@ interface SurgicalViewportProps {
   onIolDial: (deg: number, dx: number, dy: number) => void;
   onIolWashout: () => void;
   onYagFire: (x: number, y: number, zMicrons: number) => void;
+  migsState?: MigsState;
+  onMigsTilt?: (microscope: number, head: number) => void;
+  onMigsGonioPlace?: () => void;
+  onMigsOvdAngle?: () => void;
+  onMigsDeployStent?: (stentIdx: number, clockHour: number, angleDeg: number, depthMicrons: number) => void;
+  onMigsBloodReflux?: () => void;
+  onMigsWashout?: () => void;
 }
 
 export type ViewportRenderMode = 'photo' | 'hybrid' | 'shader';
@@ -58,6 +69,9 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   yagSettings,
   incisions,
   ovdCoverage,
+  currentStepId = '',
+  showGuides = true,
+  onToggleGuides,
   onIncisionAdvance,
   onOvdInject,
   onCccPuncture,
@@ -69,6 +83,13 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   onIolDial,
   onIolWashout,
   onYagFire,
+  migsState,
+  onMigsTilt,
+  onMigsGonioPlace,
+  onMigsOvdAngle,
+  onMigsDeployStent,
+  onMigsBloodReflux,
+  onMigsWashout,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -398,6 +419,8 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
           activeImg = iolImgRef.current;
         } else if (module === 'yag') {
           activeImg = yagImgRef.current;
+        } else if (module === 'migs') {
+          activeImg = cataractImgRef.current;
         }
 
         if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
@@ -432,6 +455,184 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
           ctx.beginPath();
           ctx.arc(centerX, centerY, eyeRadiusPx * 1.15, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // ==========================================
+      // LAYER 1.5: MIGS DIRECT SURGICAL GONIOSCOPY
+      // ==========================================
+      if (module === 'migs') {
+        const isGonioActive = migsState?.gonioprismPlaced || currentStepId !== 'microscope_and_head_tilt';
+
+        if (isGonioActive) {
+          ctx.save();
+
+          // 1. Direct Swan-Jacob Gonioprism Lens Frame
+          const gonioRadius = eyeRadiusPx * 1.08;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, gonioRadius, 0, Math.PI * 2);
+          ctx.clip();
+
+          // Gonioprism fluid coupling glass gradient
+          const gonioGlass = ctx.createRadialGradient(centerX, centerY, gonioRadius * 0.2, centerX, centerY, gonioRadius);
+          gonioGlass.addColorStop(0, 'rgba(10, 25, 45, 0.85)');
+          gonioGlass.addColorStop(0.7, 'rgba(15, 35, 60, 0.92)');
+          gonioGlass.addColorStop(1, 'rgba(6, 16, 32, 0.98)');
+          ctx.fillStyle = gonioGlass;
+          ctx.fill();
+
+          // 2. Anatomical Angle Bands (Curved concentric sectors in nasal quadrant)
+          // Band A: Cornea & Schwalbe's Line (Pearly glistening white)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 1.15, -Math.PI * 0.32, Math.PI * 0.32);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+          ctx.lineWidth = 8;
+          ctx.stroke();
+
+          // Band B: Non-Pigmented Trabecular Meshwork (Light beige band)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 1.05, -Math.PI * 0.32, Math.PI * 0.32);
+          ctx.strokeStyle = 'rgba(215, 205, 185, 0.75)';
+          ctx.lineWidth = 14;
+          ctx.stroke();
+
+          // Band C: Pigmented Trabecular Meshwork (Rich golden-brown filtration band - where the clog is!)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.93, -Math.PI * 0.32, Math.PI * 0.32);
+          ctx.strokeStyle = 'rgba(125, 78, 38, 0.95)';
+          ctx.lineWidth = 18;
+          ctx.stroke();
+
+          // Band D: Schlemm's Canal & Venous Collector Bed (Translucent violet/indigo behind TM)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.93, -Math.PI * 0.3, Math.PI * 0.3);
+          ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+          ctx.lineWidth = 6;
+          ctx.stroke();
+
+          // Band E: Scleral Spur (Crisp ivory white line)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.81, -Math.PI * 0.32, Math.PI * 0.32);
+          ctx.strokeStyle = 'rgba(240, 238, 230, 0.85)';
+          ctx.lineWidth = 6;
+          ctx.stroke();
+
+          // Band F: Ciliary Body Band & Peripheral Iris Root (Deep brown with radial fibers)
+          ctx.beginPath();
+          ctx.arc(centerX - eyeRadiusPx * 0.25, centerY, eyeRadiusPx * 0.68, -Math.PI * 0.32, Math.PI * 0.32);
+          ctx.strokeStyle = 'rgba(65, 38, 18, 0.92)';
+          ctx.lineWidth = 26;
+          ctx.stroke();
+
+          // 3. Anatomical Gonio Labels on Viewport
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+          ctx.fillText("SCHWALBE'S LINE", centerX + eyeRadiusPx * 0.78, centerY - eyeRadiusPx * 0.35);
+          ctx.fillStyle = 'rgba(234, 179, 8, 0.9)';
+          ctx.fillText("PIGMENTED TM (FILTER CLOG)", centerX + eyeRadiusPx * 0.62, centerY - eyeRadiusPx * 0.18);
+          ctx.fillStyle = 'rgba(192, 132, 252, 0.9)';
+          ctx.fillText("SCHLEMM'S CANAL (VENOUS DRAIN)", centerX + eyeRadiusPx * 0.58, centerY + eyeRadiusPx * 0.05);
+          ctx.fillStyle = 'rgba(240, 238, 230, 0.75)';
+          ctx.fillText("SCLERAL SPUR", centerX + eyeRadiusPx * 0.48, centerY + eyeRadiusPx * 0.22);
+
+          // 4. Stent Deployment Visualization
+          const stentLocations = [
+            { idx: 0, clock: '2:30', angleRad: -Math.PI * 0.11, label: 'STENT 1' },
+            { idx: 1, clock: '4:00', angleRad: Math.PI * 0.21, label: 'STENT 2' }
+          ];
+
+          stentLocations.forEach(loc => {
+            const stentData = migsState?.stents[loc.idx];
+            const sx = centerX - eyeRadiusPx * 0.25 + Math.cos(loc.angleRad) * (eyeRadiusPx * 0.93);
+            const sy = centerY + Math.sin(loc.angleRad) * (eyeRadiusPx * 0.93);
+
+            if (stentData && stentData.deployed) {
+              // Deployed Titanium Micro-Stent
+              ctx.save();
+              ctx.translate(sx, sy);
+              ctx.rotate(loc.angleRad + Math.PI / 2);
+
+              // Stent Titanium Body
+              ctx.fillStyle = '#e2e8f0';
+              ctx.strokeStyle = '#06b6d4';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.roundRect(-4, -8, 8, 16, 2);
+              ctx.fill();
+              ctx.stroke();
+
+              // Stent Central Outflow Lumen
+              ctx.fillStyle = '#0f172a';
+              ctx.beginPath();
+              ctx.arc(0, -4, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Four Side Outflow Orifices
+              ctx.fillStyle = '#06b6d4';
+              ctx.fillRect(-3, 2, 2, 2);
+              ctx.fillRect(1, 2, 2, 2);
+              ctx.restore();
+
+              // Label
+              ctx.fillStyle = '#38bdf8';
+              ctx.font = 'bold 9px monospace';
+              ctx.fillText(`${loc.label} (PATENT)`, sx + 8, sy - 4);
+
+              // 5. Blood Reflux Wave Plume (Crimson plume from bloodstream)
+              if (migsState?.bloodRefluxWaveConfirmed) {
+                const plumeGrad = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24);
+                plumeGrad.addColorStop(0, 'rgba(220, 38, 38, 0.85)');
+                plumeGrad.addColorStop(0.5, 'rgba(185, 28, 28, 0.45)');
+                plumeGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+                ctx.fillStyle = plumeGrad;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 24, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            } else {
+              // Pre-deployment Target Beacon on TM
+              ctx.save();
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([3, 3]);
+              ctx.beginPath();
+              ctx.arc(sx, sy, 11, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+              ctx.fill();
+
+              ctx.fillStyle = '#fbbf24';
+              ctx.font = 'bold 9px monospace';
+              ctx.fillText(`${loc.label} TARGET (${loc.clock})`, sx + 14, sy + 3);
+              ctx.restore();
+            }
+          });
+
+          // 6. Reflux Confirmation Banner at Bottom of Angle
+          if (migsState?.bloodRefluxWaveConfirmed) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(centerX - 170, centerY + eyeRadiusPx * 0.72, 340, 26, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('🩸 VENOUS BLOOD REFLUX ACTIVE: 8.5 mmHg FLOOR CONFIRMED', centerX, centerY + eyeRadiusPx * 0.72 + 16);
+            ctx.textAlign = 'start';
+          }
+
+          // Gonioprism Outer Bezel & Glass Reflection
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, gonioRadius - 2, 0, Math.PI * 2);
+          ctx.stroke();
+
           ctx.restore();
         }
       }
@@ -472,7 +673,56 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         ctx.restore();
       }
 
-      // C. Incision Wounds (Paracentesis & Tri-Planar Keratome)
+      // C. Limbal Clock Hours & Anatomical Landmarks
+      ctx.save();
+      const clockHours = [
+        { label: '12:00', rad: -Math.PI / 2 },
+        { label: '1:30', rad: 0.26 },
+        { label: '3:00', rad: 0 },
+        { label: '6:00', rad: Math.PI / 2 },
+        { label: '9:00', rad: Math.PI },
+        { label: '10:00', rad: -0.45 }
+      ];
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      clockHours.forEach(ch => {
+        const lx = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 1.05);
+        const ly = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 1.05);
+        ctx.fillStyle = ch.label === '10:00' || ch.label === '1:30' ? '#38bdf8' : 'rgba(255, 255, 255, 0.4)';
+        ctx.fillText(ch.label, lx, ly);
+
+        // Limbal radial tick
+        const tx1 = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 0.96);
+        const ty1 = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 0.96);
+        const tx2 = centerX + Math.cos(ch.rad) * (eyeRadiusPx * 1.0);
+        const ty2 = centerY + Math.sin(ch.rad) * (eyeRadiusPx * 1.0);
+        ctx.strokeStyle = ch.label === '10:00' || ch.label === '1:30' ? '#0284c7' : 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(tx1, ty1);
+        ctx.lineTo(tx2, ty2);
+        ctx.stroke();
+      });
+
+      // Limbal Vascular Arcade (Subtle micro-capillary arches)
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)';
+      ctx.lineWidth = 1.0;
+      for (let a = 0; a < Math.PI * 2; a += 0.15) {
+        const ax = centerX + Math.cos(a) * (eyeRadiusPx * 0.98);
+        const ay = centerY + Math.sin(a) * (eyeRadiusPx * 0.98);
+        const cpx = centerX + Math.cos(a + 0.07) * (eyeRadiusPx * 1.01);
+        const cpy = centerY + Math.sin(a + 0.07) * (eyeRadiusPx * 1.01);
+        const ax2 = centerX + Math.cos(a + 0.15) * (eyeRadiusPx * 0.98);
+        const ay2 = centerY + Math.sin(a + 0.15) * (eyeRadiusPx * 0.98);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.quadraticCurveTo(cpx, cpy, ax2, ay2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // C2. Detailed Anatomical Incision Wounds (Paracentesis & Tri-Planar Keratome)
       incisions.forEach(inc => {
         const woundAngle = inc.angleRad;
         const wx = centerX + Math.cos(woundAngle) * (eyeRadiusPx * 0.98);
@@ -483,32 +733,130 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         ctx.translate(wx, wy);
         ctx.rotate(woundAngle + Math.PI / 2);
 
-        if (inc.completed) {
-          ctx.strokeStyle = '#00d2ff';
-          ctx.lineWidth = 2.8;
-          ctx.beginPath();
-          ctx.moveTo(-wLen, 0);
-          ctx.lineTo(wLen, 0);
-          ctx.stroke();
+        if (inc.type === 'clear_corneal') {
+          // --- 2.4mm Tri-Planar Keratome Architecture ---
+          if (inc.completed) {
+            // Watertight Stromal Hydration Glow
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+            ctx.fillRect(-wLen * 1.1, -12, wLen * 2.2, 16);
 
-          // Internal corneal entry tunnel into AC
-          ctx.fillStyle = 'rgba(0, 210, 255, 0.25)';
-          ctx.fillRect(-wLen, -8, wLen * 2, 8);
-        } else if (inc.depthFraction > 0) {
-          ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.moveTo(-wLen * inc.depthFraction, 0);
-          ctx.lineTo(wLen * inc.depthFraction, 0);
-          ctx.stroke();
+            // Plane 1: Vertical Limbal Groove
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3.2;
+            ctx.beginPath();
+            ctx.moveTo(-wLen, 0);
+            ctx.lineTo(wLen, 0);
+            ctx.stroke();
+
+            // Plane 2: Lamellar Stromal Tunnel
+            ctx.fillStyle = 'rgba(0, 210, 255, 0.35)';
+            ctx.fillRect(-wLen, -10, wLen * 2, 10);
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-wLen, -10, wLen * 2, 10);
+
+            // Plane 3: Internal Descemet Entry Lip
+            ctx.strokeStyle = '#34d399';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-wLen * 0.95, -10);
+            ctx.lineTo(wLen * 0.95, -10);
+            ctx.stroke();
+
+            // Wound Label
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 9px "Inter", sans-serif';
+            ctx.fillStyle = '#34d399';
+            ctx.fillText('✓ 2.4mm Tri-Planar Port (1:30) - Self-Sealing Valve', 0, 18);
+          } else if (inc.depthFraction > 0) {
+            // In Progress: Step through Plane 1 -> Plane 2 -> Plane 3
+            const p = inc.plane || 1;
+            // Plane 1 Notch
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3.0;
+            ctx.beginPath();
+            ctx.moveTo(-wLen, 0);
+            ctx.lineTo(wLen, 0);
+            ctx.stroke();
+
+            // Plane 2 Tunnel
+            if (p >= 2) {
+              ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+              ctx.fillRect(-wLen, -6, wLen * 2, 6);
+            }
+
+            // Plane 3 Lip
+            if (p >= 3) {
+              ctx.strokeStyle = '#10b981';
+              ctx.lineWidth = 2.2;
+              ctx.beginPath();
+              ctx.moveTo(-wLen * 0.9, -10);
+              ctx.lineTo(wLen * 0.9, -10);
+              ctx.stroke();
+            }
+
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 8.5px "Inter", sans-serif';
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`✂ ${inc.planeName || 'Plane ' + p + ' / 3'}`, 0, 18);
+          } else {
+            // Untouched Guide Target
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.7)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(-wLen, 0);
+            ctx.lineTo(wLen, 0);
+            ctx.stroke();
+
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 8.5px "Inter", sans-serif';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText('🎯 2.4mm Main Port Target (1:30)', 0, 18);
+          }
         } else {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.setLineDash([2, 3]);
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(-wLen, 0);
-          ctx.lineTo(wLen, 0);
-          ctx.stroke();
+          // --- 1.0mm MVR Paracentesis Architecture ---
+          if (inc.completed) {
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2.8;
+            ctx.beginPath();
+            ctx.moveTo(-wLen, 0);
+            ctx.lineTo(wLen, 0);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+            ctx.fillRect(-wLen, -6, wLen * 2, 6);
+
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 9px "Inter", sans-serif';
+            ctx.fillStyle = '#34d399';
+            ctx.fillText('✓ 1.0mm Side-Port (10:00)', 0, -14);
+          } else if (inc.depthFraction > 0) {
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(-wLen * inc.depthFraction, 0);
+            ctx.lineTo(wLen * inc.depthFraction, 0);
+            ctx.stroke();
+
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 8.5px "Inter", sans-serif';
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText('✂ Paracentesis Cutting...', 0, -14);
+          } else {
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.8)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(-wLen, 0);
+            ctx.lineTo(wLen, 0);
+            ctx.stroke();
+
+            ctx.rotate(-woundAngle - Math.PI / 2);
+            ctx.font = 'bold 8.5px "Inter", sans-serif';
+            ctx.fillStyle = '#fb923c';
+            ctx.fillText('🎯 1.0mm Side-Port Target (10:00)', 0, -14);
+          }
         }
         ctx.restore();
       });
@@ -895,6 +1243,312 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
           ctx.restore();
         });
       }
+
+      // ==========================================
+      // LAYER 5: INTERACTIVE TARGET POINTERS & GUIDANCE
+      // ==========================================
+      if (showGuides) {
+        const animTime = performance.now();
+        const pulse = (Math.sin(animTime / 220) + 1) / 2; // 0 to 1
+        const bounce = Math.sin(animTime / 180) * 6; // -6 to 6 px bounce
+
+        // Helper to draw a modern glowing target beacon and pointer arrow
+        const drawTargetBeacon = (
+          tx: number,
+          ty: number,
+          titleText: string,
+          subText: string,
+          colorTheme: 'cyan' | 'amber' | 'emerald' | 'rose' = 'cyan'
+        ) => {
+          ctx.save();
+          const primaryColor =
+            colorTheme === 'amber' ? '#f59e0b' :
+            colorTheme === 'emerald' ? '#10b981' :
+            colorTheme === 'rose' ? '#f43f5e' : '#00d2ff';
+          const bgGlow =
+            colorTheme === 'amber' ? 'rgba(245, 158, 11, 0.25)' :
+            colorTheme === 'emerald' ? 'rgba(16, 185, 129, 0.25)' :
+            colorTheme === 'rose' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(0, 210, 255, 0.25)';
+
+          // 1. Concentric pulsing radar rings
+          ctx.strokeStyle = primaryColor;
+          ctx.lineWidth = 2.0;
+          ctx.beginPath();
+          ctx.arc(tx, ty, 14 + pulse * 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = bgGlow;
+          ctx.beginPath();
+          ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(tx, ty, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 2. Animated Bouncing Arrow
+          ctx.save();
+          const arrowTipX = tx;
+          const arrowTipY = ty - 18 - bounce;
+          const badgeX = tx;
+          const badgeY = arrowTipY - 32;
+
+          // Draw downward pointing chevron arrow
+          ctx.fillStyle = primaryColor;
+          ctx.beginPath();
+          ctx.moveTo(arrowTipX, arrowTipY);
+          ctx.lineTo(arrowTipX - 8, arrowTipY - 14);
+          ctx.lineTo(arrowTipX - 3, arrowTipY - 14);
+          ctx.lineTo(arrowTipX - 3, arrowTipY - 24);
+          ctx.lineTo(arrowTipX + 3, arrowTipY - 24);
+          ctx.lineTo(arrowTipX + 3, arrowTipY - 14);
+          ctx.lineTo(arrowTipX + 8, arrowTipY - 14);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // 3. Floating Instruction Badge
+          ctx.font = 'bold 10px "Inter", sans-serif';
+          const titleWidth = ctx.measureText(titleText).width;
+          ctx.font = '9px "Inter", sans-serif';
+          const subWidth = ctx.measureText(subText).width;
+          const badgeWidth = Math.max(titleWidth, subWidth) + 20;
+          const badgeHeight = 32;
+
+          // Clamp badge position within viewport boundaries
+          const clampedBadgeX = Math.max(badgeWidth / 2 + 10, Math.min(width - badgeWidth / 2 - 10, badgeX));
+          const clampedBadgeY = Math.max(40, Math.min(height - 60, badgeY));
+
+          // Badge Background
+          ctx.fillStyle = 'rgba(10, 18, 32, 0.94)';
+          ctx.strokeStyle = primaryColor;
+          ctx.lineWidth = 1.4;
+          const rx = clampedBadgeX - badgeWidth / 2;
+          const ry = clampedBadgeY - badgeHeight / 2;
+
+          // Rounded rectangle
+          ctx.beginPath();
+          ctx.roundRect(rx, ry, badgeWidth, badgeHeight, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          // Title Text
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = 'bold 10px "Inter", sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(titleText, clampedBadgeX, clampedBadgeY - 6);
+
+          // Subtitle Text
+          ctx.font = '9px "Inter", sans-serif';
+          ctx.fillStyle = primaryColor;
+          ctx.fillText(subText, clampedBadgeX, clampedBadgeY + 7);
+
+          ctx.restore();
+          ctx.restore();
+        };
+
+        // Determine target by module and currentStepId
+        if (module === 'phaco') {
+          if (currentStepId === 'paracentesis' || (!currentStepId && !incisions[0]?.completed)) {
+            const tx = centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
+            const ty = centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
+            drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber');
+          } else if (currentStepId === 'clear_corneal_incision' || (!currentStepId && !incisions[1]?.completed)) {
+            const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+            const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+            const inc = incisions.find(i => i.type === 'clear_corneal');
+            const planeTxt = !inc || inc.depthFraction === 0 ? 'Click to cut Plane 1: 300µm Groove' :
+              inc.depthFraction < 0.7 ? 'Click to cut Plane 2: 1.5mm Tunnel' : 'Click to cut Plane 3: Penetrate AC';
+            drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan');
+          } else if (currentStepId === 'ovd_injection' || (!currentStepId && ovdCoverage.dispersive < 40)) {
+            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.15, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald');
+          } else if (currentStepId === 'capsulorhexis' || (!currentStepId && !cccState.completed)) {
+            if (!cccState.punctured) {
+              drawTargetBeacon(centerX, centerY, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber');
+            } else {
+              drawTargetBeacon(centerX + (2.6 / 6.0) * (eyeRadiusPx * 0.85), centerY, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan');
+            }
+          } else if (currentStepId === 'hydrodissection' || (!currentStepId && !hydroState.corticalCleavingWaveFormed)) {
+            const ty = centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
+            drawTargetBeacon(centerX, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan');
+          } else if (currentStepId === 'phaco_chop' || (!currentStepId && nucleusState.remainingMassFraction > 0.05)) {
+            drawTargetBeacon(centerX, centerY, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber');
+          } else if (currentStepId === 'cortex_removal') {
+            drawTargetBeacon(centerX + eyeRadiusPx * 0.35, centerY, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan');
+          }
+        } else if (module === 'iol') {
+          if (currentStepId === 'ovd_bag_refill' || (!currentStepId && !iolState.opticInChamber && iolState.insertionProgressFraction < 0.1)) {
+            drawTargetBeacon(centerX, centerY, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald');
+          } else if (currentStepId === 'cartridge_insertion' || currentStepId === 'haptic_unfolding' || (!currentStepId && !iolState.opticInChamber)) {
+            const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+            const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+            drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan');
+          } else if (currentStepId === 'sinskey_dialing' || (!currentStepId && !iolState.trailingHapticInBag)) {
+            drawTargetBeacon(centerX - eyeRadiusPx * 0.25, centerY + eyeRadiusPx * 0.2, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber');
+          } else if (currentStepId === 'viscoelastic_washout') {
+            drawTargetBeacon(centerX, centerY, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan');
+          }
+        } else if (module === 'yag') {
+          if (currentStepId === 'contact_lens_placement' || (!currentStepId && !yagSettings.contactLensFitted)) {
+            drawTargetBeacon(centerX, centerY, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan');
+          } else if (currentStepId === 'aiming_focus') {
+            drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose');
+          } else if (currentStepId === 'offset_adjustment') {
+            drawTargetBeacon(centerX, centerY, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber');
+          } else if (currentStepId === 'cruciate_capsulotomy' || (!currentStepId && yagState.shots.length < 4)) {
+            // Draw 4 numbered targets on the capsule
+            const offsets = [
+              { num: '1', ox: 0, oy: -eyeRadiusPx * 0.25 },
+              { num: '2', ox: 0, oy: eyeRadiusPx * 0.25 },
+              { num: '3', ox: -eyeRadiusPx * 0.25, oy: 0 },
+              { num: '4', ox: eyeRadiusPx * 0.25, oy: 0 }
+            ];
+            offsets.forEach(off => {
+              const sx = centerX + off.ox;
+              const sy = centerY + off.oy;
+              ctx.save();
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+              ctx.strokeStyle = '#ef4444';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 9px monospace';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(off.num, sx, sy);
+              ctx.restore();
+            });
+            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose');
+          } else if (currentStepId === 'post_yag_assessment') {
+            drawTargetBeacon(centerX, centerY, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald');
+          }
+        } else if (module === 'migs') {
+          if (currentStepId === 'microscope_and_head_tilt') {
+            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan');
+          } else if (currentStepId === 'gonioprism_placement') {
+            drawTargetBeacon(centerX, centerY, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald');
+          } else if (currentStepId === 'viscoelastic_angle_deepening') {
+            drawTargetBeacon(centerX + eyeRadiusPx * 0.45, centerY, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan');
+          } else if (currentStepId === 'stent_1_deployment') {
+            const s1x = centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+            const s1y = centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+            drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber');
+          } else if (currentStepId === 'stent_2_deployment') {
+            const s2x = centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+            const s2y = centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+            drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan');
+          } else if (currentStepId === 'blood_reflux_and_washout') {
+            drawTargetBeacon(centerX + eyeRadiusPx * 0.4, centerY, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose');
+          }
+        }
+      }
+
+      // ==========================================
+      // LAYER 6: CORNEAL INCISION ARCHITECTURE MINI-HUD
+      // ==========================================
+      if (
+        module === 'phaco' &&
+        (activeInstrument === 'mvr_blade' || activeInstrument === 'keratome_2_4' || currentStepId === 'paracentesis' || currentStepId === 'clear_corneal_incision')
+      ) {
+        ctx.save();
+        const hudW = 260;
+        const hudH = 110;
+        const hudX = 14;
+        const hudY = height - hudH - 65; // Position in lower-left above foot pedal
+
+        // HUD panel background
+        ctx.fillStyle = 'rgba(10, 16, 28, 0.94)';
+        ctx.strokeStyle = '#1e304a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(hudX, hudY, hudW, hudH, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // Title
+        ctx.font = 'bold 10px "Inter", sans-serif';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('TRI-PLANAR INCISION ARCHITECTURE', hudX + 10, hudY + 8);
+
+        ctx.font = '8px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('Self-Sealing Pressure Valve Mechanics', hudX + 10, hudY + 22);
+
+        // Stylized cornea profile diagram
+        const diagX = hudX + 12;
+        const diagY = hudY + 38;
+        const diagW = 236;
+        const diagH = 45;
+
+        // Outer surface (Epithelium)
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(diagX, diagY + 4);
+        ctx.quadraticCurveTo(diagX + diagW / 2, diagY, diagX + diagW, diagY + 4);
+        ctx.stroke();
+
+        // Inner surface (Descemet / Endothelium)
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(diagX, diagY + diagH);
+        ctx.quadraticCurveTo(diagX + diagW / 2, diagY + diagH - 4, diagX + diagW, diagY + diagH);
+        ctx.stroke();
+
+        // Stroma shading
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(diagX, diagY + 4);
+        ctx.quadraticCurveTo(diagX + diagW / 2, diagY, diagX + diagW, diagY + 4);
+        ctx.lineTo(diagX + diagW, diagY + diagH);
+        ctx.quadraticCurveTo(diagX + diagW / 2, diagY + diagH - 4, diagX, diagY + diagH);
+        ctx.closePath();
+        ctx.fill();
+
+        // Stepped cut path: Plane 1 (Groove) -> Plane 2 (Tunnel) -> Plane 3 (AC Entry)
+        const mainInc = incisions.find(i => i.type === 'clear_corneal');
+        const plane = mainInc?.plane || (activeInstrument === 'keratome_2_4' ? 1 : 0);
+
+        ctx.strokeStyle = plane >= 1 ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(diagX + 180, diagY + 2);
+        ctx.lineTo(diagX + 180, diagY + 18); // Plane 1
+        ctx.stroke();
+
+        ctx.strokeStyle = plane >= 2 ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.moveTo(diagX + 180, diagY + 18);
+        ctx.lineTo(diagX + 90, diagY + 22); // Plane 2
+        ctx.stroke();
+
+        ctx.strokeStyle = plane >= 3 ? '#10b981' : 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.moveTo(diagX + 90, diagY + 22);
+        ctx.lineTo(diagX + 65, diagY + diagH); // Plane 3
+        ctx.stroke();
+
+        // Labels
+        ctx.font = '7.5px "Inter", sans-serif';
+        ctx.fillStyle = plane >= 1 ? '#f59e0b' : '#64748b';
+        ctx.fillText('1. Groove (300µm)', diagX + 155, diagY + diagH + 8);
+        ctx.fillStyle = plane >= 2 ? '#f59e0b' : '#64748b';
+        ctx.fillText('2. Tunnel (1.5mm)', diagX + 80, diagY + diagH + 8);
+        ctx.fillStyle = plane >= 3 ? '#10b981' : '#64748b';
+        ctx.fillText('3. AC Entry', diagX + 15, diagY + diagH + 8);
+
+        ctx.restore();
+      }
     };
 
     renderOverlay();
@@ -912,6 +1566,8 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     yagSettings,
     incisions,
     ovdCoverage,
+    currentStepId,
+    showGuides,
     magnification,
     mousePos,
     laserDefocusZ,
@@ -980,13 +1636,38 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       onYagFire(normX, normY, laserDefocusZ);
       audioEngine.playYagDischarge(yagSettings.energyMj, yagSettings.pulseMode);
     }
+
+    if (module === 'migs') {
+      if (currentStepId === 'microscope_and_head_tilt') {
+        onMigsTilt?.(38, 35);
+        audioEngine.playPedalClick(1);
+      } else if (currentStepId === 'gonioprism_placement' || activeInstrument === 'gonio_lens') {
+        onMigsGonioPlace?.();
+        audioEngine.playPedalClick(2);
+      } else if (currentStepId === 'viscoelastic_angle_deepening' || activeInstrument === 'ovd_provisc') {
+        onMigsOvdAngle?.();
+        audioEngine.playPedalClick(1);
+      } else if (currentStepId === 'stent_1_deployment' || (activeInstrument === 'migs_injector' && migsState?.stents[0] && !migsState.stents[0].deployed)) {
+        onMigsDeployStent?.(0, 2.5, 22, 360);
+        audioEngine.playPedalClick(3);
+      } else if (currentStepId === 'stent_2_deployment' || (activeInstrument === 'migs_injector' && migsState?.stents[1] && !migsState.stents[1].deployed)) {
+        onMigsDeployStent?.(1, 4.0, 25, 360);
+        audioEngine.playPedalClick(3);
+      } else if (currentStepId === 'blood_reflux_and_washout' || activeInstrument === 'ia_handpiece') {
+        onMigsBloodReflux?.();
+        onMigsWashout?.();
+        audioEngine.playPedalClick(2);
+      }
+    }
   }, [
     activeInstrument,
     magnification,
     module,
+    currentStepId,
     cccState.punctured,
     laserDefocusZ,
     yagSettings,
+    migsState,
     onIncisionAdvance,
     onOvdInject,
     onCccPuncture,
@@ -994,7 +1675,13 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     onIolAdvance,
     onIolDial,
     onIolWashout,
-    onYagFire
+    onYagFire,
+    onMigsTilt,
+    onMigsGonioPlace,
+    onMigsOvdAngle,
+    onMigsDeployStent,
+    onMigsBloodReflux,
+    onMigsWashout
   ]);
 
   const handlePointerMoveAction = useCallback((clientX: number, clientY: number, isDown: boolean) => {
@@ -1081,24 +1768,45 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       {/* 2D High-Resolution Composite Canvas (Real Eye Photo + Dynamic Overlays) */}
       <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-      {/* Top Right Optical Controls Toggle Button & Dropdown */}
+      {/* Top Right Optical Controls & Guidance Toggle */}
       <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowOptics(!showOptics);
-          }}
-          title="Microscope Optics & Illumination Settings"
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
-            showOptics
-              ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
-              : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'
-          }`}
-        >
-          <Camera className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="font-mono">{magnification}x</span>
-          <span className="text-[10px] hidden xs:inline uppercase text-slate-400">Optics</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onToggleGuides && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleGuides();
+              }}
+              title={showGuides ? 'Hide Interactive Guidance Pointers' : 'Show Interactive Guidance Pointers'}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
+                showGuides
+                  ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 shadow-cyan-900/40'
+                  : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-400 hover:text-white'
+              }`}
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span className="text-[10px] uppercase font-mono hidden xs:inline">{showGuides ? 'Guides: ON' : 'Guides: OFF'}</span>
+              <span className="text-[10px] uppercase font-mono xs:hidden">{showGuides ? 'ON' : 'OFF'}</span>
+            </button>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowOptics(!showOptics);
+            }}
+            title="Microscope Optics & Illumination Settings"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${
+              showOptics
+                ? 'bg-cyan-600 border-cyan-400 text-white shadow-cyan-900/50'
+                : 'bg-[#0d1522]/90 hover:bg-[#132035] border-[#1e2e48] text-slate-300 hover:text-white'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono">{magnification}x</span>
+            <span className="text-[10px] hidden xs:inline uppercase text-slate-400">Optics</span>
+          </button>
+        </div>
 
         {showOptics && (
           <div
@@ -1251,6 +1959,8 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
               ? 'Zeiss OPMI Lumera 700 Coaxial Medical Macro'
               : module === 'iol'
               ? 'High-Resolution Pseudophakic Capsular View'
+              : module === 'migs'
+              ? 'Surgical Direct Gonioscopy | Swan-Jacob Prism (38° Tilt)'
               : 'Haag-Streit BQ 900 / Ellex Nd:YAG Slit-Lamp Photography'}
           </span>
         </div>

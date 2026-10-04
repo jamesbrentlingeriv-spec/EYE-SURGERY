@@ -1,6 +1,6 @@
 // Ophthalmic Surgical Simulator - Medical & Simulation Type Definitions
 
-export type SurgicalModule = 'phaco' | 'iol' | 'yag';
+export type SurgicalModule = 'phaco' | 'iol' | 'yag' | 'migs';
 
 export type PhacoStep = 
   | 'paracentesis'
@@ -25,6 +25,14 @@ export type YagStep =
   | 'cruciate_capsulotomy'
   | 'post_yag_assessment';
 
+export type MigsStep =
+  | 'microscope_and_head_tilt'
+  | 'gonioprism_placement'
+  | 'viscoelastic_angle_deepening'
+  | 'stent_1_deployment'
+  | 'stent_2_deployment'
+  | 'blood_reflux_and_washout';
+
 export type InstrumentType =
   | 'none'
   | 'mvr_blade'
@@ -38,7 +46,9 @@ export type InstrumentType =
   | 'ia_handpiece'
   | 'iol_injector'
   | 'sinskey_hook'
-  | 'yag_laser';
+  | 'yag_laser'
+  | 'gonio_lens'
+  | 'migs_injector';
 
 export type FootPedalPosition = 0 | 1 | 2 | 3; // 0: Idle, 1: Irrigation, 2: Aspiration, 3: Phaco Power
 
@@ -108,6 +118,9 @@ export interface IncisionPoint {
   depthFraction: number; // 0 to 1 (full penetration into AC)
   type: 'paracentesis' | 'clear_corneal';
   completed: boolean;
+  plane?: number; // 0: untouched, 1: groove (300µm), 2: tunnel (1.5mm), 3: Descemet entry
+  planeName?: string;
+  clockPosition?: string; // e.g. "10:00" or "1:30"
 }
 
 export interface CapsulorhexisPathPoint {
@@ -189,6 +202,32 @@ export interface YagCapsulotomyState {
   postOpIopSpikeRiskMmHg: number;
 }
 
+export interface MigsStent {
+  id: string;
+  clockPosition: number; // e.g., 2.5 or 3.5 o'clock (nasal quadrant)
+  deployed: boolean;
+  angleAngleDeg: number; // ideal 15 - 30 degrees to TM
+  seatingDepthMicrons: number; // ideal 360µm (lumen in Schlemm's canal, inlet in AC)
+  isPatentToVenousStream: boolean;
+  collectorChannelAlignmentScore: number; // 0 - 100%
+}
+
+export interface MigsState {
+  microscopeTiltDeg: number; // Target 35 - 40°
+  patientHeadTiltDeg: number; // Target 30 - 35°
+  gonioprismPlaced: boolean;
+  gonioViewClarityPercent: number; // 0 - 100%
+  angleDeepenedWithOvd: boolean;
+  stents: MigsStent[];
+  stentsRemainingInInjector: number; // Starts at 2 (e.g. iStent inject W system)
+  baselineIopMmHg: number; // Typically 28 - 34 mmHg in severe glaucoma
+  episcleralVenousPressureMmHg: number; // Physiologic venous floor: 8.0 - 10.0 mmHg
+  currentIopMmHg: number;
+  outflowFacilityMicrolitersPerMinPerMmHg: number; // 0.08 baseline -> 0.28 post-stents
+  bloodRefluxWaveConfirmed: boolean;
+  hypotonyProtectedByVenousBackpressure: boolean;
+}
+
 export interface SurgicalReportCard {
   overallScore: number; // 0 - 100
   grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
@@ -207,5 +246,21 @@ export interface SurgicalReportCard {
   yagEfficiency: { totalShots: number; totalEnergyMj: number; rating: 'Minimal Energy' | 'Moderate' | 'Excessive' };
   iolPittingScore: { count: number; rating: 'Zero Pits' | 'Minor Pitting' | 'Severe Visual Axis Damage' };
   vitreousStatus: 'Preserved Hyaloid Face' | 'Breakthrough with Float' | 'Anterior Vitreous Prolapse';
+  // MIGS Stent specific
+  migsStentPlacement?: {
+    stentsDeployed: number;
+    targetCollectorOstiaHit: boolean;
+    rating: 'Optimal Bilateral Placement' | 'Single Stent Patent' | 'Miscalibrated Seating';
+  };
+  iopReduction?: {
+    baselineIop: number;
+    finalIop: number;
+    venousFloorMmHg: number; // 8 - 10 mmHg
+    rating: 'Superb Physiological Titration' | 'Moderate Pressure Drop' | 'Elevated Residual IOP';
+  };
+  bloodstreamRefluxVerification?: {
+    observed: boolean;
+    rating: 'Patent Venous Communication (Fluid Wave OK)' | 'No Blood Wave (Check Stent Lumen)';
+  };
   clinicalSummary: string[];
 }

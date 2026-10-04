@@ -1,0 +1,643 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cataract Phacoemulsification Surgery - Complete Surgical Manual</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  @page {
+    size: letter portrait;
+    margin: 12mm 14mm 14mm 14mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0284c7;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
+  .brand-badge {
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .doc-title {
+    font-size: 18pt;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin-top: 4px;
+  }
+
+  .doc-subtitle {
+    font-size: 9.5pt;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    font-size: 8pt;
+  }
+
+  .meta-item strong {
+    display: block;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.5px;
+  }
+
+  .meta-item span {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 8.5pt;
+  }
+
+  .overview-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 14px;
+    font-size: 9pt;
+    color: #166534;
+  }
+
+  .overview-box h4 {
+    font-size: 9.5pt;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .step-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+
+  .step-header {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .step-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .step-num {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 8pt;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .step-name {
+    font-size: 10.5pt;
+    font-weight: 700;
+  }
+
+  .step-tool {
+    font-size: 8pt;
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+
+  .step-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #ffffff;
+  }
+
+  .action-banner {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 9pt;
+    color: #92400e;
+  }
+
+  .action-banner strong {
+    color: #b45309;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .why-box {
+    background: #f0f9ff;
+    border-left: 3px solid #0284c7;
+    padding: 7px 10px;
+    border-radius: 0 6px 6px 0;
+    font-size: 8.5pt;
+    color: #0369a1;
+    line-height: 1.4;
+  }
+
+  .why-box strong {
+    font-weight: 700;
+    color: #0284c7;
+  }
+
+  .details-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-top: 4px;
+  }
+
+  .details-table th, .details-table td {
+    padding: 5px 8px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .details-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    width: 25%;
+  }
+
+  .details-table td {
+    color: #1e293b;
+  }
+
+  .hazard-box {
+    background: #fef2f2;
+    border-left: 3px solid #ef4444;
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+    font-size: 8pt;
+    color: #991b1b;
+  }
+
+  .hazard-box strong {
+    color: #dc2626;
+  }
+
+  .diagram-container {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 12px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+
+  .diagram-title {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  .page-footer {
+    border-top: 1px solid #cbd5e1;
+    padding-top: 6px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7.5pt;
+    color: #94a3b8;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <span class="brand-badge">PAL OPTIC OPHTHALMIC SURGICAL ACADEMY</span>
+      <h1 class="doc-title">Cataract Phacoemulsification Surgery</h1>
+      <p class="doc-subtitle">Beginner-to-Advanced Step-by-Step Operative Field Guide & Anatomical Rationale</p>
+    </div>
+    <div style="text-align: right;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 8pt; color: #64748b;">REF: SURG-MOD-01</span><br>
+      <span style="font-size: 8pt; font-weight: 700; color: #0284c7;">EDITION 2026.1</span>
+    </div>
+  </div>
+
+  <!-- Meta Grid -->
+  <div class="meta-grid">
+    <div class="meta-item">
+      <strong>Target Pathology</strong>
+      <span>Nuclear Cataract (LOCS III NO1-NO5)</span>
+    </div>
+    <div class="meta-item">
+      <strong>Primary Incision</strong>
+      <span>2.4 mm Tri-Planar Clear Cornea</span>
+    </div>
+    <div class="meta-item">
+      <strong>Ultrasound Frequency</strong>
+      <span>28–45 kHz Piezoelectric</span>
+    </div>
+    <div class="meta-item">
+      <strong>Anesthesia Protocol</strong>
+      <span>Topical Proparacaine + Intracameral Lidocaine</span>
+    </div>
+  </div>
+
+  <!-- Plain English Overview Box -->
+  <div class="overview-box">
+    <h4>🌟 What Is Cataract Surgery in Simple Terms?</h4>
+    Inside your eye is a natural crystal lens that focuses light onto your retina. As you get older, the proteins inside clump up and turn cloudy like frosted bathroom glass—this is a <strong>cataract</strong>. During surgery, we make a tiny self-sealing doorway into the eye, cut a round window in the cellophane-like bag holding the cataract, use a microscopic ultrasonic jackhammer (phacoemulsification) to turn the hard rock into soup and vacuum it out, and leave the clean empty bag ready for a new artificial lens.
+  </div>
+
+  <!-- Diagram: Detailed Incision Architecture -->
+  <div class="diagram-container">
+    <div class="diagram-title">Corneal Incision Architecture & Tri-Planar Self-Sealing Physics</div>
+    
+<svg viewBox="0 0 700 220" width="100%" height="160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="corneaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.2"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" />
+    </marker>
+  </defs>
+
+  <!-- Background container -->
+  <rect width="700" height="220" fill="#f8fafc" rx="8" />
+
+  <!-- Corneal Section Outline -->
+  <!-- Outer Epithelium Surface -->
+  <path d="M 40 40 Q 350 25 660 40 L 660 170 Q 350 160 40 170 Z" fill="url(#corneaGrad)" stroke="#0284c7" stroke-width="2"/>
+
+  <!-- Layer labels -->
+  <text x="50" y="32" font-family="Inter" font-size="10" font-weight="700" fill="#0369a1">CORNEA OUTER SURFACE (Epithelium)</text>
+  <text x="50" y="105" font-family="Inter" font-size="10" font-weight="600" fill="#64748b">CORNEAL STROMA (500 µm thickness - 200 collagen lamellae)</text>
+  <text x="50" y="195" font-family="Inter" font-size="10" font-weight="700" fill="#0369a1">INNER CHAMBER (Endothelium & Descemet's Membrane)</text>
+
+  <!-- Stepped Tri-Planar Path -->
+  <!-- Plane 1: Vertical Limbal Groove (300 µm depth) -->
+  <path d="M 520 40 L 520 85" stroke="#ef4444" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Plane 2: Horizontal Lamellar Tunnel (1.5 - 1.75 mm length) -->
+  <path d="M 520 85 L 360 92" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Plane 3: Angled Descemet AC Entry -->
+  <path d="M 360 92 L 310 165" stroke="#10b981" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Plane Callout Badges -->
+  <!-- Callout 1 -->
+  <circle cx="520" cy="40" r="5" fill="#ef4444"/>
+  <rect x="535" y="48" width="150" height="34" rx="4" fill="#fee2e2" stroke="#fca5a5"/>
+  <text x="542" y="62" font-family="Inter" font-size="9" font-weight="800" fill="#991b1b">PLANE 1: VERTICAL GROOVE</text>
+  <text x="542" y="75" font-family="Inter" font-size="8" fill="#7f1d1d">Depth: ~300µm at anterior limbus</text>
+
+  <!-- Callout 2 -->
+  <rect x="360" y="48" width="150" height="34" rx="4" fill="#fef3c7" stroke="#fde68a"/>
+  <text x="368" y="62" font-family="Inter" font-size="9" font-weight="800" fill="#92400e">PLANE 2: STROMAL TUNNEL</text>
+  <text x="368" y="75" font-family="Inter" font-size="8" fill="#78350f">Length: 1.5–1.75mm into stroma</text>
+
+  <!-- Callout 3 -->
+  <circle cx="310" cy="165" r="5" fill="#10b981"/>
+  <rect x="180" y="125" width="160" height="34" rx="4" fill="#d1fae5" stroke="#6ee7b7"/>
+  <text x="188" y="139" font-family="Inter" font-size="9" font-weight="800" fill="#065f46">PLANE 3: DESCEMET ENTRY</text>
+  <text x="188" y="152" font-family="Inter" font-size="8" fill="#047857">Clean puncture into AC</text>
+
+  <!-- Self-sealing valve arrow -->
+  <path d="M 300 195 Q 340 180 345 155" fill="none" stroke="#0284c7" stroke-width="2.5" marker-end="url(#arrowBlue)" stroke-dasharray="3,3"/>
+  <text x="355" y="195" font-family="Inter" font-size="8.5" font-weight="700" fill="#0369a1">Intraocular pressure pushes internal flap UP against roof → 100% Watertight Self-Seal!</text>
+</svg>
+
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 1</span>
+        <span class="step-name">Paracentesis Incision (~1.0mm MVR) — The Small Side Door</span>
+      </div>
+      <span class="step-tool">Tool: 1.0mm MVR Blade</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Pick up the 1.0mm MVR blade from your tray. Locate the 10 o'clock position (upper left) on the edge of the clear cornea. Angle the blade flat (parallel to the iris plane) and make a single, crisp 1-millimeter puncture into the front chamber.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        Eye surgery is a two-handed operation. Your primary hand operates the phaco ultrasound needle through the main wound, but you need a second doorway for an assistant tool (such as a Nagahara chopper, cyclodialysis spatula, or nucleus rotator) in your non-dominant hand. The second instrument holds the slippery cataract chunks in place, rotates the lens, and protects the back of the eye. Without this side port, you would have zero control over the cataract chunks inside the eye.
+      </div>
+      <table class="details-table">
+        <tr>
+          <th>Anatomical Target</th>
+          <td>Peripheral clear cornea at the 10 o'clock limbus, just anterior to the fine red blood vessels (vascular arcade).</td>
+        </tr>
+        <tr>
+          <th>Surgical Technique</th>
+          <td>Keep blade strictly parallel to the colored iris. Avoid aiming downward (which would puncture the iris or tear the front lens capsule) or aiming too upward (which tears the corneal stroma).</td>
+        </tr>
+      </table>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Entering too anteriorly in the clear cornea induces corneal astigmatism and distortion. A sudden downward plunge will lacerate the iris and induce massive bleeding (hyphema).
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 2</span>
+        <span class="step-name">Tri-Planar Clear Corneal Incision (2.4mm) — The Main Doorway</span>
+      </div>
+      <span class="step-tool">Tool: 2.4mm Angled Keratome</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Switch to the 2.4mm angled keratome blade. Position the blade at 1:30 o'clock on the limbus. Cut in 3 continuous steps: 1) Make a vertical 300µm groove; 2) Tunnel forward 1.5mm through the cornea wall; 3) Dimple down to enter the eye chamber.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The phacoemulsification needle is 2.4mm wide. You must create an entry path that fits the instrument snuggly without leaking irrigation fluid. Cutting it in 3 staggered planes (tri-planar) creates an automatic self-sealing one-way valve: natural pressure from inside the eye pushes the internal corneal flap against the roof of the tunnel, sealing it shut 100% watertight without requiring stitches or sutures.
+      </div>
+      <table class="details-table">
+        <tr>
+          <th>Plane 1 (Vertical Groove)</th>
+          <td>Perpendicular vertical groove (~300 µm depth, half corneal thickness) at the anterior limbus.</td>
+        </tr>
+        <tr>
+          <th>Plane 2 (Lamellar Tunnel)</th>
+          <td>Blade flattened to advance 1.5–1.75 mm through the dense collagen fibers toward the corneal center.</td>
+        </tr>
+        <tr>
+          <th>Plane 3 (Descemet Entry)</th>
+          <td>Tip dimpled downward to cleanly pierce Descemet's membrane with a crisp internal entry.</td>
+        </tr>
+      </table>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> A tunnel that is too short (&lt;1.2 mm) will leak, causing the eye to go soft, iris prolapse, and catastrophic post-op infection (endophthalmitis). A tunnel that is too long (&gt;2.2 mm) creates corneal wrinkles (striae) and blocks tool movement.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- STEP 3 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 3</span>
+        <span class="step-name">OVD Injection (Dispersive & Cohesive) — The Protective Jelly Shield</span>
+      </div>
+      <span class="step-tool">Tool: Viscoat / Provisc Syringe</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Take the Viscoat syringe with a smooth 27-gauge cannula. Slide through the side port or main wound and inject the thick jelly directly over the back of the cornea. Next, inject cohesive Provisc to deepen the eye chamber.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The inner lining of the cornea is made of delicate "endothelial cells" that pump fluid out of the cornea to keep it crystal clear. Human endothelial cells DO NOT regenerate! If ultrasonic shockwaves, free radicals, or turbulent saline touch these cells, they die, turning the cornea permanently cloudy and white (bullous keratopathy), requiring a corneal transplant. The viscoelastic jelly acts like a protective shield of armor absorbing all ultrasound turbulence.
+      </div>
+      <table class="details-table">
+        <tr>
+          <th>Arshinoff Soft-Shell Technique</th>
+          <td>1) Dispersive Viscoat coats and adheres tenaciously to endothelial cells; 2) Cohesive Provisc creates deep operating space and flattens the lens capsule.</td>
+        </tr>
+      </table>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Over-pressurizing the eye causes zonular rupture or capsule blowout. Inadequate jelly coverage leaves corneal cells exposed to ultrasonic cell death.
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagram: Capsulorhexis -->
+  <div class="diagram-container">
+    <div class="diagram-title">Continuous Curvilinear Capsulorhexis (CCC) Vector Physics</div>
+    
+<svg viewBox="0 0 700 200" width="100%" height="150" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="200" fill="#f8fafc" rx="8" />
+
+  <!-- Natural lens perimeter -->
+  <circle cx="200" cy="100" r="85" fill="#fef3c7" stroke="#d97706" stroke-width="2" />
+  <text x="200" y="30" font-family="Inter" font-size="9" font-weight="700" text-anchor="middle" fill="#92400e">CATARACTOUS LENS (9–10mm)</text>
+
+  <!-- Ideal 5.2mm CCC opening -->
+  <circle cx="200" cy="100" r="50" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5" stroke-dasharray="4,3"/>
+  <text x="200" y="96" font-family="Inter" font-size="10" font-weight="800" text-anchor="middle" fill="#0369a1">IDEAL 5.2 mm CCC</text>
+  <text x="200" y="112" font-family="Inter" font-size="8" font-weight="600" text-anchor="middle" fill="#0284c7">Overlaps 6.0mm IOL Optic</text>
+
+  <!-- Force vector illustration -->
+  <g transform="translate(420, 20)">
+    <text x="0" y="15" font-family="Inter" font-size="11" font-weight="800" fill="#0f172a">BIOMECHANICAL TEAR VECTORS</text>
+
+    <!-- Safe Shear Vector -->
+    <rect x="0" y="30" width="260" height="58" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="10" y="48" font-family="Inter" font-size="9" font-weight="800" fill="#065f46">✓ SHEAR VECTOR (Safe - In-Plane Traction)</text>
+    <text x="10" y="62" font-family="Inter" font-size="8" fill="#047857">Force directed tangentially along the circle.</text>
+    <text x="10" y="74" font-family="Inter" font-size="8" fill="#047857">Capsule tears smoothly without running away.</text>
+
+    <!-- Dangerous Radial Vector -->
+    <rect x="0" y="98" width="260" height="68" rx="6" fill="#fef2f2" stroke="#fecaca"/>
+    <text x="10" y="115" font-family="Inter" font-size="9" font-weight="800" fill="#991b1b">✗ RADIAL STRETCH (Danger - Runaway Tear)</text>
+    <text x="10" y="129" font-family="Inter" font-size="8" fill="#b91c1c">Centrifugal vector pulls out toward zonules.</text>
+    <text x="10" y="141" font-family="Inter" font-size="8" font-weight="700" fill="#b91c1c">RESCUE: Pull flap flat 180° back to pupil center!</text>
+  </g>
+</svg>
+
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 4</span>
+        <span class="step-name">Continuous Curvilinear Capsulorhexis (CCC) — The Window in the Bag</span>
+      </div>
+      <span class="step-tool">Tool: Cystotome & Utrata Forceps</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        1) Poke the center of the lens skin with the bent needle (cystotome) to raise a small flap; 2) Grasp the flap edge with Utrata forceps and drag in a continuous, smooth circle around the 5.2mm guide ring.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The cataract is encapsulated in an elastic membrane 14 microns thin (thinner than plastic wrap). To suck out the cataract, you must open this bag. If you cut it with scissors or make jagged tears, the tears will zip down the sides to the back of the eye like a run in pantyhose. The whole cataract and lens will fall into the back of the eyeball (vitreous loss)! A continuous curvilinear circle has enormous tensile strength with zero stress points.
+      </div>
+      <table class="details-table">
+        <tr>
+          <th>Target Dimensions</th>
+          <td>Diameter 5.0 to 5.5 mm (ideally 5.2 mm), centered precisely on the Purkinje optical visual axis.</td>
+        </tr>
+        <tr>
+          <th>Little's Rescue Technique</th>
+          <td>If the tear starts running out radially toward the edge, unfold the flap flat and pull 180° directly back toward the pupil center to redirect the tear.</td>
+        </tr>
+      </table>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Radial tear run-out into equatorial zonules causes posterior capsule rupture and dropped nucleus.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 5</span>
+        <span class="step-name">Hydrodissection & Rotation Test — Loosening the Cataract with Water</span>
+      </div>
+      <span class="step-tool">Tool: Hydrodissection Cannula (BSS)</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Slip the flat cannula tip just under the edge of your circular capsular opening. Inject a gentle pulse of balanced salt solution (BSS). Watch the "golden fluid wave" roll across the back. Then gently tap and rotate the lens 360 degrees.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The cataract is glued to the inside of its bag by thousands of sticky cellular fibers. If you try to chop or turn the cataract while it is glued down, you will rip the tiny suspension strings (zonules) holding the bag in place. Spraying water hydraulically cleaves all adhesions without mechanical stress.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Injecting too fast or forcefully without decompressing the front chamber causes "capsular block syndrome"—the pressure blows the back of the bag wide open!
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- STEP 6 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 6</span>
+        <span class="step-name">Phaco-Chop Nucleofractis & Aspiration — Pulverizing the Hard Core</span>
+      </div>
+      <span class="step-tool">Tool: Phaco Ultrasound Handpiece + Chopper</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Depress your foot pedal: Position 1 for water flow, Position 2 for vacuum, Position 3 for ultrasound vibration. Embed the phaco tip into the cataract core, bring the chopper in from the side, and pull together to split the cataract into 4 quadrants. Vacuum up each quarter.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        A hard cataract is up to 10mm wide and cannot fit through a tiny 2.4mm incision. The phaco needle vibrates 40,000 times a second, using microscopic cavitation bubbles to liquefy the hard rock so the vacuum can suck it out through the hollow center.
+      </div>
+      <table class="details-table">
+        <tr>
+          <th>Foot Pedal Protocol</th>
+          <td>Pos 0: Off | Pos 1: Continuous Irrigation | Pos 2: Vacuum Aspiration | Pos 3: Ultrasonic Cavitation Power</td>
+        </tr>
+        <tr>
+          <th>Safe Phaco Zone</th>
+          <td>Always perform chopping and emulsification at the iris plane in the center of the pupil. Never activate ultrasound within 1.5mm of the fragile back capsule.</td>
+        </tr>
+      </table>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Post-occlusion surge: when a dense fragment suddenly clears the tip, vacuum spikes and can suck the posterior capsule into the needle, instantly tearing it!
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 7</span>
+        <span class="step-name">Cortical Remnant Clearance (I/A) — Vacuuming the Soft Leftovers</span>
+      </div>
+      <span class="step-tool">Tool: Coaxial I/A Handpiece</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Switch to the Irrigation/Aspiration wand. Press pedal to Position 2 (suction). Move around the outer edges of the bag, occlude the fluffy cortical remnants, and pull them into the center to vacuum them away. Polish the back capsule until clean.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        Even after the rock-hard core is gone, fluffy cotton-like cellular fibers remain stuck to the bag walls. If left behind, these cells cause severe postoperative eye inflammation, sky-high eye pressure (glaucoma), and trigger cloudy scarring behind the new lens.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> If you accidentally suck on the transparent posterior capsule, fine radial wrinkles ("spider-web sign") appear! Release the foot pedal IMMEDIATELY to Position 0 to prevent tearing the bag.
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <span>PAL OPTIC SIMULATION SUITE • OPHTHALMIC SURGICAL REFERENCE</span>
+    <span>CONFIDENTIAL CLINICAL EDUCATIONAL MANUAL • PAGE 3 OF 3</span>
+  </div>
+</body>
+</html>

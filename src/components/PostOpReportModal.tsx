@@ -11,6 +11,8 @@ import {
   Sparkles,
   Download,
   RotateCcw,
+  Compass,
+  Droplet,
   X
 } from 'lucide-react';
 
@@ -284,6 +286,65 @@ export const PostOpReportModal: React.FC<PostOpReportModalProps> = ({
                   </span>
                 </div>
               </div>
+            </>
+          )}
+
+          {/* Module D: MIGS Glaucoma Stent Metrics */}
+          {report.module === 'migs' && report.migsStentPlacement && report.iopReduction && (
+            <>
+              {/* Stent Placement */}
+              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Compass className="w-4 h-4 text-emerald-400" />
+                    Micro-Stents Deployed
+                  </span>
+                  <span className="font-mono text-emerald-400 font-bold">
+                    {report.migsStentPlacement.stentsDeployed} of 2 Placed
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Rating: <span className="text-slate-200 font-medium">{report.migsStentPlacement.rating}</span>
+                </div>
+              </div>
+
+              {/* Goldmann IOP Drop & Venous Floor */}
+              <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-cyan-400" />
+                    IOP Reduction (Goldmann)
+                  </span>
+                  <span className="font-mono text-cyan-300 font-bold">
+                    {report.iopReduction.baselineIop} → {report.iopReduction.finalIop.toFixed(1)} mmHg
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Floor: <span className="text-emerald-400 font-mono font-semibold">{report.iopReduction.venousFloorMmHg} mmHg (EVP Back-Pressure)</span>
+                </div>
+              </div>
+
+              {/* Venous Bloodstream Reflux Wave */}
+              {report.bloodstreamRefluxVerification && (
+                <div className="bg-[#0e1726] p-4 rounded-xl border border-[#1c2e47] space-y-2 col-span-1 sm:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Droplet className="w-4 h-4 text-rose-400" />
+                      Episcleral Blood Reflux Wave
+                    </span>
+                    <span
+                      className={`font-mono font-bold ${
+                        report.bloodstreamRefluxVerification.observed ? 'text-emerald-400' : 'text-amber-400'
+                      }`}
+                    >
+                      {report.bloodstreamRefluxVerification.observed ? 'VERIFIED (Patent Lumen)' : 'NOT ELICITED'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    Status: <span className="text-slate-200 font-medium">{report.bloodstreamRefluxVerification.rating}</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

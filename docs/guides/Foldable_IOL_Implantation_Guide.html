@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Foldable Intraocular Lens (IOL) Implantation - Clinical Guide</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  @page {
+    size: letter portrait;
+    margin: 12mm 14mm 14mm 14mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0284c7;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+
+  .brand-badge {
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .doc-title {
+    font-size: 18pt;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin-top: 4px;
+  }
+
+  .doc-subtitle {
+    font-size: 9.5pt;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    font-size: 8pt;
+  }
+
+  .meta-item strong {
+    display: block;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.5px;
+  }
+
+  .meta-item span {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 8.5pt;
+  }
+
+  .overview-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 14px;
+    font-size: 9pt;
+    color: #166534;
+  }
+
+  .overview-box h4 {
+    font-size: 9.5pt;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .step-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+
+  .step-header {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .step-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .step-num {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 8pt;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .step-name {
+    font-size: 10.5pt;
+    font-weight: 700;
+  }
+
+  .step-tool {
+    font-size: 8pt;
+    background: #1e293b;
+    border: 1px solid #334155;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+
+  .step-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #ffffff;
+  }
+
+  .action-banner {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 9pt;
+    color: #92400e;
+  }
+
+  .action-banner strong {
+    color: #b45309;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .why-box {
+    background: #f0f9ff;
+    border-left: 3px solid #0284c7;
+    padding: 7px 10px;
+    border-radius: 0 6px 6px 0;
+    font-size: 8.5pt;
+    color: #0369a1;
+    line-height: 1.4;
+  }
+
+  .why-box strong {
+    font-weight: 700;
+    color: #0284c7;
+  }
+
+  .details-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-top: 4px;
+  }
+
+  .details-table th, .details-table td {
+    padding: 5px 8px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .details-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    width: 25%;
+  }
+
+  .details-table td {
+    color: #1e293b;
+  }
+
+  .hazard-box {
+    background: #fef2f2;
+    border-left: 3px solid #ef4444;
+    padding: 6px 10px;
+    border-radius: 0 6px 6px 0;
+    font-size: 8pt;
+    color: #991b1b;
+  }
+
+  .hazard-box strong {
+    color: #dc2626;
+  }
+
+  .diagram-container {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 12px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+
+  .diagram-title {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  .page-footer {
+    border-top: 1px solid #cbd5e1;
+    padding-top: 6px;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7.5pt;
+    color: #94a3b8;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <span class="brand-badge">PAL OPTIC OPHTHALMIC SURGICAL ACADEMY</span>
+      <h1 class="doc-title">Foldable Intraocular Lens (IOL) Implantation</h1>
+      <p class="doc-subtitle">Capsular Bag Refill, Controlled Unfolding, 360° Overlap & Viscoelastic Evacuation</p>
+    </div>
+    <div style="text-align: right;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 8pt; color: #64748b;">REF: SURG-MOD-02</span><br>
+      <span style="font-size: 8pt; font-weight: 700; color: #0284c7;">EDITION 2026.1</span>
+    </div>
+  </div>
+
+  <!-- Meta Grid -->
+  <div class="meta-grid">
+    <div class="meta-item">
+      <strong>Optic Material</strong>
+      <span>Hydrophobic Acrylic (6.0 mm Optic)</span>
+    </div>
+    <div class="meta-item">
+      <strong>Haptic Design</strong>
+      <span>Modified C-Loop (13.0 mm Total Length)</span>
+    </div>
+    <div class="meta-item">
+      <strong>Delivery System</strong>
+      <span>Screw-Assisted Cartridge (2.4 mm Bore)</span>
+    </div>
+    <div class="meta-item">
+      <strong>Optic Edge</strong>
+      <span>360° Posterior Square Edge</span>
+    </div>
+  </div>
+
+  <!-- Plain English Overview Box -->
+  <div class="overview-box">
+    <h4>🌟 What Is IOL Implantation in Simple Terms?</h4>
+    Once the cloudy cataract has been sucked out, the eye has no focusing lens—everything would be a blurry smudge! We replace the natural lens with a permanent, microscopic artificial lens made of foldable medical acrylic. Because our incision is only 2.4mm wide and the lens is 6mm wide, the lens is folded like a tiny taco inside a syringe. We inject it through the tiny wound, watch it unfold into the empty natural bag, center it precisely, and vacuum out the jelly.
+  </div>
+
+  <!-- Diagram: IOL Implantation & 360 Overlap -->
+  <div class="diagram-container">
+    <div class="diagram-title">IOL In-The-Bag Anatomy, 360° Rhexis Overlap & Centration</div>
+    
+<svg viewBox="0 0 700 200" width="100%" height="150" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="200" fill="#f8fafc" rx="8" />
+
+  <!-- Capsular Bag Equator -->
+  <circle cx="180" cy="100" r="80" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="180" y="35" font-family="Inter" font-size="8.5" font-weight="700" text-anchor="middle" fill="#64748b">CAPSULAR BAG EQUATOR (10.5 mm)</text>
+
+  <!-- 6.0mm Acrylic Optic -->
+  <circle cx="180" cy="100" r="50" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>
+  <text x="180" y="98" font-family="Inter" font-size="10" font-weight="800" text-anchor="middle" fill="#0369a1">6.0 mm IOL OPTIC</text>
+  <text x="180" y="112" font-family="Inter" font-size="8" text-anchor="middle" fill="#0284c7">Purkinje Visual Axis</text>
+
+  <!-- C-Loop Haptics -->
+  <path d="M 225 80 C 260 50, 270 120, 240 145" fill="none" stroke="#0284c7" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 135 120 C 100 150, 90 80, 120 55" fill="none" stroke="#0284c7" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 5.2mm CCC Overlap Ring -->
+  <circle cx="180" cy="100" r="44" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="180" y="150" font-family="Inter" font-size="8" font-weight="700" text-anchor="middle" fill="#047857">5.2 mm CCC Edge (Overlaps Optic 360° by 0.4mm)</text>
+
+  <!-- Explanatory legend -->
+  <g transform="translate(380, 25)">
+    <text x="0" y="15" font-family="Inter" font-size="11" font-weight="800" fill="#0f172a">WHY 360° OVERLAP MATTERS</text>
+
+    <rect x="0" y="30" width="300" height="60" rx="6" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="10" y="48" font-family="Inter" font-size="8.5" font-weight="700" fill="#166534">1. Prevents PCO (Secondary Cataracts)</text>
+    <text x="10" y="62" font-family="Inter" font-size="8" fill="#15803d">Square-edge optic + shrink-wrap overlap traps</text>
+    <text x="10" y="74" font-family="Inter" font-size="8" fill="#15803d">residual lens cells, stopping cloudy migration.</text>
+
+    <rect x="0" y="100" width="300" height="60" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="10" y="118" font-family="Inter" font-size="8.5" font-weight="700" fill="#1e40af">2. Perfect Centration & No Lens Tilt</text>
+    <text x="10" y="132" font-family="Inter" font-size="8" fill="#1d4ed8">Both spring arms seated symmetrically in bag prevents</text>
+    <text x="10" y="144" font-family="Inter" font-size="8" fill="#1d4ed8">unwanted astigmatism and double vision.</text>
+  </g>
+</svg>
+
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 1</span>
+        <span class="step-name">Capsular Bag Refill with Cohesive OVD — Re-Inflating the Deflated Bag</span>
+      </div>
+      <span class="step-tool">Tool: Provisc Cohesive Jelly</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Take the Provisc cohesive viscoelastic syringe. Insert the cannula through the main wound and gently inject jelly directly into the equator of the empty lens bag until it puffs open into a firm, round pocket.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        Without the cataract inside, the thin natural bag collapses flat like an empty balloon. If you attempt to slide a hard plastic injector nozzle into a collapsed bag, the rigid tip will spear straight through the paper-thin back capsule! Injecting thick jelly acts like a balloon pump, expanding the bag in 3 dimensions and creating a safe landing pad for the new lens.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Attempting IOL delivery into a collapsed bag causes direct mechanical rupture of the posterior capsule.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 2</span>
+        <span class="step-name">Cartridge Delivery into Bag — Squeezing the Folded Lens Through the Keyhole</span>
+      </div>
+      <span class="step-tool">Tool: Monarch / Screw IOL Injector</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Position the beveled tip of the injector nozzle into the 2.4mm clear corneal incision with the bevel pointing DOWN. Turn the screw plunger smoothly to advance the folded acrylic lens forward.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The artificial lens is 6mm wide—more than double the size of our 2.4mm incision! The lubricated cartridge compresses the lens without tearing it. Advancing the plunger smoothly allows the lens to pass through the microscopic tunnel without stretching or burning the delicate cornea.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Pushing too fast or unevenly can cause the spring-loaded lens to shoot forward with violent kinetic force, puncturing the posterior capsule.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- STEP 3 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 3</span>
+        <span class="step-name">Leading Haptic Placement — Guiding the Front Leg into the Corner</span>
+      </div>
+      <span class="step-tool">Tool: IOL Injector & Nozzle Guidance</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        As the lens emerges from the nozzle, ensure the leading spring arm (haptic) uncurls directly into the far corner of the bag equator. Keep the nozzle tip inside the circular window so the lens doesn't escape over the iris.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        If the spring arms unfold on top of the colored iris instead of inside the bag, they will chafe against iris blood vessels, causing internal bleeding, painful inflammation, and chronic pupil distortion.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Allowing the trailing arm to become trapped in the corneal tunnel can shear the haptic off the lens optic.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 4</span>
+        <span class="step-name">Sinskey Hook 360° Rotational Centering — Spinning & Tucking the Back Leg</span>
+      </div>
+      <span class="step-tool">Tool: 0.2mm Sinskey Micro-Hook</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Use the tiny angled Sinskey hook to engage the notch at the base of the trailing arm. Rotate the lens clockwise while gently pushing downward, tucking the trailing arm under the edge of the circular opening into the bag. Confirm 360° overlap.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        Both arms must be seated symmetrically inside the bag pockets. If one arm is in the bag and one is outside (asymmetric placement), the lens tilts, causing severe astigmatism, glare, and double vision. Having the circular capsular window overlap the 6.0mm lens edge all 360 degrees creates a biological seal that locks the lens in place permanently.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Asymmetric haptic fixation triggers UGH Syndrome (Uveitis-Glaucoma-Hyphema) and chronic vision degradation.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-title-wrap">
+        <span class="step-num">STEP 5</span>
+        <span class="step-name">Retro-Lens Viscoelastic Washout — Vacuuming Away the Dangerous Jelly</span>
+      </div>
+      <span class="step-tool">Tool: Coaxial I/A Handpiece</span>
+    </div>
+    <div class="step-body">
+      <div class="action-banner">
+        <strong>👉 What To Do Right Now:</strong>
+        Take the I/A suction wand. Gently tilt the new acrylic lens with the tip to slip into the pocket behind the lens. Thoroughly vacuum out all the thick cohesive jelly trapped in the back, then clean the front chamber.
+      </div>
+      <div class="why-box">
+        <strong>💡 Why This Step Is Strictly Necessary:</strong>
+        The surgical jelly that protected the eye earlier will cause severe damage if left behind! The microscopic drains of the eye (trabecular meshwork) get plugged up by thick jelly. Fluid cannot escape, causing intraocular pressure to soar past 45 or 50 mmHg within hours of surgery, causing excruciating eye pain, corneal edema, and irreversible blindness from optic nerve ischemia.
+      </div>
+      <div class="hazard-box">
+        <strong>⚠️ Critical Hazard:</strong> Incomplete viscoelastic evacuation is the #1 cause of acute early post-operative glaucoma spikes (&gt;40 mmHg).
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <span>PAL OPTIC SIMULATION SUITE • OPHTHALMIC SURGICAL REFERENCE</span>
+    <span>CONFIDENTIAL CLINICAL EDUCATIONAL MANUAL • PAGE 2 OF 2</span>
+  </div>
+</body>
+</html>

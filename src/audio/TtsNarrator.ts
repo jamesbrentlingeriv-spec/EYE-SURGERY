@@ -5,7 +5,7 @@ export class SurgicalTtsEngine {
   private currentUtterance: SpeechSynthesisUtterance | null = null;
   private selectedVoice: SpeechSynthesisVoice | null = null;
   private isMuted: boolean = false;
-  private isAutoNarrateEnabled: boolean = true;
+  private isAutoNarrateEnabled: boolean = false;
   private speechRate: number = 0.95; // Calm, deliberate surgical speaking rate
   private speechPitch: number = 1.0;
   private speechVolume: number = 1.0;

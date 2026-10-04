@@ -2,27 +2,23 @@
 const CACHE_NAME = 'eyesurg-sim-v1.0';
 
 const PRECACHE_ASSETS = [
-  './',
-  './index.html',
-  './index.css',
-  './assets/index.js',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './images/cataract_eye.jpg',
-  './images/iol_eye.jpg',
-  './images/yag_pco_eye.jpg'
+  '/',
+  '/index.html',
+  '/index.css',
+  '/assets/index.js',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/images/cataract_eye.jpg',
+  '/images/iol_eye.jpg',
+  '/images/yag_pco_eye.jpg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Pre-caching ophthalmic simulator assets');
-      return Promise.allSettled(
-        PRECACHE_ASSETS.map(url =>
-          cache.add(url).catch(err => console.warn('[SW] Cache skipped:', url, err))
-        )
-      );
+      return cache.addAll(PRECACHE_ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
@@ -43,6 +39,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
@@ -51,6 +48,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
+        // Cache new successful GET responses for future offline use
         if (
           networkResponse &&
           networkResponse.status === 200 &&
@@ -63,8 +61,9 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
+        // Fallback for navigation requests
         if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+          return caches.match('/index.html');
         }
       });
     })

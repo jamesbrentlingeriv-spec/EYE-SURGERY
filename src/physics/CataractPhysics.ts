@@ -9,8 +9,30 @@ import {
 
 export class CataractPhysicsEngine {
   public incisions: IncisionPoint[] = [
-    { x: 0.85, y: -0.4, angleRad: -0.45, widthMm: 1.0, depthFraction: 0, type: 'paracentesis', completed: false },
-    { x: 0.95, y: 0.25, angleRad: 0.26, widthMm: 2.4, depthFraction: 0, type: 'clear_corneal', completed: false }
+    {
+      x: 0.85,
+      y: -0.4,
+      angleRad: -0.45,
+      widthMm: 1.0,
+      depthFraction: 0,
+      type: 'paracentesis',
+      completed: false,
+      plane: 0,
+      planeName: 'Ready: 1.0mm MVR at 10:00 limbus',
+      clockPosition: '10:00'
+    },
+    {
+      x: 0.95,
+      y: 0.25,
+      angleRad: 0.26,
+      widthMm: 2.4,
+      depthFraction: 0,
+      type: 'clear_corneal',
+      completed: false,
+      plane: 0,
+      planeName: 'Ready: 2.4mm Tri-Planar Keratome at 1:30',
+      clockPosition: '1:30'
+    }
   ];
 
   public ovdDispersiveCoverage: number = 0; // Endothelial coat: 0 to 100%
@@ -65,12 +87,38 @@ export class CataractPhysicsEngine {
   }
 
   // --- 1. Incision Interactions ---
-  public advanceIncision(type: 'paracentesis' | 'clear_corneal', amount: number = 0.3) {
+  public advanceIncision(type: 'paracentesis' | 'clear_corneal', amount: number = 0.35) {
     const inc = this.incisions.find(i => i.type === type);
     if (!inc) return;
     inc.depthFraction = Math.min(1.0, inc.depthFraction + amount);
+
+    if (type === 'clear_corneal') {
+      if (inc.depthFraction < 0.35) {
+        inc.plane = 1;
+        inc.planeName = 'Plane 1: Vertical Limbal Groove (300 µm)';
+      } else if (inc.depthFraction < 0.7) {
+        inc.plane = 2;
+        inc.planeName = 'Plane 2: Lamellar Stromal Tunnel (1.5–1.75 mm)';
+      } else {
+        inc.plane = 3;
+        inc.planeName = 'Plane 3: Internal Descemet AC Entry (Self-Sealing)';
+      }
+    } else {
+      if (inc.depthFraction < 0.5) {
+        inc.plane = 1;
+        inc.planeName = 'Plane 1: External Corneal Puncture';
+      } else {
+        inc.plane = 2;
+        inc.planeName = 'Plane 2: Parallel Iris Entry into AC (1.0 mm)';
+      }
+    }
+
     if (inc.depthFraction >= 1.0) {
       inc.completed = true;
+      inc.plane = 3;
+      inc.planeName = inc.type === 'clear_corneal'
+        ? '✓ Complete: 2.4 mm Tri-Planar Self-Sealing Port'
+        : '✓ Complete: 1.0 mm Paracentesis Port';
     }
   }
 

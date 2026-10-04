@@ -4,6 +4,7 @@ import {
   PhacoStep,
   IolStep,
   YagStep,
+  MigsStep,
   FluidicsState,
   PatientVitals
 } from '../types/ophthalmic';
@@ -19,7 +20,10 @@ import {
   Download,
   Menu,
   Gauge,
-  Activity
+  Activity,
+  BookOpen,
+  Home,
+  Video
 } from 'lucide-react';
 import { audioEngine } from '../audio/SoundSynthesizer';
 import { InstrumentType } from '../types/ophthalmic';
@@ -29,12 +33,16 @@ interface TopVitalsBarProps {
   phacoStep: PhacoStep;
   iolStep: IolStep;
   yagStep: YagStep;
+  migsStep?: MigsStep;
   fluidics: FluidicsState;
   cde: number;
   vitals: PatientVitals;
   elapsedSeconds: number;
   onOpenReport: () => void;
   onOpenReference: () => void;
+  onOpenGuides?: () => void;
+  onOpenMenu?: () => void;
+  onOpenVideo?: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
   onToggleTools: () => void;
@@ -49,12 +57,16 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
   phacoStep,
   iolStep,
   yagStep,
+  migsStep = 'microscope_and_head_tilt',
   fluidics,
   cde,
   vitals,
   elapsedSeconds,
   onOpenReport,
   onOpenReference,
+  onOpenGuides,
+  onOpenMenu,
+  onOpenVideo,
   isMuted,
   onToggleMute,
   onToggleTools,
@@ -130,14 +142,14 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
       return stepLabels[phacoStep];
     } else if (module === 'iol') {
       const stepLabels: Record<IolStep, string> = {
-        ovd_bag_refill: 'Step 1: Bag Refill with Cohesive OVD',
-        cartridge_insertion: 'Step 2: Cartridge Delivery into Bag',
-        haptic_unfolding: 'Step 3: Leading Haptic Placement',
-        sinskey_dialing: 'Step 4: Sinskey Hook 360° Rotational Centering',
-        viscoelastic_washout: 'Step 5: Retro-lens & AC Viscoelastic Washout'
+        ovd_bag_refill: 'Step 8: Bag Refill with Cohesive OVD',
+        cartridge_insertion: 'Step 9: Cartridge Delivery into Bag',
+        haptic_unfolding: 'Step 10: Leading Haptic Placement',
+        sinskey_dialing: 'Step 11: Sinskey Hook 360° Rotational Centering',
+        viscoelastic_washout: 'Step 12: Retro-lens & AC Viscoelastic Washout'
       };
       return stepLabels[iolStep];
-    } else {
+    } else if (module === 'yag') {
       const stepLabels: Record<YagStep, string> = {
         contact_lens_placement: 'Step 1: Abraham Capsulotomy Lens Placement',
         aiming_focus: 'Step 2: Dual HeNe Aiming Beam Convergence',
@@ -146,13 +158,36 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
         post_yag_assessment: 'Step 5: PCO Visual Axis Clearance & IOP Check'
       };
       return stepLabels[yagStep];
+    } else {
+      const stepLabels: Record<MigsStep, string> = {
+        microscope_and_head_tilt: 'Step 1: Microscope (40°) & Head Tilt (35°)',
+        gonioprism_placement: 'Step 2: Direct Swan-Jacob Gonioprism',
+        viscoelastic_angle_deepening: 'Step 3: Cohesive OVD Angle Deepening',
+        stent_1_deployment: 'Step 4: Micro-Stent 1 Insertion (2:30)',
+        stent_2_deployment: 'Step 5: Micro-Stent 2 Insertion (4:00)',
+        blood_reflux_and_washout: 'Step 6: Episcleral Blood Reflux & Washout'
+      };
+      return stepLabels[migsStep];
     }
   };
 
   return (
     <header className="h-14 bg-[#0a101d] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2">
-      {/* Left: Hamburger Tools Menu + Branding */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      {/* Left: Main Menu Hub + Hamburger Tools Menu + Branding */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Main Menu Hub Button */}
+        {onOpenMenu && (
+          <button
+            onClick={onOpenMenu}
+            title="Return to Main Surgery Selection Menu"
+            aria-label="Return to Main Surgery Menu"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#0e1726] hover:bg-[#16253c] border-cyan-800/80 text-cyan-300 hover:border-cyan-500"
+          >
+            <Home className="w-4 h-4 shrink-0 text-cyan-400" />
+            <span className="text-[11px] sm:text-xs hidden xs:inline">Menu</span>
+          </button>
+        )}
+
         {/* Hamburger Menu Button for Surgical Tools */}
         <button
           onClick={onToggleTools}
@@ -278,6 +313,32 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
         </button>
+
+        {/* Real Surgical Video Overlay Button */}
+        {onOpenVideo && (
+          <button
+            onClick={onOpenVideo}
+            title="Open Real Surgical Video Overlay / Footage"
+            aria-label="Surgical Video Overlay"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-600/80 text-sky-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+          >
+            <Video className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">Video</span>
+          </button>
+        )}
+
+        {/* Surgical PDFs Guide */}
+        {onOpenGuides && (
+          <button
+            onClick={onOpenGuides}
+            title="Download & View Ophthalmic Surgery PDF Guides"
+            aria-label="Surgical PDF Guides"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/80 text-cyan-300 font-semibold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">PDF Guides</span>
+          </button>
+        )}
 
         {/* Clinical Guide */}
         <button
