@@ -87,7 +87,7 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
   };
 
   return (
-    <div className="absolute top-2 left-2 right-2 sm:right-auto sm:top-3 sm:left-3 sm:max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300">
+    <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 w-[95%] sm:w-[90%] max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300">
       {/* Minimized Pill View */}
       {isMinimized ? (
         <div className="p-2 sm:p-2.5 flex items-center justify-between gap-2">

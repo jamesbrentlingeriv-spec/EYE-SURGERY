@@ -24610,6 +24610,8 @@ class EventDispatcher {
 
 const _lut = [ '00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '0a', '0b', '0c', '0d', '0e', '0f', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1a', '1b', '1c', '1d', '1e', '1f', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '2a', '2b', '2c', '2d', '2e', '2f', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '3a', '3b', '3c', '3d', '3e', '3f', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '4a', '4b', '4c', '4d', '4e', '4f', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '5a', '5b', '5c', '5d', '5e', '5f', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '6a', '6b', '6c', '6d', '6e', '6f', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '7a', '7b', '7c', '7d', '7e', '7f', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '8a', '8b', '8c', '8d', '8e', '8f', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '9a', '9b', '9c', '9d', '9e', '9f', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'aa', 'ab', 'ac', 'ad', 'ae', 'af', 'b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9', 'ba', 'bb', 'bc', 'bd', 'be', 'bf', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'ca', 'cb', 'cc', 'cd', 'ce', 'cf', 'd0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'da', 'db', 'dc', 'dd', 'de', 'df', 'e0', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'e9', 'ea', 'eb', 'ec', 'ed', 'ee', 'ef', 'f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'fa', 'fb', 'fc', 'fd', 'fe', 'ff' ];
 
+let _seed = 1234567;
+
 
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
@@ -24669,6 +24671,48 @@ function euclideanModulo( n, m ) {
 }
 
 /**
+ * Performs a linear mapping from range `<a1, a2>` to range `<b1, b2>`
+ * for the given value. `a2` must be greater than `a1`.
+ *
+ * @param {number} x - The value to be mapped.
+ * @param {number} a1 - Minimum value for range A.
+ * @param {number} a2 - Maximum value for range A.
+ * @param {number} b1 - Minimum value for range B.
+ * @param {number} b2 - Maximum value for range B.
+ * @return {number} The mapped value.
+ */
+function mapLinear( x, a1, a2, b1, b2 ) {
+
+	return b1 + ( x - a1 ) * ( b2 - b1 ) / ( a2 - a1 );
+
+}
+
+/**
+ * Returns the percentage in the closed interval `[0, 1]` of the given value
+ * between the start and end point.
+ *
+ * @param {number} x - The start point
+ * @param {number} y - The end point.
+ * @param {number} value - A value between start and end.
+ * @return {number} The interpolation factor.
+ */
+function inverseLerp( x, y, value ) {
+
+	// https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/inverse-lerp-a-super-useful-yet-often-overlooked-function-r5230/
+
+	if ( x !== y ) {
+
+		return ( value - x ) / ( y - x );
+
+	} else {
+
+		return 0;
+
+	}
+
+}
+
+/**
  * Returns a value linearly interpolated from two known points based on the given interval -
  * `t = 0` will return `x` and `t = 1` will return `y`.
  *
@@ -24680,6 +24724,265 @@ function euclideanModulo( n, m ) {
 function lerp( x, y, t ) {
 
 	return ( 1 - t ) * x + t * y;
+
+}
+
+/**
+ * Smoothly interpolate a number from `x` to `y` in  a spring-like manner using a delta
+ * time to maintain frame rate independent movement. For details, see
+ * [Frame rate independent damping using lerp](http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/).
+ *
+ * @param {number} x - The current point.
+ * @param {number} y - The target point.
+ * @param {number} lambda - A higher lambda value will make the movement more sudden,
+ * and a lower value will make the movement more gradual.
+ * @param {number} dt - Delta time in seconds.
+ * @return {number} The interpolated value.
+ */
+function damp( x, y, lambda, dt ) {
+
+	return lerp( x, y, 1 - Math.exp( - lambda * dt ) );
+
+}
+
+/**
+ * Returns a value that alternates between `0` and the given `length` parameter.
+ *
+ * @param {number} x - The value to pingpong.
+ * @param {number} [length=1] - The positive value the function will pingpong to.
+ * @return {number} The alternated value.
+ */
+function pingpong( x, length = 1 ) {
+
+	// https://www.desmos.com/calculator/vcsjnyz7x4
+
+	return length - Math.abs( euclideanModulo( x, length * 2 ) - length );
+
+}
+
+/**
+ * Returns a value in the range `[0,1]` that represents the percentage that `x` has
+ * moved between `min` and `max`, but smoothed or slowed down the closer `x` is to
+ * the `min` and `max`.
+ *
+ * See [Smoothstep](http://en.wikipedia.org/wiki/Smoothstep) for more details.
+ *
+ * @param {number} x - The value to evaluate based on its position between `min` and `max`.
+ * @param {number} min - The min value. Any `x` value below `min` will be `0`. `min` must be lower than `max`.
+ * @param {number} max - The max value. Any `x` value above `max` will be `1`. `max` must be greater than `min`.
+ * @return {number} The alternated value.
+ */
+function smoothstep( x, min, max ) {
+
+	if ( x <= min ) return 0;
+	if ( x >= max ) return 1;
+
+	x = ( x - min ) / ( max - min );
+
+	return x * x * ( 3 - 2 * x );
+
+}
+
+/**
+ * A [variation on smoothstep](https://en.wikipedia.org/wiki/Smoothstep#Variations)
+ * that has zero 1st and 2nd order derivatives at `x=0` and `x=1`.
+ *
+ * @param {number} x - The value to evaluate based on its position between `min` and `max`.
+ * @param {number} min - The min value. Any `x` value below `min` will be `0`. `min` must be lower than `max`.
+ * @param {number} max - The max value. Any `x` value above `max` will be `1`. `max` must be greater than `min`.
+ * @return {number} The alternated value.
+ */
+function smootherstep( x, min, max ) {
+
+	if ( x <= min ) return 0;
+	if ( x >= max ) return 1;
+
+	x = ( x - min ) / ( max - min );
+
+	return x * x * x * ( x * ( x * 6 - 15 ) + 10 );
+
+}
+
+/**
+ * Returns a random integer from `<low, high>` interval.
+ *
+ * @param {number} low - The lower value boundary.
+ * @param {number} high - The upper value boundary
+ * @return {number} A random integer.
+ */
+function randInt( low, high ) {
+
+	return low + Math.floor( Math.random() * ( high - low + 1 ) );
+
+}
+
+/**
+ * Returns a random float from `<low, high>` interval.
+ *
+ * @param {number} low - The lower value boundary.
+ * @param {number} high - The upper value boundary
+ * @return {number} A random float.
+ */
+function randFloat( low, high ) {
+
+	return low + Math.random() * ( high - low );
+
+}
+
+/**
+ * Returns a random integer from `<-range/2, range/2>` interval.
+ *
+ * @param {number} range - Defines the value range.
+ * @return {number} A random float.
+ */
+function randFloatSpread( range ) {
+
+	return range * ( 0.5 - Math.random() );
+
+}
+
+/**
+ * Returns a deterministic pseudo-random float in the interval `[0, 1]`.
+ *
+ * @param {number} [s] - The integer seed.
+ * @return {number} A random float.
+ */
+function seededRandom( s ) {
+
+	if ( s !== undefined ) _seed = s;
+
+	// Mulberry32 generator
+
+	let t = _seed += 0x6D2B79F5;
+
+	t = Math.imul( t ^ t >>> 15, t | 1 );
+
+	t ^= t + Math.imul( t ^ t >>> 7, t | 61 );
+
+	return ( ( t ^ t >>> 14 ) >>> 0 ) / 4294967296;
+
+}
+
+/**
+ * Converts degrees to radians.
+ *
+ * @param {number} degrees - A value in degrees.
+ * @return {number} The converted value in radians.
+ */
+function degToRad( degrees ) {
+
+	return degrees * DEG2RAD;
+
+}
+
+/**
+ * Converts radians to degrees.
+ *
+ * @param {number} radians - A value in radians.
+ * @return {number} The converted value in degrees.
+ */
+function radToDeg( radians ) {
+
+	return radians * RAD2DEG;
+
+}
+
+/**
+ * Returns `true` if the given integer is a power of two.
+ *
+ * @param {number} value - The value to check.
+ * @return {boolean} Whether the given integer is a power of two or not.
+ */
+function isPowerOfTwo( value ) {
+
+	return value > 0 && Number.isInteger( value ) && 2 ** Math.round( Math.log2( value ) ) === value;
+
+}
+
+/**
+ * Returns the smallest power of two that is greater than or equal to the given number.
+ *
+ * @param {number} value - The value to find a POT for. Must be greater than `0`.
+ * @return {number} The smallest power of two that is greater than or equal to the given number.
+ */
+function ceilPowerOfTwo( value ) {
+
+	return Math.pow( 2, Math.ceil( Math.log( value ) / Math.LN2 ) );
+
+}
+
+/**
+ * Returns the largest power of two that is less than or equal to the given number.
+ *
+ * @param {number} value - The value to find a POT for. Must be greater than `0`.
+ * @return {number} The largest power of two that is less than or equal to the given number.
+ */
+function floorPowerOfTwo( value ) {
+
+	return Math.pow( 2, Math.floor( Math.log( value ) / Math.LN2 ) );
+
+}
+
+/**
+ * Sets the given quaternion from the [Intrinsic Proper Euler Angles](https://en.wikipedia.org/wiki/Euler_angles)
+ * defined by the given angles and order.
+ *
+ * Rotations are applied to the axes in the order specified by order:
+ * rotation by angle `a` is applied first, then by angle `b`, then by angle `c`.
+ *
+ * @param {Quaternion} q - The quaternion to set.
+ * @param {number} a - The rotation applied to the first axis, in radians.
+ * @param {number} b - The rotation applied to the second axis, in radians.
+ * @param {number} c - The rotation applied to the third axis, in radians.
+ * @param {('XYX'|'XZX'|'YXY'|'YZY'|'ZXZ'|'ZYZ')} order - A string specifying the axes order.
+ */
+function setQuaternionFromProperEuler( q, a, b, c, order ) {
+
+	const cos = Math.cos;
+	const sin = Math.sin;
+
+	const c2 = cos( b / 2 );
+	const s2 = sin( b / 2 );
+
+	const c13 = cos( ( a + c ) / 2 );
+	const s13 = sin( ( a + c ) / 2 );
+
+	const c1_3 = cos( ( a - c ) / 2 );
+	const s1_3 = sin( ( a - c ) / 2 );
+
+	const c3_1 = cos( ( c - a ) / 2 );
+	const s3_1 = sin( ( c - a ) / 2 );
+
+	switch ( order ) {
+
+		case 'XYX':
+			q.set( c2 * s13, s2 * c1_3, s2 * s1_3, c2 * c13 );
+			break;
+
+		case 'YZY':
+			q.set( s2 * s1_3, c2 * s13, s2 * c1_3, c2 * c13 );
+			break;
+
+		case 'ZXZ':
+			q.set( s2 * c1_3, s2 * s1_3, c2 * s13, c2 * c13 );
+			break;
+
+		case 'XZX':
+			q.set( c2 * s13, s2 * s3_1, s2 * c3_1, c2 * c13 );
+			break;
+
+		case 'YXY':
+			q.set( s2 * c3_1, c2 * s13, s2 * s3_1, c2 * c13 );
+			break;
+
+		case 'ZYZ':
+			q.set( s2 * s3_1, s2 * c3_1, c2 * s13, c2 * c13 );
+			break;
+
+		default:
+			warn( 'MathUtils: .setQuaternionFromProperEuler() encountered an unknown order: ' + order );
+
+	}
 
 }
 
@@ -24785,7 +25088,249 @@ function normalize( value, array ) {
  * @hideconstructor
  */
 const MathUtils = {
-	DEG2RAD: DEG2RAD};
+	DEG2RAD: DEG2RAD,
+	RAD2DEG: RAD2DEG,
+	/**
+	 * Generate a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)
+	 * (universally unique identifier).
+	 *
+	 * @static
+	 * @method
+	 * @return {string} The UUID.
+	 */
+	generateUUID: generateUUID,
+	/**
+	 * Clamps the given value between min and max.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The value to clamp.
+	 * @param {number} min - The min value.
+	 * @param {number} max - The max value.
+	 * @return {number} The clamped value.
+	 */
+	clamp: clamp,
+	/**
+	 * Computes the Euclidean modulo of the given parameters that
+	 * is `( ( n % m ) + m ) % m`.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} n - The first parameter.
+	 * @param {number} m - The second parameter.
+	 * @return {number} The Euclidean modulo.
+	 */
+	euclideanModulo: euclideanModulo,
+	/**
+	 * Performs a linear mapping from range `<a1, a2>` to range `<b1, b2>`
+	 * for the given value.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The value to be mapped.
+	 * @param {number} a1 - Minimum value for range A.
+	 * @param {number} a2 - Maximum value for range A.
+	 * @param {number} b1 - Minimum value for range B.
+	 * @param {number} b2 - Maximum value for range B.
+	 * @return {number} The mapped value.
+	 */
+	mapLinear: mapLinear,
+	/**
+	 * Returns the percentage in the closed interval `[0, 1]` of the given value
+	 * between the start and end point.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The start point
+	 * @param {number} y - The end point.
+	 * @param {number} value - A value between start and end.
+	 * @return {number} The interpolation factor.
+	 */
+	inverseLerp: inverseLerp,
+	/**
+	 * Returns a value linearly interpolated from two known points based on the given interval -
+	 * `t = 0` will return `x` and `t = 1` will return `y`.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The start point
+	 * @param {number} y - The end point.
+	 * @param {number} t - The interpolation factor in the closed interval `[0, 1]`.
+	 * @return {number} The interpolated value.
+	 */
+	lerp: lerp,
+	/**
+	 * Smoothly interpolate a number from `x` to `y` in  a spring-like manner using a delta
+	 * time to maintain frame rate independent movement. For details, see
+	 * [Frame rate independent damping using lerp](http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/).
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The current point.
+	 * @param {number} y - The target point.
+	 * @param {number} lambda - A higher lambda value will make the movement more sudden,
+	 * and a lower value will make the movement more gradual.
+	 * @param {number} dt - Delta time in seconds.
+	 * @return {number} The interpolated value.
+	 */
+	damp: damp,
+	/**
+	 * Returns a value that alternates between `0` and the given `length` parameter.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The value to pingpong.
+	 * @param {number} [length=1] - The positive value the function will pingpong to.
+	 * @return {number} The alternated value.
+	 */
+	pingpong: pingpong,
+	/**
+	 * Returns a value in the range `[0,1]` that represents the percentage that `x` has
+	 * moved between `min` and `max`, but smoothed or slowed down the closer `x` is to
+	 * the `min` and `max`.
+	 *
+	 * See [Smoothstep](http://en.wikipedia.org/wiki/Smoothstep) for more details.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The value to evaluate based on its position between min and max.
+	 * @param {number} min - The min value. Any x value below min will be `0`.
+	 * @param {number} max - The max value. Any x value above max will be `1`.
+	 * @return {number} The alternated value.
+	 */
+	smoothstep: smoothstep,
+	/**
+	 * A [variation on smoothstep](https://en.wikipedia.org/wiki/Smoothstep#Variations)
+	 * that has zero 1st and 2nd order derivatives at x=0 and x=1.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} x - The value to evaluate based on its position between min and max.
+	 * @param {number} min - The min value. Any x value below min will be `0`.
+	 * @param {number} max - The max value. Any x value above max will be `1`.
+	 * @return {number} The alternated value.
+	 */
+	smootherstep: smootherstep,
+	/**
+	 * Returns a random integer from `<low, high>` interval.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} low - The lower value boundary.
+	 * @param {number} high - The upper value boundary
+	 * @return {number} A random integer.
+	 */
+	randInt: randInt,
+	/**
+	 * Returns a random float from `<low, high>` interval.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} low - The lower value boundary.
+	 * @param {number} high - The upper value boundary
+	 * @return {number} A random float.
+	 */
+	randFloat: randFloat,
+	/**
+	 * Returns a random integer from `<-range/2, range/2>` interval.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} range - Defines the value range.
+	 * @return {number} A random float.
+	 */
+	randFloatSpread: randFloatSpread,
+	/**
+	 * Returns a deterministic pseudo-random float in the interval `[0, 1]`.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} [s] - The integer seed.
+	 * @return {number} A random float.
+	 */
+	seededRandom: seededRandom,
+	/**
+	 * Converts degrees to radians.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} degrees - A value in degrees.
+	 * @return {number} The converted value in radians.
+	 */
+	degToRad: degToRad,
+	/**
+	 * Converts radians to degrees.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} radians - A value in radians.
+	 * @return {number} The converted value in degrees.
+	 */
+	radToDeg: radToDeg,
+	/**
+	 * Returns `true` if the given number is a power of two.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The value to check.
+	 * @return {boolean} Whether the given number is a power of two or not.
+	 */
+	isPowerOfTwo: isPowerOfTwo,
+	/**
+	 * Returns the smallest power of two that is greater than or equal to the given number.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The value to find a POT for.
+	 * @return {number} The smallest power of two that is greater than or equal to the given number.
+	 */
+	ceilPowerOfTwo: ceilPowerOfTwo,
+	/**
+	 * Returns the largest power of two that is less than or equal to the given number.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The value to find a POT for.
+	 * @return {number} The largest power of two that is less than or equal to the given number.
+	 */
+	floorPowerOfTwo: floorPowerOfTwo,
+	/**
+	 * Sets the given quaternion from the [Intrinsic Proper Euler Angles](https://en.wikipedia.org/wiki/Euler_angles)
+	 * defined by the given angles and order.
+	 *
+	 * Rotations are applied to the axes in the order specified by order:
+	 * rotation by angle `a` is applied first, then by angle `b`, then by angle `c`.
+	 *
+	 * @static
+	 * @method
+	 * @param {Quaternion} q - The quaternion to set.
+	 * @param {number} a - The rotation applied to the first axis, in radians.
+	 * @param {number} b - The rotation applied to the second axis, in radians.
+	 * @param {number} c - The rotation applied to the third axis, in radians.
+	 * @param {('XYX'|'XZX'|'YXY'|'YZY'|'ZXZ'|'ZYZ')} order - A string specifying the axes order.
+	 */
+	setQuaternionFromProperEuler: setQuaternionFromProperEuler,
+	/**
+	 * Normalizes the given value according to the given typed array.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The float value in the range `[0,1]` to normalize.
+	 * @param {TypedArray} array - The typed array that defines the data type of the value.
+	 * @return {number} The normalize value.
+	 */
+	normalize: normalize,
+	/**
+	 * Denormalizes the given value according to the given typed array.
+	 *
+	 * @static
+	 * @method
+	 * @param {number} value - The value to denormalize.
+	 * @param {TypedArray} array - The typed array that defines the data type of the value.
+	 * @return {number} The denormalize (float) value in the range `[0,1]`.
+	 */
+	denormalize: denormalize
+};
 
 /**
  * Class representing a 2D vector. A 2D vector is an ordered pair of numbers
@@ -44718,74 +45263,6 @@ function checkIntersection( object, raycaster, ray, thresholdSq, a, b, i ) {
 
 }
 
-const _start = /*@__PURE__*/ new Vector3();
-const _end = /*@__PURE__*/ new Vector3();
-
-/**
- * A series of lines drawn between pairs of vertices.
- *
- * @augments Line
- */
-class LineSegments extends Line {
-
-	/**
-	 * Constructs a new line segments.
-	 *
-	 * @param {BufferGeometry} [geometry] - The line geometry.
-	 * @param {Material|Array<Material>} [material] - The line material.
-	 */
-	constructor( geometry, material ) {
-
-		super( geometry, material );
-
-		/**
-		 * This flag can be used for type testing.
-		 *
-		 * @type {boolean}
-		 * @readonly
-		 * @default true
-		 */
-		this.isLineSegments = true;
-
-		this.type = 'LineSegments';
-
-	}
-
-	computeLineDistances() {
-
-		const geometry = this.geometry;
-
-		// we assume non-indexed geometry
-
-		if ( geometry.index === null ) {
-
-			const positionAttribute = geometry.attributes.position;
-			const lineDistances = [];
-
-			for ( let i = 0, l = positionAttribute.count; i < l; i += 2 ) {
-
-				_start.fromBufferAttribute( positionAttribute, i );
-				_end.fromBufferAttribute( positionAttribute, i + 1 );
-
-				lineDistances[ i ] = ( i === 0 ) ? 0 : lineDistances[ i - 1 ];
-				lineDistances[ i + 1 ] = lineDistances[ i ] + _start.distanceTo( _end );
-
-			}
-
-			geometry.setAttribute( 'lineDistance', new Float32BufferAttribute( lineDistances, 1 ) );
-
-		} else {
-
-			warn( 'LineSegments.computeLineDistances(): Computation only possible with non-indexed BufferGeometry.' );
-
-		}
-
-		return this;
-
-	}
-
-}
-
 /**
  * A continuous line. This is nearly the same as {@link Line} the only difference
  * is that the last vertex is connected with the first vertex in order to close
@@ -50397,606 +50874,6 @@ class MeshStandardMaterial extends Material {
 		this.flatShading = source.flatShading;
 
 		this.fog = source.fog;
-
-		return this;
-
-	}
-
-}
-
-/**
- * An extension of the {@link MeshStandardMaterial}, providing more advanced
- * physically-based rendering properties:
- *
- * - Anisotropy: Ability to represent the anisotropic property of materials
- * as observable with brushed metals.
- * - Clearcoat: Some materials — like car paints, carbon fiber, and wet surfaces — require
- * a clear, reflective layer on top of another layer that may be irregular or rough.
- * Clearcoat approximates this effect, without the need for a separate transparent surface.
- * - Iridescence: Allows to render the effect where hue varies  depending on the viewing
- * angle and illumination angle. This can be seen on soap bubbles, oil films, or on the
- * wings of many insects.
- * - Physically-based transparency: One limitation of {@link Material#opacity} is that highly
- * transparent materials are less reflective. Physically-based transmission provides a more
- * realistic option for thin, transparent surfaces like glass.
- * - Advanced reflectivity: More flexible reflectivity for non-metallic materials.
- * - Retroreflection: Redirects specular light back toward the light source for
- * safety materials like road markings and reflective tape.
- * - Sheen: Can be used for representing cloth and fabric materials.
- *
- * As a result of these complex shading features, `MeshPhysicalMaterial` has a
- * higher performance cost, per pixel, than other three.js materials. Most
- * effects are disabled by default, and add cost as they are enabled. For
- * best results, always specify an environment map when using this material.
- *
- * @augments MeshStandardMaterial
- * @demo scenes/material-browser.html#MeshPhysicalMaterial
- */
-class MeshPhysicalMaterial extends MeshStandardMaterial {
-
-	/**
-	 * Constructs a new mesh physical material.
-	 *
-	 * @param {Object} [parameters] - An object with one or more properties
-	 * defining the material's appearance. Any property of the material
-	 * (including any property from inherited materials) can be passed
-	 * in here. Color values can be passed any type of value accepted
-	 * by {@link Color#set}.
-	 */
-	constructor( parameters ) {
-
-		super();
-
-		/**
-		 * This flag can be used for type testing.
-		 *
-		 * @type {boolean}
-		 * @readonly
-		 * @default true
-		 */
-		this.isMeshPhysicalMaterial = true;
-
-		this.defines = {
-
-			'STANDARD': '',
-			'PHYSICAL': ''
-
-		};
-
-		this.type = 'MeshPhysicalMaterial';
-
-		/**
-		 * The rotation of the anisotropy in tangent, bitangent space, measured in radians
-		 * counter-clockwise from the tangent. When `anisotropyMap` is present, this
-		 * property provides additional rotation to the vectors in the texture.
-		 *
-		 * @type {number}
-		 * @default 1
-		 */
-		this.anisotropyRotation = 0;
-
-		/**
-		 * Red and green channels represent the anisotropy direction in `[-1, 1]` tangent,
-		 * bitangent space, to be rotated by `anisotropyRotation`. The blue channel
-		 * contains strength as `[0, 1]` to be multiplied by `anisotropy`.
-		 *
-		 * `anisotropyMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.anisotropyMap = null;
-
-		/**
-		 * The red channel of this texture is multiplied against `clearcoat`,
-		 * for per-pixel control over a coating's intensity.
-		 *
-		 * `clearcoatMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.clearcoatMap = null;
-
-		/**
-		 * Roughness of the clear coat layer, from `0.0` to `1.0`.
-		 *
-		 * @type {number}
-		 * @default 0
-		 */
-		this.clearcoatRoughness = 0.0;
-
-		/**
-		 * The green channel of this texture is multiplied against
-		 * `clearcoatRoughness`, for per-pixel control over a coating's roughness.
-		 *
-		 * `clearcoatRoughnessMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.clearcoatRoughnessMap = null;
-
-		/**
-		 * How much `clearcoatNormalMap` affects the clear coat layer, from
-		 * `(0,0)` to `(1,1)`.
-		 *
-		 * @type {Vector2}
-		 * @default (1,1)
-		 */
-		this.clearcoatNormalScale = new Vector2( 1, 1 );
-
-		/**
-		 * Can be used to enable independent normals for the clear coat layer.
-		 *
-		 * `clearcoatNormalMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.clearcoatNormalMap = null;
-
-		/**
-		 * Index-of-refraction for non-metallic materials, from `1.0` to `2.333`.
-		 *
-		 * @type {number}
-		 * @default 1.5
-		 */
-		this.ior = 1.5;
-
-		/**
-		 * Degree of reflectivity, from `0.0` to `1.0`. Default is `0.5`, which
-		 * corresponds to an index-of-refraction of `1.5`.
-		 *
-		 * This models the reflectivity of non-metallic materials. It has no effect
-		 * when `metalness` is `1.0`
-		 *
-		 * @name MeshPhysicalMaterial#reflectivity
-		 * @type {number}
-		 * @default 0.5
-		 */
-		Object.defineProperty( this, 'reflectivity', {
-			get: function () {
-
-				return ( clamp( 2.5 * ( this.ior - 1 ) / ( this.ior + 1 ), 0, 1 ) );
-
-			},
-			set: function ( reflectivity ) {
-
-				this.ior = ( 1 + 0.4 * reflectivity ) / ( 1 - 0.4 * reflectivity );
-
-			}
-		} );
-
-		/**
-		 * The red channel of this texture is multiplied against `iridescence`, for per-pixel
-		 * control over iridescence.
-		 *
-		 * `iridescenceMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.iridescenceMap = null;
-
-		/**
-		 * Strength of the iridescence RGB color shift effect, represented by an index-of-refraction.
-		 * Between `1.0` to `2.333`.
-		 *
-		 * @type {number}
-		 * @default 1.3
-		 */
-		this.iridescenceIOR = 1.3;
-
-		/**
-		 *Array of exactly 2 elements, specifying minimum and maximum thickness of the iridescence layer.
-		 Thickness of iridescence layer has an equivalent effect of the one `thickness` has on `ior`.
-		 *
-		 * @type {Array<number,number>}
-		 * @default [100,400]
-		 */
-		this.iridescenceThicknessRange = [ 100, 400 ];
-
-		/**
-		 * A texture that defines the thickness of the iridescence layer, stored in the green channel.
-		 * Minimum and maximum values of thickness are defined by `iridescenceThicknessRange` array:
-		 * - `0.0` in the green channel will result in thickness equal to first element of the array.
-		 * - `1.0` in the green channel will result in thickness equal to second element of the array.
-		 * - Values in-between will linearly interpolate between the elements of the array.
-		 *
-		 * `iridescenceThicknessMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.iridescenceThicknessMap = null;
-
-		/**
-		 * The sheen tint.
-		 *
-		 * @type {Color}
-		 * @default (0,0,0)
-		 */
-		this.sheenColor = new Color( 0x000000 );
-
-		/**
-		 * The RGB channels of this texture are multiplied against  `sheenColor`, for per-pixel control
-		 * over sheen tint.
-		 *
-		 * `sheenColorMap` represents color data, and the texture must be assigned a
-		 * {@link Texture#colorSpace}. Most `sheenColorMap` textures set
-		 * `texture.colorSpace = SRGBColorSpace`.
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.sheenColorMap = null;
-
-		/**
-		 * Roughness of the sheen layer, from `0.0` to `1.0`.
-		 *
-		 * @type {number}
-		 * @default 1
-		 */
-		this.sheenRoughness = 1.0;
-
-		/**
-		 * The alpha channel of this texture is multiplied against `sheenRoughness`, for per-pixel control
-		 * over sheen roughness.
-		 *
-		 * `sheenRoughnessMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.sheenRoughnessMap = null;
-
-		/**
-		 * The red channel of this texture is multiplied against `transmission`, for per-pixel control over
-		 * optical transparency.
-		 *
-		 * `transmissionMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.transmissionMap = null;
-
-		/**
-		 * The thickness of the volume beneath the surface. The value is given in the
-		 * coordinate space of the mesh. If the value is `0` the material is
-		 * thin-walled. Otherwise the material is a volume boundary.
-		 *
-		 * @type {number}
-		 * @default 0
-		 */
-		this.thickness = 0;
-
-		/**
-		 * A texture that defines the thickness, stored in the green channel. This will
-		 * be multiplied by `thickness`.
-		 *
-		 * `thicknessMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.thicknessMap = null;
-
-		/**
-		 * Density of the medium given as the average distance that light travels in
-		 * the medium before interacting with a particle. The value is given in world
-		 * space units, and must be greater than zero.
-		 *
-		 * @type {number}
-		 * @default Infinity
-		 */
-		this.attenuationDistance = Infinity;
-
-		/**
-		 * The color that white light turns into due to absorption when reaching the
-		 * attenuation distance.
-		 *
-		 * @type {Color}
-		 * @default (1,1,1)
-		 */
-		this.attenuationColor = new Color( 1, 1, 1 );
-
-		/**
-		 * A float that scales the amount of specular reflection for non-metals only.
-		 * When set to zero, the model is effectively Lambertian. From `0.0` to `1.0`.
-		 *
-		 * @type {number}
-		 * @default 1
-		 */
-		this.specularIntensity = 1.0;
-
-		/**
-		 * The alpha channel of this texture is multiplied against `specularIntensity`,
-		 * for per-pixel control over specular intensity.
-		 *
-		 * `specularIntensityMap` represents non-color data. Any texture assigned must have
-		 * `texture.colorSpace = NoColorSpace` (default).
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.specularIntensityMap = null;
-
-		/**
-		 * Tints the specular reflection at normal incidence for non-metals only.
-		 *
-		 * @type {Color}
-		 * @default (1,1,1)
-		 */
-		this.specularColor = new Color( 1, 1, 1 );
-
-		/**
-		 * The RGB channels of this texture are multiplied against `specularColor`,
-		 * for per-pixel control over specular color.
-		 *
-		 * `specularColorMap` represents color data, and the texture must be assigned a
-		 * {@link Texture#colorSpace}. Most `specularColorMap` textures set
-		 * `texture.colorSpace = SRGBColorSpace`.
-		 *
-		 * @type {?Texture}
-		 * @default null
-		 */
-		this.specularColorMap = null;
-
-		this._anisotropy = 0;
-		this._clearcoat = 0;
-		this._dispersion = 0;
-		this._iridescence = 0;
-		this._retroreflectivity = 0;
-		this._sheen = 0.0;
-		this._transmission = 0;
-
-		this.setValues( parameters );
-
-	}
-
-	/**
-	 * The anisotropy strength, from `0.0` to `1.0`.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get anisotropy() {
-
-		return this._anisotropy;
-
-	}
-
-	set anisotropy( value ) {
-
-		if ( this._anisotropy > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._anisotropy = value;
-
-	}
-
-	/**
-	 * Represents the intensity of the clear coat layer, from `0.0` to `1.0`. Use
-	 * clear coat related properties to enable multilayer materials that have a
-	 * thin translucent layer over the base layer.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get clearcoat() {
-
-		return this._clearcoat;
-
-	}
-
-	set clearcoat( value ) {
-
-		if ( this._clearcoat > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._clearcoat = value;
-
-	}
-	/**
-	 * The intensity of the iridescence layer, simulating RGB color shift based on the angle between
-	 * the surface and the viewer, from `0.0` to `1.0`.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get iridescence() {
-
-		return this._iridescence;
-
-	}
-
-	set iridescence( value ) {
-
-		if ( this._iridescence > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._iridescence = value;
-
-	}
-
-	/**
-	 * Defines the strength of the angular separation of colors (chromatic aberration) transmitting
-	 * through a relatively clear volume. Any value zero or larger is valid, the typical range of
-	 * realistic values is `[0, 1]`. This property can be only be used with transmissive objects.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get dispersion() {
-
-		return this._dispersion;
-
-	}
-
-	set dispersion( value ) {
-
-		if ( this._dispersion > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._dispersion = value;
-
-	}
-
-	/**
-	 * The strength of retroreflection, from `0.0` to `1.0`. A value of `1.0`
-	 * evaluates the material's microfacet reflection with the view direction
-	 * reflected about the surface normal, redirecting the specular lobe back
-	 * toward the light source.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get retroreflectivity() {
-
-		return this._retroreflectivity;
-
-	}
-
-	set retroreflectivity( value ) {
-
-		if ( this._retroreflectivity > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._retroreflectivity = value;
-
-	}
-
-	/**
-	 * The intensity of the sheen layer, from `0.0` to `1.0`.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get sheen() {
-
-		return this._sheen;
-
-	}
-
-	set sheen( value ) {
-
-		if ( this._sheen > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._sheen = value;
-
-	}
-
-	/**
-	 * Degree of transmission (or optical transparency), from `0.0` to `1.0`.
-	 *
-	 * Thin, transparent or semitransparent, plastic or glass materials remain
-	 * largely reflective even if they are fully transmissive. The transmission
-	 * property can be used to model these materials.
-	 *
-	 * When transmission is non-zero, `opacity` should be  set to `1`.
-	 *
-	 * @type {number}
-	 * @default 0
-	 */
-	get transmission() {
-
-		return this._transmission;
-
-	}
-
-	set transmission( value ) {
-
-		if ( this._transmission > 0 !== value > 0 ) {
-
-			this.version ++;
-
-		}
-
-		this._transmission = value;
-
-	}
-
-	copy( source ) {
-
-		super.copy( source );
-
-		this.defines = {
-
-			'STANDARD': '',
-			'PHYSICAL': ''
-
-		};
-
-		this.anisotropy = source.anisotropy;
-		this.anisotropyRotation = source.anisotropyRotation;
-		this.anisotropyMap = source.anisotropyMap;
-
-		this.clearcoat = source.clearcoat;
-		this.clearcoatMap = source.clearcoatMap;
-		this.clearcoatRoughness = source.clearcoatRoughness;
-		this.clearcoatRoughnessMap = source.clearcoatRoughnessMap;
-		this.clearcoatNormalMap = source.clearcoatNormalMap;
-		this.clearcoatNormalScale.copy( source.clearcoatNormalScale );
-
-		this.dispersion = source.dispersion;
-		this.ior = source.ior;
-
-		this.iridescence = source.iridescence;
-		this.iridescenceMap = source.iridescenceMap;
-		this.iridescenceIOR = source.iridescenceIOR;
-		this.iridescenceThicknessRange = [ ...source.iridescenceThicknessRange ];
-		this.iridescenceThicknessMap = source.iridescenceThicknessMap;
-
-		this.retroreflectivity = source.retroreflectivity;
-
-		this.sheen = source.sheen;
-		this.sheenColor.copy( source.sheenColor );
-		this.sheenColorMap = source.sheenColorMap;
-		this.sheenRoughness = source.sheenRoughness;
-		this.sheenRoughnessMap = source.sheenRoughnessMap;
-
-		this.transmission = source.transmission;
-		this.transmissionMap = source.transmissionMap;
-
-		this.thickness = source.thickness;
-		this.thicknessMap = source.thicknessMap;
-		this.attenuationDistance = source.attenuationDistance;
-		this.attenuationColor.copy( source.attenuationColor );
-
-		this.specularIntensity = source.specularIntensity;
-		this.specularIntensityMap = source.specularIntensityMap;
-		this.specularColor.copy( source.specularColor );
-		this.specularColorMap = source.specularColorMap;
 
 		return this;
 
@@ -75383,12 +75260,15 @@ class ThreeEyeScene {
     coaxialLight;
     obliqueLight;
     ambientLight;
-    // Eye Anatomy Meshes
+    // Eye Anatomy Groups
     eyeGroup;
     scleraMesh;
     corneaMesh;
     irisMesh;
     pupilMesh;
+    // 3D Incision Wounds on Cornea
+    paracentesisWoundMesh;
+    clearCornealWoundMesh;
     // Glaucoma / Trabecular Meshwork Angle Meshes
     angleGroup;
     schwalbeLineMesh;
@@ -75404,7 +75284,9 @@ class ThreeEyeScene {
     lensGroup;
     anteriorCapsuleMesh;
     capsulorhexisRimMesh;
+    cccFlapMesh;
     nucleusMesh;
+    nucleusTrenchMesh;
     nucleusQuadrants = [];
     cortexMesh;
     phacoCavitationParticles;
@@ -75416,11 +75298,14 @@ class ThreeEyeScene {
     // Nd:YAG Posterior Capsule & Laser Meshes
     yagGroup;
     posteriorCapsuleMesh;
+    yagTearLeaflets = [];
     yagAimingCone1;
     yagAimingCone2;
     yagFocalDot;
     yagPlasmaSpark;
-    yagTearLines;
+    yagShockwaveMesh;
+    isRippingCapsule = false;
+    ripProgress = 0;
     // 3D Instruments
     instrumentGroup;
     currentInstrumentType = null;
@@ -75431,9 +75316,10 @@ class ThreeEyeScene {
     targetCamPos = new Vector3(0, 0, 8.5);
     targetLookAt = new Vector3(0, 0, 0);
     isTransitioningCamera = false;
-    transitionAlpha = 1.0;
+    transitionSpeed = 0.07;
     // State caches
     currentModule = 'phaco';
+    currentStep = '';
     mouseNorm = { x: 0, y: 0, isDown: false };
     currentMagnification = 12;
     constructor(config) {
@@ -75444,7 +75330,7 @@ class ThreeEyeScene {
         // 1. Initialize Scene, Camera & Renderer
         this.scene = new Scene();
         this.scene.background = null;
-        this.camera = new PerspectiveCamera(38, width / height, 0.05, 100);
+        this.camera = new PerspectiveCamera(36, width / height, 0.05, 100);
         this.camera.position.set(0, 0, 8.5);
         this.renderer = new WebGLRenderer({
             canvas: this.canvas,
@@ -75455,31 +75341,36 @@ class ThreeEyeScene {
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.toneMapping = ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.15;
-        // 2. OrbitControls
+        this.renderer.toneMappingExposure = 1.25;
+        // 2. OrbitControls (Smooth inspection & deep zoom)
         this.controls = new OrbitControls(this.camera, this.container);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        this.controls.minDistance = 1.0; // Allow extreme close-up deep zoom into trabecular meshwork & stents
-        this.controls.maxDistance = 16.0;
-        this.controls.maxPolarAngle = Math.PI * 0.88; // Allow tilting to view angle and cross section
+        this.controls.minDistance = 0.8; // Allows extreme macro zoom into trabecular meshwork & stents
+        this.controls.maxDistance = 14.0;
+        this.controls.maxPolarAngle = Math.PI * 0.92;
         this.controls.target.set(0, 0, 0);
-        // 3. Lighting System
-        this.ambientLight = new AmbientLight(0x223040, 0.9);
+        // 3. Lighting System (Coaxial microscope beam + oblique specular reflection)
+        this.ambientLight = new AmbientLight(0xffffff, 1.4);
         this.scene.add(this.ambientLight);
-        this.coaxialLight = new PointLight(0xffeedd, 3.2, 30);
-        this.coaxialLight.position.set(0, 0, 7.5);
+        this.coaxialLight = new PointLight(0xfffaed, 4.5, 30);
+        this.coaxialLight.position.set(0, 0, 8.0);
         this.scene.add(this.coaxialLight);
-        this.obliqueLight = new DirectionalLight(0xffffff, 1.8);
+        this.obliqueLight = new DirectionalLight(0xffffff, 2.2);
         this.obliqueLight.position.set(3, 4, 6);
         this.scene.add(this.obliqueLight);
-        // 4. Build Eye Anatomy
+        // Fill light for posterior structures
+        const backFillLight = new DirectionalLight(0x90caf9, 0.8);
+        backFillLight.position.set(-3, -2, 4);
+        this.scene.add(backFillLight);
+        // 4. Build Complete 3D Eye Anatomy
         this.eyeGroup = new Group();
         this.scene.add(this.eyeGroup);
         this.scleraMesh = this.buildScleraGlobe();
         this.eyeGroup.add(this.scleraMesh);
         this.corneaMesh = this.buildCorneaDome();
         this.eyeGroup.add(this.corneaMesh);
+        this.build3DCornealIncisions();
         this.irisMesh = this.buildIris();
         this.eyeGroup.add(this.irisMesh);
         this.pupilMesh = this.buildPupil();
@@ -75496,7 +75387,7 @@ class ThreeEyeScene {
         this.iolGroup = new Group();
         this.eyeGroup.add(this.iolGroup);
         this.buildFoldableIol();
-        // Nd:YAG Posterior Capsule & Laser
+        // Nd:YAG Posterior Capsule & Laser Photodisruption
         this.yagGroup = new Group();
         this.eyeGroup.add(this.yagGroup);
         this.buildYagPosteriorCapsule();
@@ -75509,29 +75400,42 @@ class ThreeEyeScene {
         this.animate();
     }
     // =========================================================================
-    // ANATOMICAL BUILDERS
+    // ANATOMICAL BUILDERS: REALISTIC EYE GLOBE, CORNEA & IRIS
     // =========================================================================
     buildScleraGlobe() {
-        // 3D Scleral Shell with Limbal Transition
-        const geo = new SphereGeometry(4.6, 64, 48, 0, Math.PI * 2, Math.PI * 0.28, Math.PI * 0.72);
-        // Procedural scleral vascular texture
+        // 3D Scleral Shell facing viewer with anterior aperture for cornea
+        const geo = new SphereGeometry(4.35, 64, 48, 0, Math.PI * 2, Math.PI * 0.28, Math.PI * 0.72);
+        // Rich procedural scleral vascular arcade texture
         const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
+        canvas.width = 1024;
+        canvas.height = 1024;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#f0f3f6';
-        ctx.fillRect(0, 0, 512, 512);
-        // Micro episcleral vessels
-        ctx.strokeStyle = 'rgba(215, 60, 50, 0.4)';
-        ctx.lineWidth = 1.2;
-        for (let i = 0; i < 45; i++) {
+        // Base scleral ivory gradient
+        const bgGrad = ctx.createRadialGradient(512, 512, 200, 512, 512, 512);
+        bgGrad.addColorStop(0, '#f8fafc');
+        bgGrad.addColorStop(0.7, '#f1f5f9');
+        bgGrad.addColorStop(1, '#e2e8f0');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1024, 1024);
+        // Limbal transition zone (grey-blue annular arcade at corneal perimeter)
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+        ctx.lineWidth = 20;
+        ctx.beginPath();
+        ctx.arc(512, 512, 380, 0, Math.PI * 2);
+        ctx.stroke();
+        // Branching episcleral micro-capillaries
+        ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+        for (let i = 0; i < 65; i++) {
+            const startAngle = Math.random() * Math.PI * 2;
+            let r = 400 + Math.random() * 90;
+            let cx = 512 + Math.cos(startAngle) * r;
+            let cy = 512 + Math.sin(startAngle) * r;
+            ctx.lineWidth = Math.random() * 2.0 + 0.8;
             ctx.beginPath();
-            let cx = Math.random() * 512;
-            let cy = Math.random() * 512;
             ctx.moveTo(cx, cy);
-            for (let j = 0; j < 4; j++) {
-                cx += (Math.random() - 0.5) * 60;
-                cy += (Math.random() - 0.5) * 60;
+            for (let j = 0; j < 5; j++) {
+                cx += (Math.random() - 0.5) * 45;
+                cy += (Math.random() - 0.5) * 45;
                 ctx.lineTo(cx, cy);
             }
             ctx.stroke();
@@ -75539,108 +75443,145 @@ class ThreeEyeScene {
         const tex = new CanvasTexture(canvas);
         const mat = new MeshStandardMaterial({
             map: tex,
-            roughness: 0.35,
-            metalness: 0.05,
+            roughness: 0.28,
+            metalness: 0.04,
             side: DoubleSide
         });
         const mesh = new Mesh(geo, mat);
-        mesh.rotation.x = Math.PI;
-        mesh.position.z = -1.2;
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.z = -2.75;
         return mesh;
     }
     buildCorneaDome() {
-        // 3D Refractive Cornea Dome (Meniscus thickness scaled to pachymetry)
-        const geo = new SphereGeometry(3.6, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.35);
-        const mat = new MeshPhysicalMaterial({
-            color: 0xffffff,
+        // 3D Refractive Cornea Dome (Anterior curvature radius 7.8mm scaled)
+        const geo = new SphereGeometry(3.55, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.33);
+        const mat = new MeshStandardMaterial({
+            color: 0xe0f7fa,
             transparent: true,
-            opacity: 0.22,
-            roughness: 0.04,
-            metalness: 0.05,
-            transmission: 0.94,
-            ior: 1.376,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.02,
+            opacity: 0.32,
+            roughness: 0.06,
+            metalness: 0.12,
             side: DoubleSide
         });
         const mesh = new Mesh(geo, mat);
-        mesh.position.z = 0.55;
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.z = -1.81;
         return mesh;
     }
+    build3DCornealIncisions() {
+        const slitMat = new MeshBasicMaterial({ color: 0x051329 });
+        // 1. Paracentesis Incision at 10:00 (150° / 2.618 rad)
+        const pGroup = new Group();
+        const pSlit = new Mesh(new BoxGeometry(0.48, 0.04, 0.22), slitMat);
+        pGroup.add(pSlit);
+        const pLipMat = new MeshStandardMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.35,
+            transparent: true,
+            opacity: 0.65,
+            roughness: 0.15
+        });
+        const pLip = new Mesh(new BoxGeometry(0.62, 0.14, 0.28), pLipMat);
+        pGroup.add(pLip);
+        const pAngle = (150 * Math.PI) / 180;
+        pGroup.position.set(Math.cos(pAngle) * 3.25, Math.sin(pAngle) * 3.25, 0.25);
+        pGroup.rotation.z = pAngle + Math.PI / 2;
+        this.paracentesisWoundMesh = pGroup;
+        this.eyeGroup.add(pGroup);
+        // 2. Clear Corneal Tri-Planar Incision at 1:30 (45° / 0.785 rad)
+        const kGroup = new Group();
+        const kSlit = new Mesh(new BoxGeometry(0.95, 0.05, 0.32), slitMat);
+        kGroup.add(kSlit);
+        const kLipMat = new MeshStandardMaterial({
+            color: 0x10b981,
+            emissive: 0x059669,
+            emissiveIntensity: 0.35,
+            transparent: true,
+            opacity: 0.65,
+            roughness: 0.15
+        });
+        const kLip = new Mesh(new BoxGeometry(1.15, 0.18, 0.38), kLipMat);
+        kGroup.add(kLip);
+        const kAngle = (45 * Math.PI) / 180;
+        kGroup.position.set(Math.cos(kAngle) * 3.25, Math.sin(kAngle) * 3.25, 0.25);
+        kGroup.rotation.z = kAngle + Math.PI / 2;
+        this.clearCornealWoundMesh = kGroup;
+        this.eyeGroup.add(kGroup);
+    }
     buildIris() {
-        // 3D Iris Diaphragm sloping gently back into the anterior chamber
-        const geo = new ConeGeometry(3.45, 0.45, 64, 8, true);
-        // Rich procedural blue-amber ophthalmic iris pattern
+        // 3D Iris Annular Diaphragm sloping gracefully toward pupillary margin
+        const geo = new RingGeometry(1.65, 3.48, 64);
+        // Rich procedural human iris texture: collarette, radial fibers, and Fuchs crypts
         const canvas = document.createElement('canvas');
         canvas.width = 1024;
         canvas.height = 1024;
         const ctx = canvas.getContext('2d');
-        const grad = ctx.createRadialGradient(512, 512, 180, 512, 512, 512);
-        grad.addColorStop(0, '#0d2235'); // Pupillary margin sphincter
-        grad.addColorStop(0.2, '#184b73');
-        grad.addColorStop(0.5, '#22699e'); // Collarette
-        grad.addColorStop(0.85, '#154163');
-        grad.addColorStop(1, '#091c2b'); // Iris root at ciliary body
+        const grad = ctx.createRadialGradient(512, 512, 170, 512, 512, 512);
+        grad.addColorStop(0, '#0c2338'); // Pupillary sphincter
+        grad.addColorStop(0.25, '#1e527d');
+        grad.addColorStop(0.52, '#2b78b5'); // Collarette prominence
+        grad.addColorStop(0.85, '#194c73');
+        grad.addColorStop(1, '#0b1d2e'); // Ciliary body root
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 1024, 1024);
-        // Radial trabecular fibers & Fuchs crypts
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        // Distinct radial collagenous trabecular ridges
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
         ctx.lineWidth = 1.8;
         for (let a = 0; a < 360; a += 1.0) {
             const rad = (a * Math.PI) / 180;
             ctx.beginPath();
-            ctx.moveTo(512 + Math.cos(rad) * 190, 512 + Math.sin(rad) * 190);
+            ctx.moveTo(512 + Math.cos(rad) * 180, 512 + Math.sin(rad) * 180);
             ctx.lineTo(512 + Math.cos(rad) * 490, 512 + Math.sin(rad) * 490);
             ctx.stroke();
         }
         const tex = new CanvasTexture(canvas);
         const mat = new MeshStandardMaterial({
             map: tex,
-            roughness: 0.65,
+            roughness: 0.6,
             metalness: 0.08,
             side: DoubleSide
         });
         const mesh = new Mesh(geo, mat);
-        mesh.rotation.x = Math.PI;
-        mesh.position.z = -0.15;
+        mesh.position.z = -0.12;
         return mesh;
     }
     buildPupil() {
-        const geo = new CircleGeometry(2.35, 64);
+        const geo = new CircleGeometry(1.68, 64);
         const mat = new MeshBasicMaterial({
-            color: 0xc8260c, // Coaxial red reflex glow
+            color: 0xc8260c, // Coaxial red reflex glow from retina
             transparent: true,
-            opacity: 0.92
+            opacity: 0.94
         });
         const mesh = new Mesh(geo, mat);
-        mesh.position.z = -0.32;
+        mesh.position.z = -0.16;
         return mesh;
     }
     // =========================================================================
-    // GLAUCOMA / MIGS TRABECULAR MESHWORK & ANGLE (3D ZOOMABLE)
+    // GLAUCOMA / MIGS TRABECULAR MESHWORK & STENTS (HYPER-DETAILED 3D)
     // =========================================================================
     buildTrabecularMeshworkAngle() {
-        // 1. Schwalbe's Line (Prominent anatomical white ridge at outer corneal boundary)
-        const slGeo = new TorusGeometry(3.38, 0.045, 16, 64);
+        // 1. Schwalbe's Line (Pearly glistening white anatomical termination of Descemet's)
+        const slGeo = new TorusGeometry(3.38, 0.055, 16, 64);
         const slMat = new MeshStandardMaterial({
             color: 0xffffff,
-            roughness: 0.25,
-            emissive: 0x444444
+            roughness: 0.2,
+            emissive: 0x555555
         });
         this.schwalbeLineMesh = new Mesh(slGeo, slMat);
-        this.schwalbeLineMesh.position.z = 0.18;
+        this.schwalbeLineMesh.position.z = 0.22;
         this.angleGroup.add(this.schwalbeLineMesh);
-        // 2. Pigmented Trabecular Meshwork (TM) - Main filtration site
-        const tmGeo = new CylinderGeometry(3.42, 3.48, 0.18, 64, 1, true);
-        // Porous hyperpigmented texture for the TM filter bed
+        // 2. Pigmented Trabecular Meshwork (TM) - Main filtration tissue
+        const tmGeo = new CylinderGeometry(3.42, 3.48, 0.22, 64, 1, true);
+        // Microscopic porous trabecular beam lattice texture
         const tmCanvas = document.createElement('canvas');
         tmCanvas.width = 512;
         tmCanvas.height = 64;
         const tmCtx = tmCanvas.getContext('2d');
-        tmCtx.fillStyle = '#6b4822'; // Dark honey/brown pigment
+        tmCtx.fillStyle = '#784e24'; // Rich golden-brown pigment
         tmCtx.fillRect(0, 0, 512, 64);
-        tmCtx.fillStyle = 'rgba(20, 10, 5, 0.7)';
-        for (let i = 0; i < 600; i++) {
+        tmCtx.fillStyle = '#221105';
+        for (let i = 0; i < 800; i++) {
             tmCtx.fillRect(Math.random() * 512, Math.random() * 64, 2, 2);
         }
         const tmTex = new CanvasTexture(tmCanvas);
@@ -75648,36 +75589,36 @@ class ThreeEyeScene {
         tmTex.repeat.set(8, 1);
         const tmMat = new MeshStandardMaterial({
             map: tmTex,
-            roughness: 0.8,
+            roughness: 0.85,
             metalness: 0.15,
             side: DoubleSide
         });
         this.trabecularMeshworkMesh = new Mesh(tmGeo, tmMat);
         this.trabecularMeshworkMesh.rotation.x = Math.PI / 2;
-        this.trabecularMeshworkMesh.position.z = 0.08;
+        this.trabecularMeshworkMesh.position.z = 0.12;
         this.angleGroup.add(this.trabecularMeshworkMesh);
-        // 3. Schlemm's Canal (Circumferential collector conduit located directly behind TM)
-        const scGeo = new TorusGeometry(3.52, 0.07, 16, 64);
+        // 3. Schlemm's Canal (Circumferential collector channel directly behind TM)
+        const scGeo = new TorusGeometry(3.52, 0.08, 16, 64);
         const scMat = new MeshStandardMaterial({
-            color: 0x882218, // Endothelial vascular channel
-            roughness: 0.4,
+            color: 0x991b1b, // Endothelial vascular collector bed
+            roughness: 0.35,
             transparent: true,
-            opacity: 0.82
+            opacity: 0.85
         });
         this.schlemmCanalMesh = new Mesh(scGeo, scMat);
-        this.schlemmCanalMesh.position.z = 0.06;
+        this.schlemmCanalMesh.position.z = 0.08;
         this.angleGroup.add(this.schlemmCanalMesh);
-        // 4. Scleral Spur (White fibrous band behind TM)
-        const ssGeo = new TorusGeometry(3.46, 0.035, 16, 64);
+        // 4. Scleral Spur (White fibrous ring)
+        const ssGeo = new TorusGeometry(3.46, 0.04, 16, 64);
         const ssMat = new MeshStandardMaterial({
-            color: 0xdedede,
+            color: 0xeeeeee,
             roughness: 0.3
         });
         this.scleralSpurMesh = new Mesh(ssGeo, ssMat);
-        this.scleralSpurMesh.position.z = -0.04;
+        this.scleralSpurMesh.position.z = -0.02;
         this.angleGroup.add(this.scleralSpurMesh);
-        // 5. Ciliary Body Band (Slate grey/brown uveal band at iris root)
-        const cbGeo = new CylinderGeometry(3.46, 3.44, 0.22, 64, 1, true);
+        // 5. Ciliary Body Band
+        const cbGeo = new CylinderGeometry(3.46, 3.44, 0.24, 64, 1, true);
         const cbMat = new MeshStandardMaterial({
             color: 0x3d3228,
             roughness: 0.9,
@@ -75687,153 +75628,170 @@ class ThreeEyeScene {
         this.ciliaryBodyMesh.rotation.x = Math.PI / 2;
         this.ciliaryBodyMesh.position.z = -0.16;
         this.angleGroup.add(this.ciliaryBodyMesh);
-        // 6. Micro-Bypass Stents (iStent inject models in 3D)
+        // 6. 3D Titanium Micro-Bypass Stents
         this.stent1Group = this.buildMicroStentModel('Stent 1 (2:30 Target)');
         this.stent2Group = this.buildMicroStentModel('Stent 2 (4:00 Target)');
-        // Position Stent 1 at 2:30 (approx 75 degrees)
         const rad1 = (75 * Math.PI) / 180;
-        this.stent1Group.position.set(Math.cos(rad1) * 3.44, Math.sin(rad1) * 3.44, 0.08);
+        this.stent1Group.position.set(Math.cos(rad1) * 3.44, Math.sin(rad1) * 3.44, 0.12);
         this.stent1Group.rotation.z = rad1 + Math.PI;
         this.stent1Group.rotation.y = -0.4;
         this.angleGroup.add(this.stent1Group);
-        // Position Stent 2 at 4:00 (approx 120 degrees)
         const rad2 = (120 * Math.PI) / 180;
-        this.stent2Group.position.set(Math.cos(rad2) * 3.44, Math.sin(rad2) * 3.44, 0.08);
+        this.stent2Group.position.set(Math.cos(rad2) * 3.44, Math.sin(rad2) * 3.44, 0.12);
         this.stent2Group.rotation.z = rad2 + Math.PI;
         this.stent2Group.rotation.y = -0.4;
         this.angleGroup.add(this.stent2Group);
-        // 7. Venous Blood Reflux Particles (Welling up from Schlemm's canal & stent lumens)
-        const pCount = 180;
+        // 7. Venous Blood Reflux Fluid Particles
+        const pCount = 200;
         const pGeo = new BufferGeometry();
         const pPos = new Float32Array(pCount * 3);
         const pVel = new Float32Array(pCount * 3);
         for (let i = 0; i < pCount; i++) {
-            const angle = (Math.random() * 0.8 + 1.1); // Nasal quadrant angle range
+            const angle = Math.random() * 0.9 + 1.05;
             const r = 3.42 + Math.random() * 0.12;
             pPos[i * 3] = Math.cos(angle) * r;
             pPos[i * 3 + 1] = Math.sin(angle) * r;
-            pPos[i * 3 + 2] = 0.06 + Math.random() * 0.12;
-            pVel[i * 3] = -Math.cos(angle) * 0.015;
-            pVel[i * 3 + 1] = -Math.sin(angle) * 0.015;
-            pVel[i * 3 + 2] = 0.008;
+            pPos[i * 3 + 2] = 0.08 + Math.random() * 0.12;
+            pVel[i * 3] = -Math.cos(angle) * 0.016;
+            pVel[i * 3 + 1] = -Math.sin(angle) * 0.016;
+            pVel[i * 3 + 2] = 0.009;
         }
         pGeo.setAttribute('position', new BufferAttribute(pPos, 3));
         pGeo.setAttribute('velocity', new BufferAttribute(pVel, 3));
         const pMat = new PointsMaterial({
-            color: 0xcc1111,
-            size: 0.08,
+            color: 0xef4444,
+            size: 0.09,
             transparent: true,
-            opacity: 0.85,
-            blending: NormalBlending
+            opacity: 0.9
         });
         this.bloodRefluxParticles = new Points(pGeo, pMat);
         this.bloodRefluxParticles.visible = false;
         this.angleGroup.add(this.bloodRefluxParticles);
         // 8. Swan-Jacob Gonioprism Lens (38° clinical mirror)
-        const gonioGeo = new CylinderGeometry(2.8, 3.2, 1.4, 32);
-        const gonioMat = new MeshPhysicalMaterial({
-            color: 0x99ddff,
+        const gonioGeo = new CylinderGeometry(2.7, 3.1, 1.3, 32);
+        const gonioMat = new MeshStandardMaterial({
+            color: 0xbae6fd,
             transparent: true,
-            opacity: 0.38,
+            opacity: 0.35,
             roughness: 0.05,
-            transmission: 0.9,
-            ior: 1.52,
-            clearcoat: 1.0
+            metalness: 0.1
         });
         this.gonioprismMesh = new Mesh(gonioGeo, gonioMat);
-        this.gonioprismMesh.position.set(0, 0, 1.35);
-        this.gonioprismMesh.rotation.x = 0.65; // 38 degree surgical tilt
+        this.gonioprismMesh.position.set(0, 0, 1.25);
+        this.gonioprismMesh.rotation.x = 0.65;
         this.gonioprismMesh.visible = false;
         this.eyeGroup.add(this.gonioprismMesh);
+        this.angleGroup.visible = false;
     }
     buildMicroStentModel(name) {
         const grp = new Group();
         grp.name = name;
         const metalMat = new MeshStandardMaterial({
-            color: 0xddddf0,
-            metalness: 0.92,
-            roughness: 0.22
+            color: 0x93c5fd,
+            metalness: 0.95,
+            roughness: 0.18,
+            emissive: 0x1e3a8a,
+            emissiveIntensity: 0.25
         });
-        // Stent Flanged Head (rests in anterior chamber)
-        const headGeo = new CylinderGeometry(0.12, 0.09, 0.08, 16);
-        const headMesh = new Mesh(headGeo, metalMat);
+        // Flanged retention collar (sits in AC)
+        const headMesh = new Mesh(new CylinderGeometry(0.14, 0.1, 0.09, 16), metalMat);
         headMesh.rotation.z = Math.PI / 2;
         grp.add(headMesh);
         // Thorax / Shaft (spans trabecular meshwork)
-        const bodyGeo = new CylinderGeometry(0.06, 0.06, 0.24, 16);
-        const bodyMesh = new Mesh(bodyGeo, metalMat);
+        const bodyMesh = new Mesh(new CylinderGeometry(0.07, 0.07, 0.26, 16), metalMat);
         bodyMesh.rotation.z = Math.PI / 2;
-        bodyMesh.position.x = 0.14;
+        bodyMesh.position.x = 0.15;
         grp.add(bodyMesh);
         // Duckbill Outlet Tip (seats directly into Schlemm's canal)
-        const tipGeo = new ConeGeometry(0.065, 0.12, 16);
-        const tipMesh = new Mesh(tipGeo, metalMat);
+        const tipMesh = new Mesh(new ConeGeometry(0.075, 0.14, 16), metalMat);
         tipMesh.rotation.z = -Math.PI / 2;
-        tipMesh.position.x = 0.31;
+        tipMesh.position.x = 0.33;
         grp.add(tipMesh);
-        // Central Lumen hole indicator
-        const lumenGeo = new CircleGeometry(0.04, 12);
-        const lumenMat = new MeshBasicMaterial({ color: 0x111111 });
-        const lumenMesh = new Mesh(lumenGeo, lumenMat);
+        // Central Lumen Hole
+        const lumenMesh = new Mesh(new CircleGeometry(0.045, 12), new MeshBasicMaterial({ color: 0x020617 }));
         lumenMesh.rotation.y = -Math.PI / 2;
-        lumenMesh.position.x = -0.042;
+        lumenMesh.position.x = -0.048;
         grp.add(lumenMesh);
-        grp.scale.set(0.8, 0.8, 0.8);
+        grp.scale.set(0.9, 0.9, 0.9);
         grp.visible = false;
         return grp;
     }
     // =========================================================================
-    // CATARACT LENS & PHACOEMULSIFICATION (3D CORE & QUADRANTS)
+    // CATARACT LENS & PHACOEMULSIFICATION (3D CORE, TRENCH & QUADRANTS)
     // =========================================================================
     buildCataractLens() {
         // 1. Anterior Capsule
-        const acGeo = new SphereGeometry(2.36, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
-        const acMat = new MeshPhysicalMaterial({
+        const acGeo = new SphereGeometry(2.32, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
+        const acMat = new MeshStandardMaterial({
             color: 0xffffff,
             transparent: true,
-            opacity: 0.25,
+            opacity: 0.32,
             roughness: 0.12,
-            transmission: 0.88,
             side: DoubleSide
         });
         this.anteriorCapsuleMesh = new Mesh(acGeo, acMat);
-        this.anteriorCapsuleMesh.position.z = -0.28;
+        this.anteriorCapsuleMesh.rotation.x = Math.PI / 2;
+        this.anteriorCapsuleMesh.position.z = -0.85;
         this.lensGroup.add(this.anteriorCapsuleMesh);
-        // Capsulorhexis 5.5mm Tear Rim indicator
+        // 5.5mm Capsulorhexis Circular Rim Line
         const rimPoints = [];
         const rRadius = 1.25;
         for (let a = 0; a <= 64; a++) {
             const th = (a / 64) * Math.PI * 2;
-            rimPoints.push(new Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.24));
+            rimPoints.push(new Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.22));
         }
         const rimGeo = new BufferGeometry().setFromPoints(rimPoints);
-        const rimMat = new LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
+        const rimMat = new LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
         this.capsulorhexisRimMesh = new LineLoop(rimGeo, rimMat);
+        this.capsulorhexisRimMesh.visible = false;
         this.lensGroup.add(this.capsulorhexisRimMesh);
+        // Peeling Capsulorhexis Flap in 3D
+        const flapGeo = new CircleGeometry(0.65, 16);
+        const flapMat = new MeshStandardMaterial({
+            color: 0x93c5fd,
+            transparent: true,
+            opacity: 0.55,
+            side: DoubleSide
+        });
+        this.cccFlapMesh = new Mesh(flapGeo, flapMat);
+        this.cccFlapMesh.position.set(0.4, 0.4, -0.18);
+        this.cccFlapMesh.rotation.x = 0.5;
+        this.cccFlapMesh.visible = false;
+        this.lensGroup.add(this.cccFlapMesh);
         // 2. Cataract Core (LOCS III NO3 Nuclear Cataract)
-        const nGeo = new SphereGeometry(2.32, 48, 32);
+        const nGeo = new SphereGeometry(2.28, 48, 32);
         nGeo.scale(1, 1, 0.45);
         const nMat = new MeshStandardMaterial({
-            color: 0xd99834, // Golden nuclear amber
+            color: 0xd97706, // Amber golden nuclear grade
             roughness: 0.55,
             metalness: 0.08,
             transparent: true,
-            opacity: 0.92
+            opacity: 0.94
         });
         this.nucleusMesh = new Mesh(nGeo, nMat);
-        this.nucleusMesh.position.z = -0.55;
+        this.nucleusMesh.position.z = -0.52;
         this.lensGroup.add(this.nucleusMesh);
+        // Deep Phaco Trench Groove (Sculpted central canal)
+        const trGeo = new BoxGeometry(0.45, 2.6, 0.38);
+        const trMat = new MeshStandardMaterial({
+            color: 0x92400e,
+            roughness: 0.7
+        });
+        this.nucleusTrenchMesh = new Mesh(trGeo, trMat);
+        this.nucleusTrenchMesh.position.set(0, 0, -0.45);
+        this.nucleusTrenchMesh.visible = false;
+        this.lensGroup.add(this.nucleusTrenchMesh);
         // 4 Chopped Nuclear Quadrants for Phacoemulsification
         const quadOffsets = [
-            { x: 0.45, y: 0.45, rotZ: 0 },
-            { x: -0.45, y: 0.45, rotZ: Math.PI / 2 },
-            { x: -0.45, y: -0.45, rotZ: Math.PI },
-            { x: 0.45, y: -0.45, rotZ: -Math.PI / 2 }
+            { x: 0.5, y: 0.5, rotZ: 0 },
+            { x: -0.5, y: 0.5, rotZ: Math.PI / 2 },
+            { x: -0.5, y: -0.5, rotZ: Math.PI },
+            { x: 0.5, y: -0.5, rotZ: -Math.PI / 2 }
         ];
-        quadOffsets.forEach((q, idx) => {
-            const qGeo = new CylinderGeometry(1.15, 0.2, 0.45, 16, 1, false, 0, Math.PI * 0.48);
+        quadOffsets.forEach((q) => {
+            const qGeo = new CylinderGeometry(1.15, 0.18, 0.45, 16, 1, false, 0, Math.PI * 0.46);
             const qMat = new MeshStandardMaterial({
-                color: 0xcc8d28,
+                color: 0xb45309,
                 roughness: 0.6,
                 transparent: true,
                 opacity: 0.92
@@ -75841,37 +75799,37 @@ class ThreeEyeScene {
             const qMesh = new Mesh(qGeo, qMat);
             qMesh.rotation.x = Math.PI / 2;
             qMesh.rotation.z = q.rotZ;
-            qMesh.position.set(q.x, q.y, -0.55);
+            qMesh.position.set(q.x, q.y, -0.52);
             qMesh.visible = false;
             this.nucleusQuadrants.push(qMesh);
             this.lensGroup.add(qMesh);
         });
         // 3. Cortex Fibers
-        const cGeo = new RingGeometry(1.6, 2.34, 32);
+        const cGeo = new RingGeometry(1.6, 2.32, 32);
         const cMat = new MeshStandardMaterial({
-            color: 0xf5eedc,
+            color: 0xfef3c7,
             transparent: true,
-            opacity: 0.45,
-            roughness: 0.7
+            opacity: 0.52,
+            roughness: 0.75
         });
         this.cortexMesh = new Mesh(cGeo, cMat);
-        this.cortexMesh.position.z = -0.38;
+        this.cortexMesh.position.z = -0.35;
         this.lensGroup.add(this.cortexMesh);
         // 4. Ultrasonic Cavitation Shockwave Particles
-        const cavCount = 120;
+        const cavCount = 140;
         const cavGeo = new BufferGeometry();
         const cavPos = new Float32Array(cavCount * 3);
         for (let i = 0; i < cavCount; i++) {
-            cavPos[i * 3] = (Math.random() - 0.5) * 0.8;
-            cavPos[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
+            cavPos[i * 3] = (Math.random() - 0.5) * 0.9;
+            cavPos[i * 3 + 1] = (Math.random() - 0.5) * 0.9;
             cavPos[i * 3 + 2] = -0.4 + (Math.random() - 0.5) * 0.3;
         }
         cavGeo.setAttribute('position', new BufferAttribute(cavPos, 3));
         const cavMat = new PointsMaterial({
-            color: 0xaae8ff,
-            size: 0.065,
+            color: 0x67e8f9,
+            size: 0.08,
             transparent: true,
-            opacity: 0.85
+            opacity: 0.9
         });
         this.phacoCavitationParticles = new Points(cavGeo, cavMat);
         this.phacoCavitationParticles.visible = false;
@@ -75883,14 +75841,12 @@ class ThreeEyeScene {
     buildFoldableIol() {
         // 6.0mm Acrylic Biconvex Optic Disc
         const opticGeo = new CylinderGeometry(1.4, 1.4, 0.18, 32);
-        const opticMat = new MeshPhysicalMaterial({
+        const opticMat = new MeshStandardMaterial({
             color: 0xffffff,
             transparent: true,
-            opacity: 0.7,
-            transmission: 0.95,
-            ior: 1.55,
-            roughness: 0.05,
-            clearcoat: 1.0
+            opacity: 0.72,
+            roughness: 0.06,
+            metalness: 0.1
         });
         this.iolOpticMesh = new Mesh(opticGeo, opticMat);
         this.iolOpticMesh.rotation.x = Math.PI / 2;
@@ -75900,11 +75856,11 @@ class ThreeEyeScene {
         const curve1 = new QuadraticBezierCurve3(new Vector3(1.35, 0.2, -0.65), new Vector3(2.3, 1.2, -0.65), new Vector3(1.1, 2.1, -0.65));
         const hapticGeo1 = new TubeGeometry(curve1, 20, 0.05, 8, false);
         const hapticMat = new MeshStandardMaterial({
-            color: 0x90caf9,
+            color: 0x60a5fa,
             roughness: 0.2,
             metalness: 0.1,
             transparent: true,
-            opacity: 0.85
+            opacity: 0.88
         });
         this.iolHapticLeading = new Mesh(hapticGeo1, hapticMat);
         this.iolGroup.add(this.iolHapticLeading);
@@ -75915,20 +75871,20 @@ class ThreeEyeScene {
         this.iolGroup.visible = false;
     }
     // =========================================================================
-    // Nd:YAG POSTERIOR CAPSULE & LASER OPTICS
+    // Nd:YAG POSTERIOR CAPSULE & LASER PHOTODISRUPTION (TISSUE RIPPING)
     // =========================================================================
     buildYagPosteriorCapsule() {
         // 3D Posterior Capsule with PCO pearl texture
-        const geo = new SphereGeometry(2.32, 48, 24, 0, Math.PI * 2, Math.PI * 0.58, Math.PI * 0.42);
+        const geo = new SphereGeometry(2.3, 48, 24, 0, Math.PI * 2, Math.PI * 0.58, Math.PI * 0.42);
         const pcoCanvas = document.createElement('canvas');
         pcoCanvas.width = 512;
         pcoCanvas.height = 512;
         const pcoCtx = pcoCanvas.getContext('2d');
-        pcoCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        pcoCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         pcoCtx.fillRect(0, 0, 512, 512);
         // Elschnig pearls & fibrotic wrinkling
-        pcoCtx.fillStyle = 'rgba(240, 235, 220, 0.8)';
-        for (let i = 0; i < 350; i++) {
+        pcoCtx.fillStyle = 'rgba(240, 235, 220, 0.85)';
+        for (let i = 0; i < 400; i++) {
             const px = Math.random() * 512;
             const py = Math.random() * 512;
             const pr = Math.random() * 5 + 2;
@@ -75940,19 +75896,43 @@ class ThreeEyeScene {
         const mat = new MeshStandardMaterial({
             map: pcoTex,
             transparent: true,
-            opacity: 0.52,
-            roughness: 0.4,
+            opacity: 0.6,
+            roughness: 0.45,
             side: DoubleSide
         });
         this.posteriorCapsuleMesh = new Mesh(geo, mat);
+        this.posteriorCapsuleMesh.rotation.x = Math.PI / 2;
         this.posteriorCapsuleMesh.position.z = -0.85;
         this.yagGroup.add(this.posteriorCapsuleMesh);
+        // 4 Ripped Capsular Tissue Leaflets (Curling open into vitreous body)
+        const leafletConfigs = [
+            { x: 0, y: 0.6, rotX: -0.6, rotZ: 0 }, // Top leaflet
+            { x: 0, y: -0.6, rotX: 0.6, rotZ: Math.PI }, // Bottom leaflet
+            { x: -0.6, y: 0, rotY: -0.6, rotZ: Math.PI / 2 }, // Left leaflet
+            { x: 0.6, y: 0, rotY: 0.6, rotZ: -Math.PI / 2 } // Right leaflet
+        ];
+        leafletConfigs.forEach((lc) => {
+            const lGeo = new ConeGeometry(0.55, 0.8, 4);
+            const lMat = new MeshStandardMaterial({
+                color: 0xf1f5f9,
+                transparent: true,
+                opacity: 0.65,
+                roughness: 0.4,
+                side: DoubleSide
+            });
+            const lMesh = new Mesh(lGeo, lMat);
+            lMesh.position.set(lc.x, lc.y, -0.92);
+            lMesh.rotation.set(lc.rotX || 0, lc.rotY || 0, lc.rotZ);
+            lMesh.visible = false;
+            this.yagTearLeaflets.push(lMesh);
+            this.yagGroup.add(lMesh);
+        });
         // Dual Helium-Neon (He-Ne) Aiming Beams (converging twin cones)
         const b1Geo = new BufferGeometry().setFromPoints([
             new Vector3(-1.2, 1.2, 5.0),
             new Vector3(0, 0, -0.88)
         ]);
-        const bMat = new LineBasicMaterial({ color: 0xff1111, transparent: true, opacity: 0.85 });
+        const bMat = new LineBasicMaterial({ color: 0xef4444, linewidth: 2 });
         this.yagAimingCone1 = new Line(b1Geo, bMat);
         this.yagGroup.add(this.yagAimingCone1);
         const b2Geo = new BufferGeometry().setFromPoints([
@@ -75961,34 +75941,33 @@ class ThreeEyeScene {
         ]);
         this.yagAimingCone2 = new Line(b2Geo, bMat);
         this.yagGroup.add(this.yagAimingCone2);
-        // Focal Reticle Dot
-        const dotGeo = new SphereGeometry(0.045, 16, 16);
+        // Focal Reticle Pinpoint
+        const dotGeo = new SphereGeometry(0.05, 16, 16);
         const dotMat = new MeshBasicMaterial({ color: 0xff0000 });
         this.yagFocalDot = new Mesh(dotGeo, dotMat);
         this.yagFocalDot.position.set(0, 0, -0.88);
         this.yagGroup.add(this.yagFocalDot);
-        // Plasma Optical Breakdown Spark (white-blue ignition)
-        const sparkGeo = new SphereGeometry(0.14, 16, 16);
+        // Optical Breakdown Plasma Spark
+        const sparkGeo = new SphereGeometry(0.22, 16, 16);
         const sparkMat = new MeshBasicMaterial({
-            color: 0x99ffff,
+            color: 0xe0ffff,
             transparent: true,
             opacity: 0
         });
         this.yagPlasmaSpark = new Mesh(sparkGeo, sparkMat);
         this.yagPlasmaSpark.position.set(0, 0, -0.88);
         this.yagGroup.add(this.yagPlasmaSpark);
-        // Cruciate (+) Capsulotomy Tear Lines
-        const tearPoints = [
-            // Vertical cut
-            new Vector3(0, -0.8, -0.85), new Vector3(0, 0.8, -0.85),
-            // Horizontal cut
-            new Vector3(-0.8, 0, -0.85), new Vector3(0.8, 0, -0.85)
-        ];
-        const tearGeo = new BufferGeometry().setFromPoints(tearPoints);
-        const tearMat = new LineBasicMaterial({ color: 0x111111, linewidth: 2 });
-        this.yagTearLines = new LineSegments(tearGeo, tearMat);
-        this.yagTearLines.visible = false;
-        this.yagGroup.add(this.yagTearLines);
+        // Acoustic Cavitation Shockwave Ring
+        const swGeo = new RingGeometry(0.1, 0.16, 32);
+        const swMat = new MeshBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0,
+            side: DoubleSide
+        });
+        this.yagShockwaveMesh = new Mesh(swGeo, swMat);
+        this.yagShockwaveMesh.position.set(0, 0, -0.87);
+        this.yagGroup.add(this.yagShockwaveMesh);
         this.yagGroup.visible = false;
     }
     // =========================================================================
@@ -75997,21 +75976,13 @@ class ThreeEyeScene {
     build3DInstruments() {
         // 1. Phaco Handpiece & Titanium Tip
         const phacoObj = new Group();
-        const handleGeo = new CylinderGeometry(0.18, 0.22, 2.8, 16);
-        const handleMat = new MeshStandardMaterial({ color: 0x223344, metalness: 0.6, roughness: 0.4 });
-        const handle = new Mesh(handleGeo, handleMat);
+        const handle = new Mesh(new CylinderGeometry(0.18, 0.22, 2.8, 16), new MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 }));
         handle.position.y = 1.4;
         phacoObj.add(handle);
-        // Silicone Sleeve (blue)
-        const sleeveGeo = new CylinderGeometry(0.1, 0.14, 0.9, 16);
-        const sleeveMat = new MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 });
-        const sleeve = new Mesh(sleeveGeo, sleeveMat);
+        const sleeve = new Mesh(new CylinderGeometry(0.1, 0.14, 0.9, 16), new MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 }));
         sleeve.position.y = 0.4;
         phacoObj.add(sleeve);
-        // Titanium Needle
-        const needleGeo = new CylinderGeometry(0.045, 0.045, 0.6, 16);
-        const needleMat = new MeshStandardMaterial({ color: 0xcccccc, metalness: 0.95, roughness: 0.15 });
-        const needle = new Mesh(needleGeo, needleMat);
+        const needle = new Mesh(new CylinderGeometry(0.045, 0.045, 0.6, 16), new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 }));
         needle.position.y = -0.15;
         phacoObj.add(needle);
         phacoObj.rotation.x = Math.PI / 4;
@@ -76021,9 +75992,8 @@ class ThreeEyeScene {
         const mvrHandle = new Mesh(new CylinderGeometry(0.12, 0.12, 2.4, 16), new MeshStandardMaterial({ color: 0xf59e0b }));
         mvrHandle.position.y = 1.2;
         mvrObj.add(mvrHandle);
-        const mvrBlade = new Mesh(new ConeGeometry(0.06, 0.45, 4), new MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9 }));
+        const mvrBlade = new Mesh(new ConeGeometry(0.06, 0.45, 4), new MeshStandardMaterial({ color: 0xffffff, metalness: 0.9 }));
         mvrBlade.position.y = -0.1;
-        mvrBlade.rotation.y = Math.PI / 4;
         mvrObj.add(mvrBlade);
         this.instrumentMeshes.set('mvr_blade', mvrObj);
         // 3. Clear Corneal Keratome (2.4mm)
@@ -76035,7 +76005,7 @@ class ThreeEyeScene {
         kBlade.position.y = -0.12;
         keratomeObj.add(kBlade);
         this.instrumentMeshes.set('keratome_2_4', keratomeObj);
-        // 4. MIGS Stent Injector
+        // 4. MIGS Stent Injector Trocar
         const migsObj = new Group();
         const migsHandle = new Mesh(new CylinderGeometry(0.15, 0.15, 2.8, 16), new MeshStandardMaterial({ color: 0x3b82f6 }));
         migsHandle.position.y = 1.4;
@@ -76051,45 +76021,135 @@ class ThreeEyeScene {
         });
     }
     // =========================================================================
-    // CAMERA PRESETS & ZOOMING
+    // STEP-SPECIFIC AUTOMATIC ZOOM & FRAMING
     // =========================================================================
+    focusOnStep(stepId) {
+        this.currentStep = stepId;
+        this.isTransitioningCamera = true;
+        switch (stepId) {
+            // --- CATARACT PHACO STEPS ---
+            case 'paracentesis':
+                // Zoom right onto the 10:00 limbus incision
+                this.targetCamPos.set(-2, 1.2, 2.5);
+                this.targetLookAt.set(-2.8, 1.6, 0.25);
+                break;
+            case 'clear_corneal_incision':
+                // Zoom onto the 1:30 main tunnel
+                this.targetCamPos.set(1.7, 1.6, 2.5);
+                this.targetLookAt.set(2.3, 2.3, 0.25);
+                break;
+            case 'ovd_injection':
+                // Frame anterior chamber depth
+                this.targetCamPos.set(0, -0.6, 3.6);
+                this.targetLookAt.set(0, 0, 0.1);
+                break;
+            case 'capsulorhexis':
+                // Macro-zoom on anterior capsule window
+                this.targetCamPos.set(0, 0, 2.6);
+                this.targetLookAt.set(0, 0, -0.25);
+                break;
+            case 'hydrodissection':
+                // Zoom under capsular rim at 12:00
+                this.targetCamPos.set(0, 0.7, 2.8);
+                this.targetLookAt.set(0, 1.1, -0.3);
+                break;
+            case 'phaco_chop':
+                // Deep zoom into lens nucleus & phaco trench
+                this.targetCamPos.set(0.6, -0.5, 3.0);
+                this.targetLookAt.set(0, 0, -0.5);
+                break;
+            case 'cortex_removal':
+                // Zoom into capsular fornices
+                this.targetCamPos.set(0.6, -0.4, 3.0);
+                this.targetLookAt.set(0.8, -0.6, -0.4);
+                break;
+            // --- IOL STEPS ---
+            case 'ovd_bag_refill':
+            case 'cartridge_insertion':
+                this.targetCamPos.set(1.4, 0.8, 3.0);
+                this.targetLookAt.set(1.8, 1.0, 0.2);
+                break;
+            case 'haptic_unfolding':
+            case 'sinskey_dialing':
+            case 'viscoelastic_washout':
+                this.targetCamPos.set(0, 0, 3.2);
+                this.targetLookAt.set(0, 0, -0.65);
+                break;
+            // --- Nd:YAG STEPS ---
+            case 'contact_lens_placement':
+                this.targetCamPos.set(0, 0, 5.0);
+                this.targetLookAt.set(0, 0, 0);
+                break;
+            case 'aiming_focus':
+            case 'offset_adjustment':
+                this.targetCamPos.set(0, 0, 2.8);
+                this.targetLookAt.set(0, 0, -0.85);
+                break;
+            case 'cruciate_capsulotomy':
+            case 'post_yag_assessment':
+                // Macro-zoom into posterior capsule photodisruption zone
+                this.targetCamPos.set(0, 0, 2.4);
+                this.targetLookAt.set(0, 0, -0.85);
+                break;
+            // --- GLAUCOMA MIGS STEPS ---
+            case 'microscope_and_head_tilt':
+            case 'gonioprism_placement':
+            case 'viscoelastic_angle_deepening':
+                // 38° Gonioscopic angle view
+                this.targetCamPos.set(0.4, 2.4, 2.8);
+                this.targetLookAt.set(0.6, 3.2, 0.12);
+                break;
+            case 'stent_1_deployment':
+                // Hyper-detailed macro zoom into 2:30 Trabecular Meshwork & Schlemm's canal!
+                this.targetCamPos.set(0.6, 2.5, 2.0);
+                this.targetLookAt.set(0.89, 3.32, 0.12);
+                break;
+            case 'stent_2_deployment':
+                // Hyper-detailed macro zoom into 4:00 Trabecular Meshwork & Schlemm's canal!
+                this.targetCamPos.set(-1.2, 2.2, 2.0);
+                this.targetLookAt.set(-1.72, 2.98, 0.12);
+                break;
+            case 'blood_reflux_and_washout':
+                // Macro-zoom on both stents and venous blood reflux wave!
+                this.targetCamPos.set(-0.4, 2.2, 2.5);
+                this.targetLookAt.set(-0.4, 3.15, 0.12);
+                break;
+            default:
+                this.setCameraPreset('microscope');
+                break;
+        }
+    }
     setCameraPreset(preset) {
         this.isTransitioningCamera = true;
-        this.transitionAlpha = 0.0;
         switch (preset) {
             case 'microscope':
-                // Standard coaxial surgeon view
                 this.targetCamPos.set(0, 0, 8.5);
                 this.targetLookAt.set(0, 0, 0);
                 break;
             case 'glaucoma_angle':
-                // Dives into the 38° nasal iridocorneal angle right at the trabecular meshwork!
-                this.targetCamPos.set(2.4, 1.8, 1.6);
-                this.targetLookAt.set(2.8, 2.1, 0.05);
+                // Dives into 38° nasal angle directly at Trabecular Meshwork
+                this.targetCamPos.set(2.5, 1.7, 1.8);
+                this.targetLookAt.set(2.8, 2.0, 0.1);
                 break;
             case 'cataract_core':
-                // Dives deep into the anterior chamber & lens nucleus
                 this.targetCamPos.set(0.4, 0.3, 3.2);
-                this.targetLookAt.set(0, 0, -0.45);
+                this.targetLookAt.set(0, 0, -0.5);
                 break;
             case 'yag_capsule':
-                // Macro view centered on posterior capsule & IOL optic
-                this.targetCamPos.set(0, 0, 3.5);
+                this.targetCamPos.set(0, 0, 2.8);
                 this.targetLookAt.set(0, 0, -0.85);
                 break;
             case 'cross_section':
-                // Side profile showing cornea dome, AC depth, and lens
-                this.targetCamPos.set(6.2, 0, 1.2);
+                this.targetCamPos.set(5.8, 0, 1.2);
                 this.targetLookAt.set(0, 0, 0);
                 break;
         }
     }
     setZoom(zoomFactor) {
-        // Smoothly scale camera distance based on magnification (6x - 25x or higher)
         this.currentMagnification = zoomFactor;
-        const targetDist = 11.5 - (zoomFactor / 25.0) * 8.2;
+        const targetDist = 11.0 - (zoomFactor / 45.0) * 8.8;
         const dir = this.camera.position.clone().sub(this.controls.target).normalize();
-        this.camera.position.copy(this.controls.target.clone().add(dir.multiplyScalar(Math.max(1.1, targetDist))));
+        this.camera.position.copy(this.controls.target.clone().add(dir.multiplyScalar(Math.max(0.85, targetDist))));
     }
     // =========================================================================
     // MAIN SCENE UPDATE & SYNCHRONIZATION
@@ -76098,10 +76158,14 @@ class ThreeEyeScene {
         this.currentModule = params.module;
         if (params.mouseNormPos)
             this.mouseNorm = params.mouseNormPos;
-        // 1. Lighting
-        this.coaxialLight.intensity = (params.coaxialLight / 100.0) * 3.8;
+        // Auto-focus on step change if specified
+        if (params.currentStepId && params.currentStepId !== this.currentStep) {
+            this.focusOnStep(params.currentStepId);
+        }
+        // 1. Lighting Intensity & Red Reflex
+        this.coaxialLight.intensity = (params.coaxialLight / 100.0) * 4.5;
         const reflex = (params.redReflexGain / 100.0) * (params.coaxialLight / 100.0);
-        this.pupilMesh.material.color.setRGB(0.85 * reflex, 0.18 * reflex, 0.08 * reflex);
+        this.pupilMesh.material.color.setRGB(0.88 * reflex, 0.18 * reflex, 0.08 * reflex);
         // 2. Module Visibility Configuration
         if (params.module === 'phaco') {
             this.lensGroup.visible = true;
@@ -76109,28 +76173,32 @@ class ThreeEyeScene {
             this.yagGroup.visible = false;
             this.angleGroup.visible = false;
             this.gonioprismMesh.visible = false;
-            // Capsulorhexis Window Opening
+            // Capsulorhexis Window Opening & Peeling Flap
             if (params.cccState.completed) {
                 this.anteriorCapsuleMesh.visible = false;
                 this.capsulorhexisRimMesh.visible = true;
+                this.cccFlapMesh.visible = false;
             }
             else if (params.cccState.punctured) {
-                this.anteriorCapsuleMesh.material.opacity = 0.12;
+                this.anteriorCapsuleMesh.material.opacity = 0.15;
                 this.capsulorhexisRimMesh.visible = true;
+                this.cccFlapMesh.visible = true;
             }
-            // Phacoemulsification Nucleus Mass & Quadrants
+            // Phacoemulsification Nucleus Mass, Trenching & Chopped Quadrants
             const rem = params.nucleusState.remainingMassFraction;
-            if (rem > 0.75) {
+            if (rem > 0.82) {
                 this.nucleusMesh.visible = true;
+                this.nucleusTrenchMesh.visible = rem < 0.95;
                 this.nucleusQuadrants.forEach(q => q.visible = false);
                 this.nucleusMesh.scale.set(rem, rem, rem);
             }
             else {
-                // Chopped into quadrants
+                // Nucleus cracked into 4 quadrants
                 this.nucleusMesh.visible = false;
+                this.nucleusTrenchMesh.visible = false;
                 this.nucleusQuadrants.forEach((q, idx) => {
                     q.visible = rem > idx * 0.18;
-                    const qScale = Math.max(0.2, rem / 0.75);
+                    const qScale = Math.max(0.2, rem / 0.82);
                     q.scale.set(qScale, qScale, qScale);
                 });
             }
@@ -76156,7 +76224,7 @@ class ThreeEyeScene {
             this.yagGroup.visible = true;
             this.angleGroup.visible = false;
             this.gonioprismMesh.visible = false;
-            // Focus laser reticle to mouse/target
+            // Focus laser reticle
             const targetZ = -0.85 + (params.laserDefocusZ / 1000.0) * 0.5;
             this.yagFocalDot.position.set(this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
             // Reconnect aiming beam lines to focal point
@@ -76166,9 +76234,10 @@ class ThreeEyeScene {
             const b2Pos = this.yagAimingCone2.geometry.attributes.position;
             b2Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
             b2Pos.needsUpdate = true;
-            // Show cruciate tears once fired
+            // Show ripped tissue leaflets curling open once fired
             if (params.yagState.shots.length > 0) {
-                this.yagTearLines.visible = true;
+                this.posteriorCapsuleMesh.material.opacity = 0.22;
+                this.yagTearLeaflets.forEach(l => l.visible = true);
             }
         }
         else if (params.module === 'migs') {
@@ -76176,7 +76245,6 @@ class ThreeEyeScene {
             this.iolGroup.visible = true;
             this.yagGroup.visible = false;
             this.angleGroup.visible = true;
-            // Gonioprism on cornea
             this.gonioprismMesh.visible = true;
             // Stents deployment state
             if (params.migsState) {
@@ -76201,19 +76269,32 @@ class ThreeEyeScene {
         const currentMesh = this.instrumentMeshes.get(activeInstrument);
         if (!currentMesh)
             return;
-        // Follow cursor with realistic corneal incision pivot
+        // Follow cursor with corneal pivot
         const tx = this.mouseNorm.x * 2.2;
         const ty = this.mouseNorm.y * 2.2;
         currentMesh.position.set(tx, ty, 0.4);
-        // Phaco tip micro-vibration when ultrasound pedal active
+        // Ultrasonic vibration blur when phaco pedal in position 3
         if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
-            currentMesh.position.x += (Math.random() - 0.5) * 0.025;
-            currentMesh.position.y += (Math.random() - 0.5) * 0.025;
+            currentMesh.position.x += (Math.random() - 0.5) * 0.035;
+            currentMesh.position.y += (Math.random() - 0.5) * 0.035;
         }
     }
     triggerYagPlasmaSpark(x, y) {
+        // 1. Plasma Spark at focal breakdown
         this.yagPlasmaSpark.position.set(x * 1.8, y * 1.8, -0.85);
         this.yagPlasmaSpark.material.opacity = 1.0;
+        // 2. Ultrasonic Cavitation Shockwave Bubble Ring
+        this.yagShockwaveMesh.position.set(x * 1.8, y * 1.8, -0.86);
+        this.yagShockwaveMesh.scale.set(0.15, 0.15, 0.15);
+        this.yagShockwaveMesh.material.opacity = 1.0;
+        // 3. Physically rip open the capsular leaflets with ultrasonic tear
+        this.posteriorCapsuleMesh.material.opacity = 0.18;
+        this.yagTearLeaflets.forEach(l => {
+            l.visible = true;
+            l.scale.set(0.1, 0.1, 0.1);
+        });
+        this.isRippingCapsule = true;
+        this.ripProgress = 0;
     }
     // =========================================================================
     // ANIMATION LOOP & CLEANUP
@@ -76231,12 +76312,13 @@ class ThreeEyeScene {
         if (this.isDestroyed)
             return;
         this.animFrameId = requestAnimationFrame(this.animate);
-        // Smooth camera transition if interpolating
+        // Smooth camera transition if interpolating toward target
         if (this.isTransitioningCamera) {
-            this.transitionAlpha += 0.04;
-            this.camera.position.lerp(this.targetCamPos, 0.08);
-            this.controls.target.lerp(this.targetLookAt, 0.08);
-            if (this.transitionAlpha >= 1.0) {
+            this.camera.position.lerp(this.targetCamPos, this.transitionSpeed);
+            this.controls.target.lerp(this.targetLookAt, this.transitionSpeed);
+            if (this.camera.position.distanceTo(this.targetCamPos) < 0.04) {
+                this.camera.position.copy(this.targetCamPos);
+                this.controls.target.copy(this.targetLookAt);
                 this.isTransitioningCamera = false;
             }
         }
@@ -76248,21 +76330,35 @@ class ThreeEyeScene {
                 let x = posAttr.getX(i) + velAttr.getX(i);
                 let y = posAttr.getY(i) + velAttr.getY(i);
                 let z = posAttr.getZ(i) + velAttr.getZ(i);
-                // Reset particle if drifted too far into AC
                 if (Math.hypot(x, y) < 2.9) {
-                    const angle = Math.random() * 0.8 + 1.1;
+                    const angle = Math.random() * 0.9 + 1.05;
                     const r = 3.42 + Math.random() * 0.12;
                     x = Math.cos(angle) * r;
                     y = Math.sin(angle) * r;
-                    z = 0.06;
+                    z = 0.08;
                 }
                 posAttr.setXYZ(i, x, y, z);
             }
             posAttr.needsUpdate = true;
         }
-        // Decay YAG plasma spark
+        // Decay YAG plasma spark & expand cavitation shockwave
         if (this.yagPlasmaSpark && this.yagPlasmaSpark.material.opacity > 0) {
-            this.yagPlasmaSpark.material.opacity -= 0.08;
+            this.yagPlasmaSpark.material.opacity -= 0.06;
+        }
+        if (this.yagShockwaveMesh && this.yagShockwaveMesh.material.opacity > 0) {
+            this.yagShockwaveMesh.scale.multiplyScalar(1.12);
+            this.yagShockwaveMesh.material.opacity -= 0.04;
+        }
+        // Dynamic tearing and curling of posterior capsule leaflets
+        if (this.isRippingCapsule) {
+            this.ripProgress = Math.min(1.0, this.ripProgress + 0.08);
+            const s = MathUtils.lerp(0.1, 1.0, this.ripProgress);
+            this.yagTearLeaflets.forEach(l => {
+                l.scale.set(s, s, s);
+            });
+            if (this.ripProgress >= 1.0) {
+                this.isRippingCapsule = false;
+            }
         }
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
@@ -76288,6 +76384,14 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
     const [laserDefocusZ, setLaserDefocusZ] = reactExports.useState(150); // µm offset for YAG focus
     const [showOptics, setShowOptics] = reactExports.useState(false); // Collapsed on mobile by default to preserve eye view
     const [currentCameraPreset, setCurrentCameraPreset] = reactExports.useState('microscope');
+    const [isZenMode, setIsZenMode] = reactExports.useState(false); // One-click clear view of 3D eyeball without HUD obstruction
+    // Auto-focus 3D camera into target anatomy whenever surgical step advances
+    reactExports.useEffect(() => {
+        if (!threeEyeSceneRef.current || !currentStepId)
+            return;
+        threeEyeSceneRef.current.focusOnStep(currentStepId);
+        setCurrentCameraPreset('step_focus');
+    }, [currentStepId]);
     // Pre-loaded Real Eye Image Elements
     const cataractImgRef = reactExports.useRef(null);
     const iolImgRef = reactExports.useRef(null);
@@ -76396,6 +76500,7 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         const normY = (mousePos.y - height / 2) / (eyeRadiusPx * 0.65);
         threeEyeSceneRef.current.updateState({
             module,
+            currentStepId,
             activeInstrument,
             pedalPosition,
             nucleusState,
@@ -76411,6 +76516,7 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         });
     }, [
         module,
+        currentStepId,
         activeInstrument,
         pedalPosition,
         nucleusState,
@@ -77684,7 +77790,14 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
             }
         }
     }, [handlePointerDownAction]);
-    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 left-2 sm:left-4 z-20 flex flex-wrap items-center gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-140px)]", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-1 shrink-0", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "3D Angle:" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
+    return (jsxRuntimeExports.jsxs("div", { ref: containerRef, className: "relative w-full h-full bg-[#050811] overflow-hidden select-none cursor-crosshair touch-none", onMouseDown: handleMouseDown, onMouseMove: handleMouseMove, onMouseUp: handleMouseUp, onMouseLeave: handleMouseUp, onTouchStart: handleTouchStart, onTouchMove: handleTouchMove, onTouchEnd: handleTouchEnd, onTouchCancel: handleTouchEnd, children: [jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), jsxRuntimeExports.jsx("canvas", { ref: overlayCanvasRef, className: "absolute inset-0 w-full h-full pointer-events-none" }), !isZenMode && (jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-3 left-2 sm:left-3 z-20 flex flex-wrap items-center gap-1 sm:gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-120px)]", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-0.5 shrink-0", children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { className: "hidden xs:inline", children: "3D View:" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                            if (currentStepId) {
+                                threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                                setCurrentCameraPreset('step_focus');
+                            }
+                        }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${currentCameraPreset === 'step_focus'
+                            ? 'bg-amber-500 text-white shadow-md shadow-amber-950/60 font-bold animate-pulse'
+                            : 'bg-amber-950/50 text-amber-300 hover:text-white hover:bg-amber-900/60 border border-amber-600/50'}`, title: "Macro Zoom directly into the target incision or tissue for the current surgical step", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3 h-3 text-amber-300" }), jsxRuntimeExports.jsx("span", { children: "\uD83C\uDFAF Step Focus" })] }), jsxRuntimeExports.jsx("button", { onClick: () => {
                             threeEyeSceneRef.current?.setCameraPreset('microscope');
                             setCurrentCameraPreset('microscope');
                         }, className: `px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${currentCameraPreset === 'microscope'
@@ -77713,7 +77826,10 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                             threeEyeSceneRef.current?.controls.reset();
                             threeEyeSceneRef.current?.setCameraPreset('microscope');
                             setCurrentCameraPreset('microscope');
-                        }, className: "p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition", title: "Reset 3D Camera Orbit", children: jsxRuntimeExports.jsx(RotateCcw, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                        }, className: "p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition", title: "Reset 3D Camera Orbit", children: jsxRuntimeExports.jsx(RotateCcw, { className: "w-3.5 h-3.5" }) })] })), jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                    e.stopPropagation();
+                    setIsZenMode(!isZenMode);
+                }, className: `absolute ${isZenMode ? 'top-3 right-3 bg-emerald-600 text-white' : 'bottom-3 right-3 bg-[#0a121e]/90 text-slate-400 hover:text-white border border-emerald-900/40'} z-30 px-2.5 py-1.5 rounded-xl backdrop-blur-md shadow-2xl text-[10px] font-mono font-bold flex items-center gap-1.5 transition active:scale-95`, title: isZenMode ? 'Exit Zen Mode (Show Controls)' : 'Zen Mode: Hide HUD for 100% Unobstructed Eyeball View', children: [jsxRuntimeExports.jsx(Eye, { className: "w-3.5 h-3.5 text-emerald-400" }), jsxRuntimeExports.jsx("span", { children: isZenMode ? 'EXIT ZEN MODE' : 'ZEN MODE' })] }), jsxRuntimeExports.jsxs("div", { className: "absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [onToggleGuides && (jsxRuntimeExports.jsxs("button", { onClick: (e) => {
                                     e.stopPropagation();
                                     onToggleGuides();
                                 }, title: showGuides ? 'Hide Interactive Guidance Pointers' : 'Show Interactive Guidance Pointers', className: `flex items-center gap-1 px-2.5 py-1.5 rounded-xl border backdrop-blur-md shadow-xl text-xs font-semibold transition active:scale-95 ${showGuides
@@ -78805,7 +78921,7 @@ const SurgicalInstructionBanner = ({ currentInstruction, onSelectInstrument, sho
         yag_laser: 'Nd:YAG Q-Switched Laser',
         none: 'Hands Free'
     };
-    return (jsxRuntimeExports.jsx("div", { className: "absolute top-2 left-2 right-2 sm:right-auto sm:top-3 sm:left-3 sm:max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
+    return (jsxRuntimeExports.jsx("div", { className: "absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 w-[95%] sm:w-[90%] max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
                                         ? 'bg-rose-950 border-rose-400 text-rose-300 shadow-md shadow-rose-900/50 animate-pulse'
                                         : 'bg-[#101b2e] border-[#1c2c44] text-slate-400 hover:text-emerald-300'}`, title: isSpeaking ? 'Stop Spoken Voice' : 'Play Attending Voice Narration', children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3.5 sm:h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2.5 sm:h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-3.5 sm:h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.2 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs sm:text-[13px] truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] sm:text-[11px] text-emerald-300 font-medium truncate mt-0.5", children: currentInstruction.beginnerSummary })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: () => setIsBeginnerMode(!isBeginnerMode), className: `px-2 py-1 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 ${isBeginnerMode
                                         ? 'bg-amber-950/80 border-amber-600 text-amber-300'

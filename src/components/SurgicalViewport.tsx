@@ -104,6 +104,14 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
   const [laserDefocusZ, setLaserDefocusZ] = useState<number>(150); // µm offset for YAG focus
   const [showOptics, setShowOptics] = useState<boolean>(false); // Collapsed on mobile by default to preserve eye view
   const [currentCameraPreset, setCurrentCameraPreset] = useState<CameraPresetType>('microscope');
+  const [isZenMode, setIsZenMode] = useState<boolean>(false); // One-click clear view of 3D eyeball without HUD obstruction
+
+  // Auto-focus 3D camera into target anatomy whenever surgical step advances
+  useEffect(() => {
+    if (!threeEyeSceneRef.current || !currentStepId) return;
+    threeEyeSceneRef.current.focusOnStep(currentStepId);
+    setCurrentCameraPreset('step_focus');
+  }, [currentStepId]);
 
   // Pre-loaded Real Eye Image Elements
   const cataractImgRef = useRef<HTMLImageElement | null>(null);
@@ -221,6 +229,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
 
     threeEyeSceneRef.current.updateState({
       module,
+      currentStepId,
       activeInstrument,
       pedalPosition,
       nucleusState,
@@ -236,6 +245,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     });
   }, [
     module,
+    currentStepId,
     activeInstrument,
     pedalPosition,
     nucleusState,
@@ -1659,94 +1669,136 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
       {/* 3D Camera Angles & Deep Zoom Presets Bar */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-20 flex flex-wrap items-center gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-140px)]">
-        <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-1 shrink-0">
-          <Eye className="w-3.5 h-3.5" />
-          <span className="hidden xs:inline">3D Angle:</span>
-        </span>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.setCameraPreset('microscope');
-            setCurrentCameraPreset('microscope');
-          }}
-          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-            currentCameraPreset === 'microscope'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-          }`}
-          title="0° Coaxial Surgeon Microscope View"
-        >
-          Microscope
-        </button>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
-            setCurrentCameraPreset('glaucoma_angle');
-          }}
-          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
-            currentCameraPreset === 'glaucoma_angle'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-              : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'
-          }`}
-          title="Deep Zoom into 38° Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal"
-        >
-          <Compass className="w-3 h-3 text-emerald-400" />
-          <span>TM Angle (38°)</span>
-        </button>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.setCameraPreset('cataract_core');
-            setCurrentCameraPreset('cataract_core');
-          }}
-          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-            currentCameraPreset === 'cataract_core'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-          }`}
-          title="Deep Zoom into Cataract Nucleus Core & Phaco Trench"
-        >
-          Cataract Core
-        </button>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
-            setCurrentCameraPreset('yag_capsule');
-          }}
-          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-            currentCameraPreset === 'yag_capsule'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-          }`}
-          title="Macro Zoom onto Posterior Capsule & IOL Optic"
-        >
-          YAG Capsule
-        </button>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.setCameraPreset('cross_section');
-            setCurrentCameraPreset('cross_section');
-          }}
-          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
-            currentCameraPreset === 'cross_section'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
-              : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-          }`}
-          title="Anterior Chamber Profile Cross-Section"
-        >
-          Profile
-        </button>
-        <button
-          onClick={() => {
-            threeEyeSceneRef.current?.controls.reset();
-            threeEyeSceneRef.current?.setCameraPreset('microscope');
-            setCurrentCameraPreset('microscope');
-          }}
-          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
-          title="Reset 3D Camera Orbit"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      {!isZenMode && (
+        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-20 flex flex-wrap items-center gap-1 sm:gap-1.5 bg-[#0a121e]/90 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-2xl border border-emerald-900/50 shadow-xl text-xs max-w-[calc(100vw-120px)]">
+          <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1 mr-0.5 shrink-0">
+            <Eye className="w-3.5 h-3.5" />
+            <span className="hidden xs:inline">3D View:</span>
+          </span>
+
+          {/* Direct Step Target Macro Focus */}
+          <button
+            onClick={() => {
+              if (currentStepId) {
+                threeEyeSceneRef.current?.focusOnStep(currentStepId);
+                setCurrentCameraPreset('step_focus');
+              }
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'step_focus'
+                ? 'bg-amber-500 text-white shadow-md shadow-amber-950/60 font-bold animate-pulse'
+                : 'bg-amber-950/50 text-amber-300 hover:text-white hover:bg-amber-900/60 border border-amber-600/50'
+            }`}
+            title="Macro Zoom directly into the target incision or tissue for the current surgical step"
+          >
+            <Crosshair className="w-3 h-3 text-amber-300" />
+            <span>🎯 Step Focus</span>
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.setCameraPreset('microscope');
+              setCurrentCameraPreset('microscope');
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'microscope'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="0° Coaxial Surgeon Microscope View"
+          >
+            Microscope
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.setCameraPreset('glaucoma_angle');
+              setCurrentCameraPreset('glaucoma_angle');
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition flex items-center gap-1 active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'glaucoma_angle'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-emerald-400 hover:text-white hover:bg-emerald-950/40 border border-emerald-800/40'
+            }`}
+            title="Deep Zoom into 38° Glaucoma Angle: Trabecular Meshwork & Schlemm's Canal"
+          >
+            <Compass className="w-3 h-3 text-emerald-400" />
+            <span>TM Angle (38°)</span>
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.setCameraPreset('cataract_core');
+              setCurrentCameraPreset('cataract_core');
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'cataract_core'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="Deep Zoom into Cataract Nucleus Core & Phaco Trench"
+          >
+            Cataract Core
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.setCameraPreset('yag_capsule');
+              setCurrentCameraPreset('yag_capsule');
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'yag_capsule'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="Macro Zoom onto Posterior Capsule & IOL Optic"
+          >
+            YAG Capsule
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.setCameraPreset('cross_section');
+              setCurrentCameraPreset('cross_section');
+            }}
+            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95 whitespace-nowrap ${
+              currentCameraPreset === 'cross_section'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/60'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="Anterior Chamber Profile Cross-Section"
+          >
+            Profile
+          </button>
+
+          <button
+            onClick={() => {
+              threeEyeSceneRef.current?.controls.reset();
+              threeEyeSceneRef.current?.setCameraPreset('microscope');
+              setCurrentCameraPreset('microscope');
+            }}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
+            title="Reset 3D Camera Orbit"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Zen Mode Toggle (Unobstructed Full Eyeball View) */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsZenMode(!isZenMode);
+        }}
+        className={`absolute ${
+          isZenMode ? 'top-3 right-3 bg-emerald-600 text-white' : 'bottom-3 right-3 bg-[#0a121e]/90 text-slate-400 hover:text-white border border-emerald-900/40'
+        } z-30 px-2.5 py-1.5 rounded-xl backdrop-blur-md shadow-2xl text-[10px] font-mono font-bold flex items-center gap-1.5 transition active:scale-95`}
+        title={isZenMode ? 'Exit Zen Mode (Show Controls)' : 'Zen Mode: Hide HUD for 100% Unobstructed Eyeball View'}
+      >
+        <Eye className="w-3.5 h-3.5 text-emerald-400" />
+        <span>{isZenMode ? 'EXIT ZEN MODE' : 'ZEN MODE'}</span>
+      </button>
 
       {/* Top Right Optical Controls & Guidance Toggle */}
       <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 flex flex-col items-end gap-2">
