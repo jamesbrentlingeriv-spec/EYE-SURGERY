@@ -300,6 +300,39 @@ export const App: React.FC = () => {
     }
   };
 
+  // Surgery Module Cycling (Prev / Next Surgery)
+  const handlePrevSurgery = () => {
+    if (module === 'phaco' || module === 'iol') {
+      setModule('migs');
+      setMigsStep('microscope_and_head_tilt');
+      setActiveInstrument('gonio_lens');
+    } else if (module === 'yag') {
+      setModule('phaco');
+      setPhacoStep('paracentesis');
+      setActiveInstrument('mvr_blade');
+    } else {
+      setModule('yag');
+      setYagStep('aiming_focus');
+      setActiveInstrument('yag_laser');
+    }
+  };
+
+  const handleNextSurgery = () => {
+    if (module === 'phaco' || module === 'iol') {
+      setModule('yag');
+      setYagStep('aiming_focus');
+      setActiveInstrument('yag_laser');
+    } else if (module === 'yag') {
+      setModule('migs');
+      setMigsStep('microscope_and_head_tilt');
+      setActiveInstrument('gonio_lens');
+    } else {
+      setModule('phaco');
+      setPhacoStep('paracentesis');
+      setActiveInstrument('mvr_blade');
+    }
+  };
+
   // Incision handling
   const handleIncisionAdvance = useCallback((type: 'paracentesis' | 'clear_corneal') => {
     cataractEngineRef.current.advanceIncision(type, type === 'paracentesis' ? 0.55 : 0.35);
@@ -746,9 +779,30 @@ export const App: React.FC = () => {
       />
 
       {/* Module Selector Bar with Step Navigation & Active Tool Pill */}
-      <div className="bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar">
+      <div
+        onWheel={(e) => {
+          if (e.deltaY) e.currentTarget.scrollLeft += e.deltaY;
+        }}
+        className="bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar scroll-smooth"
+      >
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span className="text-slate-400 font-medium hidden md:inline">Surgeries:</span>
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-slate-400 font-medium hidden md:inline">Surgeries:</span>
+            <button
+              onClick={handlePrevSurgery}
+              className="p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95"
+              title="Switch to Previous Surgery"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleNextSurgery}
+              className="p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95"
+              title="Switch to Next Surgery"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <div className="flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]">
             {/* Procedure 1: Combined Cataract & Foldable IOL */}
             <button

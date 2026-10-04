@@ -21272,7 +21272,7 @@ function createLucideIcon(iconDataOrName, iconNode = [], aliases = []) {
  */
 
 
-const __iconData$S = {
+const __iconData$T = {
   name: "activity",
   size: 24,
   node: [
@@ -21285,8 +21285,27 @@ const __iconData$S = {
     ]
   ]
 };
+__iconData$T.node;
+const Activity = createLucideIcon(__iconData$T);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$S = {
+  name: "arrow-right",
+  size: 24,
+  node: [
+    ["path", { d: "M5 12h14", key: "1ays0h" }],
+    ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  ]
+};
 __iconData$S.node;
-const Activity = createLucideIcon(__iconData$S);
+const ArrowRight = createLucideIcon(__iconData$S);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21297,25 +21316,6 @@ const Activity = createLucideIcon(__iconData$S);
 
 
 const __iconData$R = {
-  name: "arrow-right",
-  size: 24,
-  node: [
-    ["path", { d: "M5 12h14", key: "1ays0h" }],
-    ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
-  ]
-};
-__iconData$R.node;
-const ArrowRight = createLucideIcon(__iconData$R);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$Q = {
   name: "award",
   size: 24,
   node: [
@@ -21329,8 +21329,8 @@ const __iconData$Q = {
     ["circle", { cx: "12", cy: "8", r: "6", key: "1vp47v" }]
   ]
 };
-__iconData$Q.node;
-const Award = createLucideIcon(__iconData$Q);
+__iconData$R.node;
+const Award = createLucideIcon(__iconData$R);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21340,7 +21340,7 @@ const Award = createLucideIcon(__iconData$Q);
  */
 
 
-const __iconData$P = {
+const __iconData$Q = {
   name: "book-open",
   size: 24,
   node: [
@@ -21354,8 +21354,8 @@ const __iconData$P = {
     ]
   ]
 };
-__iconData$P.node;
-const BookOpen = createLucideIcon(__iconData$P);
+__iconData$Q.node;
+const BookOpen = createLucideIcon(__iconData$Q);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21365,7 +21365,7 @@ const BookOpen = createLucideIcon(__iconData$P);
  */
 
 
-const __iconData$O = {
+const __iconData$P = {
   name: "camera",
   size: 24,
   node: [
@@ -21379,8 +21379,24 @@ const __iconData$O = {
     ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
   ]
 };
+__iconData$P.node;
+const Camera$1 = createLucideIcon(__iconData$P);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$O = {
+  name: "check",
+  size: 24,
+  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
+};
 __iconData$O.node;
-const Camera$1 = createLucideIcon(__iconData$O);
+const Check = createLucideIcon(__iconData$O);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21391,12 +21407,12 @@ const Camera$1 = createLucideIcon(__iconData$O);
 
 
 const __iconData$N = {
-  name: "check",
+  name: "chevron-down",
   size: 24,
-  node: [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]
+  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
 };
 __iconData$N.node;
-const Check = createLucideIcon(__iconData$N);
+const ChevronDown = createLucideIcon(__iconData$N);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21407,12 +21423,12 @@ const Check = createLucideIcon(__iconData$N);
 
 
 const __iconData$M = {
-  name: "chevron-down",
+  name: "chevron-right",
   size: 24,
-  node: [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]]
+  node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
 };
 __iconData$M.node;
-const ChevronDown = createLucideIcon(__iconData$M);
+const ChevronRight = createLucideIcon(__iconData$M);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21423,12 +21439,12 @@ const ChevronDown = createLucideIcon(__iconData$M);
 
 
 const __iconData$L = {
-  name: "chevron-right",
+  name: "chevron-left",
   size: 24,
-  node: [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]]
+  node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
 };
 __iconData$L.node;
-const ChevronRight = createLucideIcon(__iconData$L);
+const ChevronLeft = createLucideIcon(__iconData$L);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21439,12 +21455,12 @@ const ChevronRight = createLucideIcon(__iconData$L);
 
 
 const __iconData$K = {
-  name: "chevron-left",
+  name: "chevron-up",
   size: 24,
-  node: [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]]
+  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
 };
 __iconData$K.node;
-const ChevronLeft = createLucideIcon(__iconData$K);
+const ChevronUp = createLucideIcon(__iconData$K);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21455,12 +21471,16 @@ const ChevronLeft = createLucideIcon(__iconData$K);
 
 
 const __iconData$J = {
-  name: "chevron-up",
+  name: "circle-check-big",
   size: 24,
-  node: [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]]
+  node: [
+    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+  ],
+  aliases: ["check-circle"]
 };
 __iconData$J.node;
-const ChevronUp = createLucideIcon(__iconData$J);
+const CircleCheckBig = createLucideIcon(__iconData$J);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21471,16 +21491,16 @@ const ChevronUp = createLucideIcon(__iconData$J);
 
 
 const __iconData$I = {
-  name: "circle-check-big",
+  name: "circle-check",
   size: 24,
   node: [
-    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m16 9-5.5 5.5L8 12", key: "xofnsj" }]
   ],
-  aliases: ["check-circle"]
+  aliases: ["check-circle-2"]
 };
 __iconData$I.node;
-const CircleCheckBig = createLucideIcon(__iconData$I);
+const CircleCheck = createLucideIcon(__iconData$I);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21491,16 +21511,17 @@ const CircleCheckBig = createLucideIcon(__iconData$I);
 
 
 const __iconData$H = {
-  name: "circle-check",
+  name: "circle-question-mark",
   size: 24,
   node: [
     ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "m16 9-5.5 5.5L8 12", key: "xofnsj" }]
+    ["path", { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", key: "1u773s" }],
+    ["path", { d: "M12 17h.01", key: "p32p05" }]
   ],
-  aliases: ["check-circle-2"]
+  aliases: ["help-circle", "circle-help"]
 };
 __iconData$H.node;
-const CircleCheck = createLucideIcon(__iconData$H);
+const CircleQuestionMark = createLucideIcon(__iconData$H);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21511,27 +21532,6 @@ const CircleCheck = createLucideIcon(__iconData$H);
 
 
 const __iconData$G = {
-  name: "circle-question-mark",
-  size: 24,
-  node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", key: "1u773s" }],
-    ["path", { d: "M12 17h.01", key: "p32p05" }]
-  ],
-  aliases: ["help-circle", "circle-help"]
-};
-__iconData$G.node;
-const CircleQuestionMark = createLucideIcon(__iconData$G);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$F = {
   name: "compass",
   size: 24,
   node: [
@@ -21545,8 +21545,8 @@ const __iconData$F = {
     ]
   ]
 };
-__iconData$F.node;
-const Compass = createLucideIcon(__iconData$F);
+__iconData$G.node;
+const Compass = createLucideIcon(__iconData$G);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21556,7 +21556,7 @@ const Compass = createLucideIcon(__iconData$F);
  */
 
 
-const __iconData$E = {
+const __iconData$F = {
   name: "crosshair",
   size: 24,
   node: [
@@ -21567,8 +21567,27 @@ const __iconData$E = {
     ["line", { x1: "12", x2: "12", y1: "22", y2: "18", key: "15g9kq" }]
   ]
 };
+__iconData$F.node;
+const Crosshair = createLucideIcon(__iconData$F);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$E = {
+  name: "disc",
+  size: 24,
+  node: [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+  ]
+};
 __iconData$E.node;
-const Crosshair = createLucideIcon(__iconData$E);
+const Disc = createLucideIcon(__iconData$E);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21579,15 +21598,16 @@ const Crosshair = createLucideIcon(__iconData$E);
 
 
 const __iconData$D = {
-  name: "disc",
+  name: "download",
   size: 24,
   node: [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+    ["path", { d: "M12 15V3", key: "m9g1x1" }],
+    ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+    ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
   ]
 };
 __iconData$D.node;
-const Disc = createLucideIcon(__iconData$D);
+const Download = createLucideIcon(__iconData$D);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21598,26 +21618,6 @@ const Disc = createLucideIcon(__iconData$D);
 
 
 const __iconData$C = {
-  name: "download",
-  size: 24,
-  node: [
-    ["path", { d: "M12 15V3", key: "m9g1x1" }],
-    ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-    ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
-  ]
-};
-__iconData$C.node;
-const Download = createLucideIcon(__iconData$C);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$B = {
   name: "droplet",
   size: 24,
   node: [
@@ -21630,8 +21630,8 @@ const __iconData$B = {
     ]
   ]
 };
-__iconData$B.node;
-const Droplet = createLucideIcon(__iconData$B);
+__iconData$C.node;
+const Droplet = createLucideIcon(__iconData$C);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21641,7 +21641,7 @@ const Droplet = createLucideIcon(__iconData$B);
  */
 
 
-const __iconData$A = {
+const __iconData$B = {
   name: "droplets",
   size: 24,
   node: [
@@ -21661,8 +21661,8 @@ const __iconData$A = {
     ]
   ]
 };
-__iconData$A.node;
-const Droplets = createLucideIcon(__iconData$A);
+__iconData$B.node;
+const Droplets = createLucideIcon(__iconData$B);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21672,7 +21672,7 @@ const Droplets = createLucideIcon(__iconData$A);
  */
 
 
-const __iconData$z = {
+const __iconData$A = {
   name: "eye",
   size: 24,
   node: [
@@ -21686,8 +21686,8 @@ const __iconData$z = {
     ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
   ]
 };
-__iconData$z.node;
-const Eye = createLucideIcon(__iconData$z);
+__iconData$A.node;
+const Eye = createLucideIcon(__iconData$A);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21697,7 +21697,7 @@ const Eye = createLucideIcon(__iconData$z);
  */
 
 
-const __iconData$y = {
+const __iconData$z = {
   name: "file-text",
   size: 24,
   node: [
@@ -21714,8 +21714,8 @@ const __iconData$y = {
     ["path", { d: "M16 17H8", key: "z1uh3a" }]
   ]
 };
-__iconData$y.node;
-const FileText = createLucideIcon(__iconData$y);
+__iconData$z.node;
+const FileText = createLucideIcon(__iconData$z);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21725,7 +21725,7 @@ const FileText = createLucideIcon(__iconData$y);
  */
 
 
-const __iconData$x = {
+const __iconData$y = {
   name: "flame",
   size: 24,
   node: [
@@ -21738,8 +21738,27 @@ const __iconData$x = {
     ]
   ]
 };
+__iconData$y.node;
+const Flame = createLucideIcon(__iconData$y);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$x = {
+  name: "gauge",
+  size: 24,
+  node: [
+    ["path", { d: "m12 14 4-4", key: "9kzdfg" }],
+    ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
+  ]
+};
 __iconData$x.node;
-const Flame = createLucideIcon(__iconData$x);
+const Gauge = createLucideIcon(__iconData$x);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21750,25 +21769,6 @@ const Flame = createLucideIcon(__iconData$x);
 
 
 const __iconData$w = {
-  name: "gauge",
-  size: 24,
-  node: [
-    ["path", { d: "m12 14 4-4", key: "9kzdfg" }],
-    ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
-  ]
-};
-__iconData$w.node;
-const Gauge = createLucideIcon(__iconData$w);
-
-/**
- * @license lucide-react v1.51.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-
-
-const __iconData$v = {
   name: "heart",
   size: 24,
   node: [
@@ -21781,8 +21781,8 @@ const __iconData$v = {
     ]
   ]
 };
-__iconData$v.node;
-const Heart = createLucideIcon(__iconData$v);
+__iconData$w.node;
+const Heart = createLucideIcon(__iconData$w);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21792,7 +21792,7 @@ const Heart = createLucideIcon(__iconData$v);
  */
 
 
-const __iconData$u = {
+const __iconData$v = {
   name: "house",
   size: 24,
   node: [
@@ -21807,8 +21807,8 @@ const __iconData$u = {
   ],
   aliases: ["home"]
 };
-__iconData$u.node;
-const House = createLucideIcon(__iconData$u);
+__iconData$v.node;
+const House = createLucideIcon(__iconData$v);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -21818,7 +21818,7 @@ const House = createLucideIcon(__iconData$u);
  */
 
 
-const __iconData$t = {
+const __iconData$u = {
   name: "layers",
   size: 24,
   node: [
@@ -21846,8 +21846,29 @@ const __iconData$t = {
   ],
   aliases: ["layers-3"]
 };
+__iconData$u.node;
+const Layers$1 = createLucideIcon(__iconData$u);
+
+/**
+ * @license lucide-react v1.51.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+
+const __iconData$t = {
+  name: "layout-grid",
+  size: 24,
+  node: [
+    ["rect", { width: "7", height: "7", x: "3", y: "3", rx: "1", key: "1g98yp" }],
+    ["rect", { width: "7", height: "7", x: "14", y: "3", rx: "1", key: "6d4xhi" }],
+    ["rect", { width: "7", height: "7", x: "14", y: "14", rx: "1", key: "nxv5o0" }],
+    ["rect", { width: "7", height: "7", x: "3", y: "14", rx: "1", key: "1bb6yr" }]
+  ]
+};
 __iconData$t.node;
-const Layers$1 = createLucideIcon(__iconData$t);
+const LayoutGrid = createLucideIcon(__iconData$t);
 
 /**
  * @license lucide-react v1.51.0 - ISC
@@ -71906,9 +71927,33 @@ const SurgeryMainMenu = ({ onSelectSurgery, onOpenVideoOverlay, onOpenPdfGuides,
             pdfGuideName: 'MIGS_Trabecular_Micro_Stent_Glaucoma_Guide.pdf'
         }
     ];
-    return (jsxRuntimeExports.jsxs("div", { className: "min-h-screen w-screen bg-[#050811] text-slate-200 select-none overflow-y-auto font-sans p-4 sm:p-6 flex flex-col justify-between", children: [jsxRuntimeExports.jsxs("header", { className: "max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-xl shadow-cyan-950/50", children: jsxRuntimeExports.jsx(Eye, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "text-[11px] font-mono tracking-widest text-cyan-400 uppercase font-bold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { children: "PAL OPTIC MEDICAL SPECIALTY SUITE" }), jsxRuntimeExports.jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping" })] }), jsxRuntimeExports.jsx("h1", { className: "text-xl sm:text-2xl font-black text-white tracking-tight", children: "Ophthalmic Surgical Operations Hub" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides('master'), className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(BookOpen, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Master PDF Manual" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(Award, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "Clinical Compendium" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "max-w-6xl w-full mx-auto my-6 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold", children: "RESIDENCY & FELLOWSHIP SIMULATION" }), jsxRuntimeExports.jsx("h2", { className: "text-lg sm:text-xl font-bold text-white mt-1.5", children: "Select an Ophthalmic Surgical Procedure to Begin" }), jsxRuntimeExports.jsx("p", { className: "text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed", children: "Practice anterior segment micro-surgery with real fluidics differential equations, progressive 3-plane incisions, tactile sound synthesis, real surgical video overlays, and attending voice coaching." })] }), jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2 shrink-0", children: jsxRuntimeExports.jsxs("span", { className: "text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-700/80 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleCheck, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "Surgical Suites Ready" })] }) })] }), jsxRuntimeExports.jsx("div", { className: "max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5 my-2", children: surgeries.map((surg) => {
+    const [activeFilter, setActiveFilter] = reactExports.useState('all');
+    return (jsxRuntimeExports.jsxs("div", { className: "fixed inset-0 w-full h-full bg-[#050811] text-slate-200 select-none overflow-y-auto overscroll-contain font-sans p-4 sm:p-6 lg:p-8 flex flex-col justify-between z-10", children: [jsxRuntimeExports.jsxs("header", { className: "max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4 shrink-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-xl shadow-cyan-950/50", children: jsxRuntimeExports.jsx(Eye, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "text-[11px] font-mono tracking-widest text-cyan-400 uppercase font-bold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx("span", { children: "PAL OPTIC MEDICAL SPECIALTY SUITE" }), jsxRuntimeExports.jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping" })] }), jsxRuntimeExports.jsx("h1", { className: "text-xl sm:text-2xl font-black text-white tracking-tight", children: "Ophthalmic Surgical Operations Hub" })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides('master'), className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(BookOpen, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Master PDF Manual" })] }), jsxRuntimeExports.jsxs("button", { onClick: onOpenReference, className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1a2942] border border-[#233857] text-slate-200 text-xs font-semibold transition active:scale-95 shadow-md", children: [jsxRuntimeExports.jsx(Award, { className: "w-4 h-4 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "Clinical Compendium" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "max-w-6xl w-full mx-auto my-5 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold", children: "RESIDENCY & FELLOWSHIP SIMULATION" }), jsxRuntimeExports.jsx("h2", { className: "text-lg sm:text-xl font-bold text-white mt-1.5", children: "Select an Ophthalmic Surgical Procedure to Begin" }), jsxRuntimeExports.jsx("p", { className: "text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed", children: "Practice anterior segment micro-surgery with real fluidics differential equations, progressive 3-plane incisions, tactile sound synthesis, real surgical video overlays, and attending voice coaching." })] }), jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2 shrink-0", children: jsxRuntimeExports.jsxs("span", { className: "text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-700/80 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(CircleCheck, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "3 Surgical Suites Ready" })] }) })] }), jsxRuntimeExports.jsxs("div", { className: "max-w-6xl w-full mx-auto mb-4 sticky top-0 z-30 bg-[#080d19]/95 backdrop-blur-md p-2.5 rounded-2xl border border-[#1b2b44] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto", children: [jsxRuntimeExports.jsxs("button", { onClick: () => setActiveFilter('all'), className: `px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${activeFilter === 'all'
+                                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                                    : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'}`, children: [jsxRuntimeExports.jsx(LayoutGrid, { className: "w-3.5 h-3.5" }), jsxRuntimeExports.jsx("span", { children: "All 3 Surgeries" })] }), surgeries.map((s, idx) => (jsxRuntimeExports.jsx("button", { onClick: () => {
+                                    setActiveFilter(idx);
+                                    const el = document.getElementById(`surgery-card-${s.id}`);
+                                    if (el)
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                }, className: `px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${activeFilter === idx
+                                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                                    : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'}`, children: jsxRuntimeExports.jsxs("span", { children: [idx + 1, ". ", s.title.split(' ')[0]] }) }, s.id)))] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end", children: [jsxRuntimeExports.jsx("span", { className: "text-[11px] font-mono text-slate-400", children: activeFilter === 'all' ? 'Scroll below or switch:' : `Surgery ${activeFilter + 1} of 3` }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            const nextIdx = activeFilter === 'all' ? 2 : (activeFilter - 1 + surgeries.length) % surgeries.length;
+                                            setActiveFilter(nextIdx);
+                                            const el = document.getElementById(`surgery-card-${surgeries[nextIdx].id}`);
+                                            if (el)
+                                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, className: "px-3 py-1.5 rounded-xl bg-[#0f172a] hover:bg-[#16253c] border border-[#20324c] text-slate-200 text-xs font-semibold flex items-center gap-1 transition active:scale-95 shadow-sm", title: "Previous Surgery", children: [jsxRuntimeExports.jsx(ChevronLeft, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Prev" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                            const nextIdx = activeFilter === 'all' ? 0 : (activeFilter + 1) % surgeries.length;
+                                            setActiveFilter(nextIdx);
+                                            const el = document.getElementById(`surgery-card-${surgeries[nextIdx].id}`);
+                                            if (el)
+                                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, className: "px-3 py-1.5 rounded-xl bg-[#0f172a] hover:bg-[#16253c] border border-[#20324c] text-slate-200 text-xs font-semibold flex items-center gap-1 transition active:scale-95 shadow-sm", title: "Next Surgery", children: [jsxRuntimeExports.jsx("span", { children: "Next" }), jsxRuntimeExports.jsx(ChevronRight, { className: "w-4 h-4 text-cyan-400" })] })] })] })] }), jsxRuntimeExports.jsx("div", { className: `max-w-6xl w-full mx-auto my-2 ${activeFilter === 'all'
+                    ? 'grid grid-cols-1 lg:grid-cols-3 gap-5'
+                    : 'flex flex-col max-w-2xl'}`, children: (activeFilter === 'all' ? surgeries : [surgeries[activeFilter]]).map((surg) => {
                     const Icon = surg.icon;
-                    return (jsxRuntimeExports.jsxs("div", { className: `rounded-2xl border ${surg.themeBorder} ${surg.themeBg} backdrop-blur-md p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group relative overflow-hidden`, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-3 border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold", children: surg.num }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-[#09101d] text-cyan-300 border border-[#1b2b44] px-2 py-0.5 rounded font-bold", children: surg.badge })] }), jsxRuntimeExports.jsxs("div", { className: "mt-4 flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-[#09101d] border border-[#1e2f4a] group-hover:border-cyan-400 text-cyan-400 transition-colors shadow-md", children: jsxRuntimeExports.jsx(Icon, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h3", { className: "text-base font-bold text-white group-hover:text-cyan-300 transition-colors", children: surg.title }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-400", children: surg.subtitle })] })] }), jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-300 leading-relaxed mt-4", children: surg.summary }), jsxRuntimeExports.jsx("div", { className: "mt-4 pt-3 border-t border-[#17253a] space-y-1.5 text-[11px]", children: surg.highlights.map((hl, i) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-bold", children: "\u2713" }), jsxRuntimeExports.jsx("span", { children: hl })] }, i))) })] }), jsxRuntimeExports.jsxs("div", { className: "mt-6 pt-4 border-t border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onSelectSurgery(surg.id), className: `w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95 ${surg.themeButton}`, children: [jsxRuntimeExports.jsxs("span", { children: ["Launch ", surg.title.split(' ')[0], " Simulator"] }), jsxRuntimeExports.jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-1 transition-transform" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenVideoOverlay(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-cyan-500/80 text-cyan-300 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Watch Real Surgical Video for ${surg.title}`, children: [jsxRuntimeExports.jsx(Video, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Video Overlay" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-sky-500/80 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Open Field Guide PDF for ${surg.title}`, children: [jsxRuntimeExports.jsx(FileText, { className: "w-3.5 h-3.5 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "PDF Guide" })] })] })] })] }, surg.id));
+                    return (jsxRuntimeExports.jsxs("div", { id: `surgery-card-${surg.id}`, className: `rounded-2xl border ${surg.themeBorder} ${surg.themeBg} backdrop-blur-md p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group relative overflow-hidden scroll-mt-24`, children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between pb-3 border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase tracking-widest text-slate-400 font-bold", children: surg.num }), jsxRuntimeExports.jsx("span", { className: "text-[10px] font-mono uppercase bg-[#09101d] text-cyan-300 border border-[#1b2b44] px-2 py-0.5 rounded font-bold", children: surg.badge })] }), jsxRuntimeExports.jsxs("div", { className: "mt-4 flex items-center gap-3", children: [jsxRuntimeExports.jsx("div", { className: "p-3 rounded-2xl bg-[#09101d] border border-[#1e2f4a] group-hover:border-cyan-400 text-cyan-400 transition-colors shadow-md", children: jsxRuntimeExports.jsx(Icon, { className: "w-6 h-6" }) }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("h3", { className: "text-base font-bold text-white group-hover:text-cyan-300 transition-colors", children: surg.title }), jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-400", children: surg.subtitle })] })] }), jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-300 leading-relaxed mt-4", children: surg.summary }), jsxRuntimeExports.jsx("div", { className: "mt-4 pt-3 border-t border-[#17253a] space-y-1.5 text-[11px]", children: surg.highlights.map((hl, i) => (jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-bold", children: "\u2713" }), jsxRuntimeExports.jsx("span", { children: hl })] }, i))) })] }), jsxRuntimeExports.jsxs("div", { className: "mt-6 pt-4 border-t border-[#17253a] space-y-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onSelectSurgery(surg.id), className: `w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95 ${surg.themeButton}`, children: [jsxRuntimeExports.jsxs("span", { children: ["Launch ", surg.title.split(' ')[0], " Simulator"] }), jsxRuntimeExports.jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-1 transition-transform" })] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [jsxRuntimeExports.jsxs("button", { onClick: () => onOpenVideoOverlay(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-cyan-500/80 text-cyan-300 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Watch Real Surgical Video for ${surg.title}`, children: [jsxRuntimeExports.jsx(Video, { className: "w-3.5 h-3.5 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Video Overlay" })] }), jsxRuntimeExports.jsxs("button", { onClick: () => onOpenPdfGuides(surg.id), className: "py-1.5 px-2 rounded-lg bg-[#0a1220] hover:bg-[#132035] border border-[#1b2b44] hover:border-sky-500/80 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 transition active:scale-95", title: `Open Field Guide PDF for ${surg.title}`, children: [jsxRuntimeExports.jsx(FileText, { className: "w-3.5 h-3.5 text-sky-400" }), jsxRuntimeExports.jsx("span", { children: "PDF Guide" })] })] })] })] }, surg.id));
                 }) }), jsxRuntimeExports.jsxs("footer", { className: "max-w-6xl w-full mx-auto mt-6 pt-4 border-t border-[#1b2b44] flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsx("span", { children: "PAL OPTIC Simulator v2026.1" }), jsxRuntimeExports.jsx("span", { children: "\u2022" }), jsxRuntimeExports.jsx("span", { children: "Chrome/Edge WebGL 3D & 2D Composite Viewports" })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [jsxRuntimeExports.jsx("span", { className: "text-cyan-400 font-mono", children: "TTS Autoplay: OFF (Manual Activation)" }), jsxRuntimeExports.jsx("span", { children: "\u2022" }), jsxRuntimeExports.jsx("span", { children: "High-Resolution Real Eye Photography" })] })] })] }));
 };
 
@@ -72272,6 +72317,41 @@ const App = () => {
                 setMigsStep(nextStep);
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
+        }
+    };
+    // Surgery Module Cycling (Prev / Next Surgery)
+    const handlePrevSurgery = () => {
+        if (module === 'phaco' || module === 'iol') {
+            setModule('migs');
+            setMigsStep('microscope_and_head_tilt');
+            setActiveInstrument('gonio_lens');
+        }
+        else if (module === 'yag') {
+            setModule('phaco');
+            setPhacoStep('paracentesis');
+            setActiveInstrument('mvr_blade');
+        }
+        else {
+            setModule('yag');
+            setYagStep('aiming_focus');
+            setActiveInstrument('yag_laser');
+        }
+    };
+    const handleNextSurgery = () => {
+        if (module === 'phaco' || module === 'iol') {
+            setModule('yag');
+            setYagStep('aiming_focus');
+            setActiveInstrument('yag_laser');
+        }
+        else if (module === 'yag') {
+            setModule('migs');
+            setMigsStep('microscope_and_head_tilt');
+            setActiveInstrument('gonio_lens');
+        }
+        else {
+            setModule('phaco');
+            setPhacoStep('paracentesis');
+            setActiveInstrument('mvr_blade');
         }
     };
     // Incision handling
@@ -72678,7 +72758,10 @@ const App = () => {
     return (jsxRuntimeExports.jsxs("div", { className: "flex flex-col h-screen w-screen bg-[#060a12] text-slate-200 select-none overflow-hidden font-sans", children: [jsxRuntimeExports.jsx(TopVitalsBar, { module: module, phacoStep: phacoStep, iolStep: iolStep, yagStep: yagStep, migsStep: migsStep, fluidics: fluidics, cde: cataractEngineRef.current.totalCde, vitals: vitals, elapsedSeconds: elapsedSeconds, onOpenReport: () => setIsReportOpen(true), onOpenReference: () => setIsReferenceOpen(true), onOpenGuides: () => setIsGuidesOpen(true), onOpenMenu: () => setScreenMode('menu'), onOpenVideo: () => setIsVideoOpen(true), isMuted: isMuted, onToggleMute: () => {
                     setIsMuted(!isMuted);
                     audioEngine.setMuted(!isMuted);
-                }, onToggleTools: () => setIsToolsOpen(!isToolsOpen), isToolsOpen: isToolsOpen, onToggleConsole: () => setIsConsoleOpen(!isConsoleOpen), isConsoleOpen: isConsoleOpen, activeInstrument: activeInstrument }), jsxRuntimeExports.jsxs("div", { className: "bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium hidden md:inline", children: "Surgeries:" }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => {
+                }, onToggleTools: () => setIsToolsOpen(!isToolsOpen), isToolsOpen: isToolsOpen, onToggleConsole: () => setIsConsoleOpen(!isConsoleOpen), isConsoleOpen: isConsoleOpen, activeInstrument: activeInstrument }), jsxRuntimeExports.jsxs("div", { onWheel: (e) => {
+                    if (e.deltaY)
+                        e.currentTarget.scrollLeft += e.deltaY;
+                }, className: "bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar scroll-smooth", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-3 shrink-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 shrink-0", children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400 font-medium hidden md:inline", children: "Surgeries:" }), jsxRuntimeExports.jsx("button", { onClick: handlePrevSurgery, className: "p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95", title: "Switch to Previous Surgery", children: jsxRuntimeExports.jsx(ChevronLeft, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsx("button", { onClick: handleNextSurgery, className: "p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95", title: "Switch to Next Surgery", children: jsxRuntimeExports.jsx(ChevronRight, { className: "w-3.5 h-3.5" }) })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-[#17253a]", children: [jsxRuntimeExports.jsxs("button", { onClick: () => {
                                             if (module !== 'phaco' && module !== 'iol') {
                                                 setModule('phaco');
                                                 setPhacoStep('paracentesis');

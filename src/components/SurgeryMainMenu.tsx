@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Layers,
   Disc,
@@ -11,7 +12,10 @@ import {
   Activity,
   CheckCircle2,
   Eye,
-  Compass
+  Compass,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid
 } from 'lucide-react';
 import { SurgicalModule } from '../types/ophthalmic';
 
@@ -91,10 +95,12 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
     }
   ];
 
+  const [activeFilter, setActiveFilter] = useState<number | 'all'>('all');
+
   return (
-    <div className="min-h-screen w-screen bg-[#050811] text-slate-200 select-none overflow-y-auto font-sans p-4 sm:p-6 flex flex-col justify-between">
+    <div className="fixed inset-0 w-full h-full bg-[#050811] text-slate-200 select-none overflow-y-auto overscroll-contain font-sans p-4 sm:p-6 lg:p-8 flex flex-col justify-between z-10">
       {/* Top Navigation / Brand Header */}
-      <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4">
+      <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-xl shadow-cyan-950/50">
             <Eye className="w-6 h-6" />
@@ -131,7 +137,7 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       </header>
 
       {/* Hero Welcome Banner */}
-      <div className="max-w-6xl w-full mx-auto my-6 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="max-w-6xl w-full mx-auto my-5 bg-gradient-to-r from-[#0a1426] via-[#0d1d36] to-[#0a1426] border border-[#1e3353] rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
         <div>
           <span className="text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-bold">
             RESIDENCY & FELLOWSHIP SIMULATION
@@ -147,19 +153,94 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-700/80 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Surgical Suites Ready</span>
+            <span>3 Surgical Suites Ready</span>
           </span>
         </div>
       </div>
 
+      {/* Quick Surgery Carousel & Selector Strip */}
+      <div className="max-w-6xl w-full mx-auto mb-4 sticky top-0 z-30 bg-[#080d19]/95 backdrop-blur-md p-2.5 rounded-2xl border border-[#1b2b44] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${
+              activeFilter === 'all'
+                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>All 3 Surgeries</span>
+          </button>
+
+          {surgeries.map((s, idx) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setActiveFilter(idx);
+                const el = document.getElementById(`surgery-card-${s.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shrink-0 ${
+                activeFilter === idx
+                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/50'
+                  : 'bg-[#0f172a] text-slate-300 hover:text-white border border-[#1e2f47]'
+              }`}
+            >
+              <span>{idx + 1}. {s.title.split(' ')[0]}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Carousel Prev / Next Controls */}
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+          <span className="text-[11px] font-mono text-slate-400">
+            {activeFilter === 'all' ? 'Scroll below or switch:' : `Surgery ${activeFilter + 1} of 3`}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                const nextIdx = activeFilter === 'all' ? 2 : (activeFilter - 1 + surgeries.length) % surgeries.length;
+                setActiveFilter(nextIdx);
+                const el = document.getElementById(`surgery-card-${surgeries[nextIdx].id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              className="px-3 py-1.5 rounded-xl bg-[#0f172a] hover:bg-[#16253c] border border-[#20324c] text-slate-200 text-xs font-semibold flex items-center gap-1 transition active:scale-95 shadow-sm"
+              title="Previous Surgery"
+            >
+              <ChevronLeft className="w-4 h-4 text-cyan-400" />
+              <span>Prev</span>
+            </button>
+            <button
+              onClick={() => {
+                const nextIdx = activeFilter === 'all' ? 0 : (activeFilter + 1) % surgeries.length;
+                setActiveFilter(nextIdx);
+                const el = document.getElementById(`surgery-card-${surgeries[nextIdx].id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              className="px-3 py-1.5 rounded-xl bg-[#0f172a] hover:bg-[#16253c] border border-[#20324c] text-slate-200 text-xs font-semibold flex items-center gap-1 transition active:scale-95 shadow-sm"
+              title="Next Surgery"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-4 h-4 text-cyan-400" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* The Three Surgical Suites */}
-      <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5 my-2">
-        {surgeries.map((surg) => {
+      <div className={`max-w-6xl w-full mx-auto my-2 ${
+        activeFilter === 'all'
+          ? 'grid grid-cols-1 lg:grid-cols-3 gap-5'
+          : 'flex flex-col max-w-2xl'
+      }`}>
+        {(activeFilter === 'all' ? surgeries : [surgeries[activeFilter]]).map((surg) => {
           const Icon = surg.icon;
           return (
             <div
               key={surg.id}
-              className={`rounded-2xl border ${surg.themeBorder} ${surg.themeBg} backdrop-blur-md p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group relative overflow-hidden`}
+              id={`surgery-card-${surg.id}`}
+              className={`rounded-2xl border ${surg.themeBorder} ${surg.themeBg} backdrop-blur-md p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group relative overflow-hidden scroll-mt-24`}
             >
               {/* Card Header */}
               <div>
