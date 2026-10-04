@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""
+Generate crystal-clear, realistic surgical instruction voiceovers using Microsoft's free Neural TTS (edge-tts).
+Generates MP3 audio for each of the 23 surgical steps across Cataract/IOL, Nd:YAG, and MIGS Glaucoma.
+"""
+
+import os
+import sys
+import asyncio
+import edge_tts
+
+# Surgical voiceover scripts: ID -> (filename, spoken text)
+SCRIPTS = {
+    # --- MODULE 1: CATARACT EXTRACTION & FOLDABLE IOL SURGERY (12 STEPS) ---
+    "paracentesis": (
+        "cataract_01_paracentesis.mp3",
+        "Step 1: Make a small side door. Take the 1.0 millimeter blade from the left tray. Look for the flashing orange target at the top-left edge of the eye, at the 10 o'clock position. Click there to make a tiny slit. This gives your assistant tool a way into the eye."
+    ),
+    "clear_corneal_incision": (
+        "cataract_02_clear_corneal_incision.mp3",
+        "Step 2: Create your main doorway. Switch to the 2.4 millimeter keratome blade. Look for the flashing blue target at the upper-right, at the 1:30 o'clock position. Click 3 times to step through the three planes: groove the surface, tunnel through the wall, and enter the eye chamber. This creates a self-sealing tunnel that won't leak."
+    ),
+    "ovd_injection": (
+        "cataract_03_ovd_injection.mp3",
+        "Step 3: Protect the eye with jelly. Choose the Viscoat syringe on the left. Click inside the pupil to inject a clear protective gel. This coats the fragile inner lining of the cornea so ultrasonic soundwaves and turbulence won't damage it."
+    ),
+    "capsulorhexis": (
+        "cataract_04_capsulorhexis.mp3",
+        "Step 4: Cut a circular window in the lens skin. Take the needle cystotome to poke a small tear in the center, then use the Utrata micro-forceps to steer the flap around the dashed blue circle. Make a smooth 5.2 millimeter circle. If it starts running wild toward the edge, pull back toward the center."
+    ),
+    "hydrodissection": (
+        "cataract_05_hydrodissection.mp3",
+        "Step 5: Loosen the cataract with a fluid wave. Select the hydrodissection cannula. Slide the flat tip gently under the edge of your circular opening and click to spray a gentle pulse of balanced salt water. Look for the golden wave rolling across the back. Then verify the cataract spins freely like a dinner plate."
+    ),
+    "phaco_chop": (
+        "cataract_06_phaco_chop.mp3",
+        "Step 6: Pulverize and vacuum the hard cataract. Select the phaco tip. Step on your foot pedal to Position 3 to engage ultrasonic vibration. Touch the tip to the center of the brown lens core to impale it, chop it into smaller bite-sized quarters, and vacuum them up. Keep your tip in the middle and stay far away from the thin back capsule."
+    ),
+    "cortex_removal": (
+        "cataract_07_cortex_removal.mp3",
+        "Step 7: Vacuum the soft sticky leftovers. Switch to the Irrigation and Aspiration handpiece. Step on pedal Position 2 to turn on suction. Click around the outer edges to vacuum away the fluffy cortical fibers. Polish the back surface until it looks like a clean window."
+    ),
+    "ovd_bag_refill": (
+        "cataract_08_ovd_bag_refill.mp3",
+        "Step 8: Re-inflate the empty bag. Select the Provisc cohesive jelly. Click inside the capsular bag to pump it full of thick jelly. This opens the bag wide so the new lens can slide in safely without poking a hole in the back."
+    ),
+    "cartridge_insertion": (
+        "cataract_09_cartridge_insertion.mp3",
+        "Step 9: Deliver the folded lens. Select the IOL injector. Slide the tapered nozzle through your main incision with the bevel pointing down. Click to smoothly advance the screw plunger and push the folded artificial lens inside."
+    ),
+    "haptic_unfolding": (
+        "cataract_10_haptic_unfolding.mp3",
+        "Step 10: Place the front leg. Watch the leading springy arm unfold out of the nozzle directly into the far corner of the bag. Keep the nozzle steady in the center so the lens optic unrolls smoothly flat."
+    ),
+    "sinskey_dialing": (
+        "cataract_11_sinskey_dialing.mp3",
+        "Step 11: Tuck the back leg in. Select the tiny Sinskey hook tool. Hook into the corner notch of the lens and rotate it clockwise. Tuck the trailing arm under the edge of the circular opening. Check that the round opening overlaps the lens edge all 360 degrees."
+    ),
+    "viscoelastic_washout": (
+        "cataract_12_viscoelastic_washout.mp3",
+        "Step 12: Vacuum out all the remaining jelly. Take the I/A suction handpiece. Gently tilt the lens and reach behind it to suck out all the thick jelly trapped in the back. If you leave even a little jelly behind, the patient will wake up with dangerously high eye pressure."
+    ),
+
+    # --- MODULE 2: ND:YAG LASER POSTERIOR CAPSULOTOMY (5 STEPS) ---
+    "contact_lens_placement": (
+        "yag_01_contact_lens_placement.mp3",
+        "Step 1 of YAG Laser: Place the special contact lens on the eye. Put a drop of clear gel on the Abraham contact lens and place it onto the patient's cornea. The magnifying button sharpens the laser beam into a tight focus point and keeps the patient from blinking."
+    ),
+    "aiming_focus": (
+        "yag_02_aiming_focus.mp3",
+        "Step 2: Align the twin red aiming lasers. Move your slit-lamp joystick forward or backward until the two separate red dots merge into a single crisp red point right on the cloudy membrane. When the two dots become one, you know the laser is perfectly in focus."
+    ),
+    "offset_adjustment": (
+        "yag_03_offset_adjustment.mp3",
+        "Step 3: Crucial safety setting! Set the posterior offset to plus 150 micrometers. Never fire at zero offset! When the laser sparks, the mini shockwave expands forward. If you don't set a safety gap, the shockwave will pit, scratch, and crack the patient's expensive artificial lens!"
+    ),
+    "cruciate_capsulotomy": (
+        "yag_04_cruciate_capsulotomy.mp3",
+        "Step 4: Zap the membrane in a cross pattern. Fire your laser pulses starting at the outer edges: 12 o'clock at the top, 6 o'clock at the bottom, then 9 and 3 o'clock. Cutting in a cross releases the tension, making the cloudy flaps curl up and roll out of the visual axis naturally."
+    ),
+    "post_yag_assessment": (
+        "yag_05_post_yag_assessment.mp3",
+        "Step 5: Inspect your work and check pressure. Verify you have created a clean 4 millimeter circular window with no loose tags hanging in the center. Check that the gel bag behind the eye is intact, and apply eye drops to prevent post-laser pressure spikes."
+    ),
+
+    # --- MODULE 3: MIGS TRABECULAR MICRO-BYPASS STENT SURGERY (6 STEPS) ---
+    "microscope_and_head_tilt": (
+        "migs_01_microscope_and_head_tilt.mp3",
+        "Step 1 of MIGS Glaucoma Stent Surgery: Angle the microscope and patient head. Because the drainage angle of the eye is hidden around the side curve behind the cornea, light from straight above cannot see it. Tilt the microscope 35 to 40 degrees towards yourself, and tilt the patient's head 30 to 35 degrees away. Click the alignment beacon to set optimal direct gonioscopic optical trajectory."
+    ),
+    "gonioprism_placement": (
+        "migs_02_gonioprism_placement.mp3",
+        "Step 2: Apply the Swan-Jacob surgical gonioprism. Select the gonio lens from your tray. Place a drop of cohesive viscoelastic on the front surface of the cornea, then gently couple the flat lens onto the eye. Look for the golden-brown pigmented band: that is the diseased trabecular meshwork."
+    ),
+    "viscoelastic_angle_deepening": (
+        "migs_03_viscoelastic_angle_deepening.mp3",
+        "Step 3: Deepen the drainage corner with thick cohesive jelly. Select Provisc on the tray. Inject a gentle bolus into the nasal angle. Watch the iris push backward away from the cornea, opening up a spacious cavern for the stent injector."
+    ),
+    "stent_1_deployment": (
+        "migs_04_stent_1_deployment.mp3",
+        "Step 4: Deploy Micro-Stent number 1. Select the iStent inject pen. Guide the microscopic tip across the eye to the nasal golden-brown meshwork band at 2:30 o'clock. Approach at a 15 to 20 degree angle. Pierce through the meshwork right into Schlemm's canal and click the deployment button! The stent now channels fluid straight into the bloodstream."
+    ),
+    "stent_2_deployment": (
+        "migs_05_stent_2_deployment.mp3",
+        "Step 5: Deploy the second micro-stent. Retract the injector tip slightly, slide 2 clock hours down to 4:00 o'clock, and target the adjacent collector channel. Press gently into the pigmented meshwork and click to deploy Stent 2. Having two stents doubles your outflow capacity and guarantees dramatic eye pressure reduction."
+    ),
+    "blood_reflux_and_washout": (
+        "migs_06_blood_reflux_and_washout.mp3",
+        "Step 6: Verify blood reflux and clean the eye. Take the I/A suction handpiece. Gently tap the corneal wound to let a tiny drop of fluid out. Watch the miraculous blood reflux wave! Bright red blood seeps backwards through both stents from the bloodstream into the eye. This proves your stents are connected directly to the bloodstream! Wash out all remaining jelly, and your glaucoma surgery is complete."
+    )
+}
+
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+DEFAULT_VOICE = "en-US-ChristopherNeural"  # Professional, calm, authoritative medical consultant voice
+RATE = "-2%"  # Slightly deliberate pacing for surgical guidance
+
+async def generate_single(step_id, filename, text, output_dir, voice):
+    out_path = os.path.join(output_dir, filename)
+    print(f"[*] Generating [{step_id}] -> {filename} using {voice}...")
+    communicate = edge_tts.Communicate(text, voice=voice, rate=RATE)
+    await communicate.save(out_path)
+    size_kb = os.path.getsize(out_path) / 1024
+    print(f"    Saved: {filename} ({size_kb:.1f} KB)")
+
+async def main():
+    voice = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_VOICE
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(script_dir)
+    output_dir = os.path.join(root_dir, "public", "audio", "voiceover")
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"============================================================")
+    print(f"Microsoft Neural TTS Voiceover Audio Generator")
+    print(f"Voice: {voice}")
+    print(f"Destination: {output_dir}")
+    print(f"Total Clips to Generate: {len(SCRIPTS)}")
+    print(f"============================================================\n")
+
+    for step_id, (filename, text) in SCRIPTS.items():
+        await generate_single(step_id, filename, text, output_dir, voice)
+
+    print("\n🎉 All 23 surgical instruction voiceovers generated successfully!")
+
+if __name__ == "__main__":
+    asyncio.run(main())

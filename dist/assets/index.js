@@ -71541,10 +71541,40 @@ const SurgicalGuidesModal = ({ isOpen, onClose, initialModule = 'phaco' }) => {
                     }) }), jsxRuntimeExports.jsxs("div", { className: "p-4 bg-gradient-to-r from-[#0d1b30] via-[#0d223c] to-[#0a1728] border-b border-[#1b2f4c] flex flex-col sm:flex-row sm:items-center justify-between gap-3", children: [jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "text-sm font-bold text-white flex items-center gap-2", children: [jsxRuntimeExports.jsx(FileText, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: currentPdf.title })] }), jsxRuntimeExports.jsx("div", { className: "text-xs text-slate-300 mt-0.5 line-clamp-2", children: currentPdf.desc })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [jsxRuntimeExports.jsxs("a", { href: getAssetUrl(`guides/${currentPdf.fileName}`), download: currentPdf.fileName, target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 transition active:scale-95", children: [jsxRuntimeExports.jsx(Download, { className: "w-4 h-4" }), jsxRuntimeExports.jsx("span", { children: "Download PDF" })] }), jsxRuntimeExports.jsxs("a", { href: getAssetUrl(`guides/${currentPdf.fileName.replace('.pdf', '.html')}`), target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#101b2d] hover:bg-[#16253c] border border-[#1e2f4a] text-slate-300 hover:text-white text-xs font-semibold transition", title: "Open Printable HTML Version in New Tab", children: [jsxRuntimeExports.jsx(Printer, { className: "w-4 h-4 text-slate-400" }), jsxRuntimeExports.jsx("span", { className: "hidden sm:inline", children: "Print / View" })] })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs leading-relaxed", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#0e1726] p-4 rounded-xl border border-[#1b2b44] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 font-bold text-cyan-300 text-sm", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-4 h-4 text-cyan-400" }), jsxRuntimeExports.jsx("span", { children: "Summary for Beginners (No Experience Required)" })] }), jsxRuntimeExports.jsxs("p", { className: "text-slate-300 text-xs", children: [selectedModule === 'phaco' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: ["In cataract surgery, we replace the eye's cloudy natural lens with a clear artificial one. The procedure is performed through a tiny ", jsxRuntimeExports.jsx("strong", { children: "2.4mm self-sealing tunnel" }), " cut in three staggered planes into the clear window of the eye (cornea). We inject a protective gel to shield delicate cells, tear a smooth circular 5.2mm window in the lens capsule bag, loosen the lens with water, pulverize the rock-hard cataract using ultrasonic sound waves (phacoemulsification), and vacuum away the fluffy remnants."] })), selectedModule === 'iol' && (jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: "After removing the cataract, we must insert a new artificial lens (IOL) so light can focus on the retina. Because the new lens is 6.0mm wide and our incision is only 2.4mm, the lens is folded like a tiny taco inside an injector cartridge. We re-inflate the natural bag with jelly, inject the folded lens, watch its spring arms (haptics) seat into the bag corners, dial it clockwise with a Sinskey hook to achieve 360\u00B0 anterior capsule overlap, and vacuum out all the jelly to prevent high eye pressure." })), selectedModule === 'yag' && (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: ["Months or years after cataract surgery, microscopic cells can grow across the back bag like frost on glass (Posterior Capsule Opacification, or PCO). We use an invisible infrared Nd:YAG laser to zap a crystal-clear window through the cloudy membrane. A specialized Abraham contact lens magnifies the view, twin red HeNe aiming beams converge to guarantee sharp focus, and a ", jsxRuntimeExports.jsx("strong", { children: "+150\u00B5m posterior defocus offset" }), " ensures the laser spark occurs safely behind the artificial lens, preventing scratches or pits!"] })), selectedModule === 'master' && (jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: "The Master Compendium integrates all three surgical workflows into a unified reference document with complete anatomical SVG illustrations, fluidic calculations, Cumulative Dissipated Energy (CDE) parameters, and complications prevention protocols." }))] })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [jsxRuntimeExports.jsx("div", { className: "font-bold text-slate-300 uppercase tracking-wider text-[11px]", children: "Step-by-Step Surgical Steps & Clinical Rationale:" }), getInstructionsForModule(selectedModule === 'master' ? 'phaco' : selectedModule).map((step, idx) => (jsxRuntimeExports.jsxs("div", { className: "bg-[#090f1c] rounded-xl border border-[#18283f] overflow-hidden space-y-0", children: [jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#0e1726] border-b border-[#18283f] flex items-center justify-between", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "font-mono text-[10px] font-bold uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded", children: ["STEP ", step.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs", children: step.beginnerTitle })] }), jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono text-cyan-300 bg-[#070c16] px-2 py-0.5 rounded border border-[#17253a]", children: ["Tool: ", step.recommendedInstrument.replace('_', ' ')] })] }), jsxRuntimeExports.jsxs("div", { className: "p-3.5 space-y-2 text-xs", children: [jsxRuntimeExports.jsxs("div", { className: "bg-[#101b2d] p-2.5 rounded-lg border border-[#1a2d48] text-slate-200", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-bold uppercase text-amber-400 font-mono", children: "What You Do:" }), jsxRuntimeExports.jsx("div", { className: "text-white mt-0.5 leading-relaxed", children: step.actionCallout })] }), jsxRuntimeExports.jsxs("div", { className: "bg-[#071222] p-2.5 rounded-lg border border-[#152a48] text-slate-300", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] font-bold uppercase text-sky-400 font-mono", children: "Why It Is Strictly Necessary:" }), jsxRuntimeExports.jsx("div", { className: "text-slate-300 mt-0.5 leading-relaxed", children: step.whyItsNecessary })] }), step.detailedAnatomy && (jsxRuntimeExports.jsxs("div", { className: "p-2.5 rounded-lg bg-[#060c18] border border-[#132238] space-y-1 text-[11px]", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Target Tissue: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: step.detailedAnatomy.tissueTarget })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Tissue Biomechanics: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-300", children: step.detailedAnatomy.biomechanicsExplanation })] })] })), jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2 text-rose-300 text-[11px] pt-1", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-rose-400", children: "Critical Hazard: " }), jsxRuntimeExports.jsx("span", { children: step.hazards[0] })] })] })] })] }, idx)))] })] }), jsxRuntimeExports.jsxs("div", { className: "p-4 border-t border-[#1b2b44] flex items-center justify-between bg-[#080d19]", children: [jsxRuntimeExports.jsxs("div", { className: "text-[11px] text-slate-400", children: ["PDF files are stored in ", jsxRuntimeExports.jsx("span", { className: "font-mono text-cyan-300", children: "guides/" }), " and available for offline review."] }), jsxRuntimeExports.jsx("button", { onClick: onClose, className: "px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition", children: "Close Guide" })] })] }) }));
 };
 
-// Web Speech API - Ophthalmic Surgical Consultant Text-To-Speech (TTS) Engine
+// Ophthalmic Surgical Consultant Voiceover Engine
+// Hybrid Architecture: Plays Microsoft Neural TTS Studio Audio (edge-tts MP3s) with Web Speech API fallback
+const STEP_VOICEOVER_MAP = {
+    // Cataract / IOL (1-12)
+    paracentesis: 'cataract_01_paracentesis.mp3',
+    clear_corneal_incision: 'cataract_02_clear_corneal_incision.mp3',
+    ovd_injection: 'cataract_03_ovd_injection.mp3',
+    capsulorhexis: 'cataract_04_capsulorhexis.mp3',
+    hydrodissection: 'cataract_05_hydrodissection.mp3',
+    phaco_chop: 'cataract_06_phaco_chop.mp3',
+    cortex_removal: 'cataract_07_cortex_removal.mp3',
+    ovd_bag_refill: 'cataract_08_ovd_bag_refill.mp3',
+    cartridge_insertion: 'cataract_09_cartridge_insertion.mp3',
+    haptic_unfolding: 'cataract_10_haptic_unfolding.mp3',
+    sinskey_dialing: 'cataract_11_sinskey_dialing.mp3',
+    viscoelastic_washout: 'cataract_12_viscoelastic_washout.mp3',
+    // Nd:YAG Laser (1-5)
+    contact_lens_placement: 'yag_01_contact_lens_placement.mp3',
+    aiming_focus: 'yag_02_aiming_focus.mp3',
+    offset_adjustment: 'yag_03_offset_adjustment.mp3',
+    cruciate_capsulotomy: 'yag_04_cruciate_capsulotomy.mp3',
+    post_yag_assessment: 'yag_05_post_yag_assessment.mp3',
+    // MIGS Glaucoma Stent (1-6)
+    microscope_and_head_tilt: 'migs_01_microscope_and_head_tilt.mp3',
+    gonioprism_placement: 'migs_02_gonioprism_placement.mp3',
+    viscoelastic_angle_deepening: 'migs_03_viscoelastic_angle_deepening.mp3',
+    stent_1_deployment: 'migs_04_stent_1_deployment.mp3',
+    stent_2_deployment: 'migs_05_stent_2_deployment.mp3',
+    blood_reflux_and_washout: 'migs_06_blood_reflux_and_washout.mp3'
+};
 class SurgicalTtsEngine {
     synth = null;
     currentUtterance = null;
+    currentAudio = null;
     selectedVoice = null;
     isMuted = false;
     isAutoNarrateEnabled = false;
@@ -71570,15 +71600,14 @@ class SurgicalTtsEngine {
             return;
         // Prefer high-quality English natural/medical voices
         const preferredVoices = [
-            'Google UK English Female',
-            'Google US English',
+            'Microsoft Christopher Online (Natural)',
+            'Microsoft Guy Online (Natural)',
             'Microsoft Jenny Online (Natural) - English (United States)',
             'Microsoft Ryan Online (Natural) - English (United States)',
-            'Microsoft David - English (United States)',
-            'Microsoft Zira - English (United States)',
+            'Google UK English Female',
+            'Google US English',
             'Samantha',
-            'Daniel',
-            'Alex'
+            'Daniel'
         ];
         for (const name of preferredVoices) {
             const found = voices.find(v => v.name.includes(name) || v.name === name);
@@ -71587,7 +71616,6 @@ class SurgicalTtsEngine {
                 return;
             }
         }
-        // Fallback to first English voice or first available
         const englishVoice = voices.find(v => v.lang.startsWith('en'));
         this.selectedVoice = englishVoice || voices[0];
     }
@@ -71613,9 +71641,15 @@ class SurgicalTtsEngine {
     }
     setRate(rate) {
         this.speechRate = Math.max(0.7, Math.min(1.5, rate));
+        if (this.currentAudio) {
+            this.currentAudio.playbackRate = this.speechRate;
+        }
     }
     setVolume(volume) {
         this.speechVolume = Math.max(0, Math.min(1, volume));
+        if (this.currentAudio) {
+            this.currentAudio.volume = this.speechVolume;
+        }
     }
     subscribe(listener) {
         this.onSpeakingStateChangeListeners.push(listener);
@@ -71627,12 +71661,59 @@ class SurgicalTtsEngine {
         this.isSpeaking = speaking;
         this.onSpeakingStateChangeListeners.forEach(listener => listener(speaking));
     }
-    speak(text, force = false) {
+    /**
+     * Speak instruction:
+     * First attempts to play high-fidelity Microsoft Neural TTS MP3 audio from public/audio/voiceover/.
+     * If the file cannot be loaded or played, gracefully falls back to browser SpeechSynthesis.
+     */
+    speak(text, force = false, stepId) {
+        if (this.isMuted && !force)
+            return;
+        // Stop any active speech or audio
+        this.stop();
+        const audioFile = stepId ? STEP_VOICEOVER_MAP[stepId] : null;
+        if (audioFile) {
+            // Determine audio base path (supporting both local dev & GitHub Pages subpaths)
+            const audioUrl = `audio/voiceover/${audioFile}`;
+            const audio = new Audio(audioUrl);
+            audio.volume = this.speechVolume;
+            audio.playbackRate = this.speechRate;
+            let playedSuccessfully = false;
+            audio.onplay = () => {
+                playedSuccessfully = true;
+                this.notify(true);
+            };
+            audio.onended = () => {
+                this.notify(false);
+                this.currentAudio = null;
+            };
+            audio.onerror = () => {
+                if (!playedSuccessfully) {
+                    console.warn(`[Audio] Neural voiceover not found for ${stepId} (${audioUrl}), falling back to SpeechSynthesis.`);
+                    this.currentAudio = null;
+                    this.speakWithSynth(text, force);
+                }
+                else {
+                    this.notify(false);
+                    this.currentAudio = null;
+                }
+            };
+            this.currentAudio = audio;
+            audio.play().catch((err) => {
+                console.warn(`[Audio] Audio play failed for ${stepId}:`, err);
+                this.currentAudio = null;
+                this.speakWithSynth(text, force);
+            });
+            return;
+        }
+        // Default fallback to browser speech synthesis
+        this.speakWithSynth(text, force);
+    }
+    speakWithSynth(text, force = false) {
         if (!this.synth)
             return;
         if (this.isMuted && !force)
             return;
-        // Cancel any ongoing speech
         this.synth.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         if (this.selectedVoice) {
@@ -71657,11 +71738,21 @@ class SurgicalTtsEngine {
         this.synth.speak(utterance);
     }
     stop() {
+        if (this.currentAudio) {
+            try {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+            }
+            catch (e) {
+                // ignore
+            }
+            this.currentAudio = null;
+        }
         if (this.synth) {
             this.synth.cancel();
-            this.notify(false);
             this.currentUtterance = null;
         }
+        this.notify(false);
     }
 }
 const ttsEngine = new SurgicalTtsEngine();
@@ -71684,7 +71775,7 @@ const SurgicalInstructionBanner = ({ currentInstruction, onSelectInstrument, sho
     reactExports.useEffect(() => {
         if (autoNarrate && currentInstruction) {
             const timer = setTimeout(() => {
-                ttsEngine.speak(currentInstruction.spokenScript);
+                ttsEngine.speak(currentInstruction.spokenScript, false, currentInstruction.id);
             }, 400);
             return () => clearTimeout(timer);
         }
@@ -71694,7 +71785,7 @@ const SurgicalInstructionBanner = ({ currentInstruction, onSelectInstrument, sho
             ttsEngine.stop();
         }
         else {
-            ttsEngine.speak(currentInstruction.spokenScript, true);
+            ttsEngine.speak(currentInstruction.spokenScript, true, currentInstruction.id);
         }
     };
     const handleRateChange = (rate) => {

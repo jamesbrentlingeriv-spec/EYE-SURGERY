@@ -1,8 +1,41 @@
-// Web Speech API - Ophthalmic Surgical Consultant Text-To-Speech (TTS) Engine
+// Ophthalmic Surgical Consultant Voiceover Engine
+// Hybrid Architecture: Plays Microsoft Neural TTS Studio Audio (edge-tts MP3s) with Web Speech API fallback
+
+export const STEP_VOICEOVER_MAP: Record<string, string> = {
+  // Cataract / IOL (1-12)
+  paracentesis: 'cataract_01_paracentesis.mp3',
+  clear_corneal_incision: 'cataract_02_clear_corneal_incision.mp3',
+  ovd_injection: 'cataract_03_ovd_injection.mp3',
+  capsulorhexis: 'cataract_04_capsulorhexis.mp3',
+  hydrodissection: 'cataract_05_hydrodissection.mp3',
+  phaco_chop: 'cataract_06_phaco_chop.mp3',
+  cortex_removal: 'cataract_07_cortex_removal.mp3',
+  ovd_bag_refill: 'cataract_08_ovd_bag_refill.mp3',
+  cartridge_insertion: 'cataract_09_cartridge_insertion.mp3',
+  haptic_unfolding: 'cataract_10_haptic_unfolding.mp3',
+  sinskey_dialing: 'cataract_11_sinskey_dialing.mp3',
+  viscoelastic_washout: 'cataract_12_viscoelastic_washout.mp3',
+
+  // Nd:YAG Laser (1-5)
+  contact_lens_placement: 'yag_01_contact_lens_placement.mp3',
+  aiming_focus: 'yag_02_aiming_focus.mp3',
+  offset_adjustment: 'yag_03_offset_adjustment.mp3',
+  cruciate_capsulotomy: 'yag_04_cruciate_capsulotomy.mp3',
+  post_yag_assessment: 'yag_05_post_yag_assessment.mp3',
+
+  // MIGS Glaucoma Stent (1-6)
+  microscope_and_head_tilt: 'migs_01_microscope_and_head_tilt.mp3',
+  gonioprism_placement: 'migs_02_gonioprism_placement.mp3',
+  viscoelastic_angle_deepening: 'migs_03_viscoelastic_angle_deepening.mp3',
+  stent_1_deployment: 'migs_04_stent_1_deployment.mp3',
+  stent_2_deployment: 'migs_05_stent_2_deployment.mp3',
+  blood_reflux_and_washout: 'migs_06_blood_reflux_and_washout.mp3'
+};
 
 export class SurgicalTtsEngine {
   private synth: SpeechSynthesis | null = null;
   private currentUtterance: SpeechSynthesisUtterance | null = null;
+  private currentAudio: HTMLAudioElement | null = null;
   private selectedVoice: SpeechSynthesisVoice | null = null;
   private isMuted: boolean = false;
   private isAutoNarrateEnabled: boolean = false;
@@ -29,15 +62,14 @@ export class SurgicalTtsEngine {
 
     // Prefer high-quality English natural/medical voices
     const preferredVoices = [
-      'Google UK English Female',
-      'Google US English',
+      'Microsoft Christopher Online (Natural)',
+      'Microsoft Guy Online (Natural)',
       'Microsoft Jenny Online (Natural) - English (United States)',
       'Microsoft Ryan Online (Natural) - English (United States)',
-      'Microsoft David - English (United States)',
-      'Microsoft Zira - English (United States)',
+      'Google UK English Female',
+      'Google US English',
       'Samantha',
-      'Daniel',
-      'Alex'
+      'Daniel'
     ];
 
     for (const name of preferredVoices) {
@@ -48,7 +80,6 @@ export class SurgicalTtsEngine {
       }
     }
 
-    // Fallback to first English voice or first available
     const englishVoice = voices.find(v => v.lang.startsWith('en'));
     this.selectedVoice = englishVoice || voices[0];
   }
@@ -79,10 +110,16 @@ export class SurgicalTtsEngine {
 
   public setRate(rate: number) {
     this.speechRate = Math.max(0.7, Math.min(1.5, rate));
+    if (this.currentAudio) {
+      this.currentAudio.playbackRate = this.speechRate;
+    }
   }
 
   public setVolume(volume: number) {
     this.speechVolume = Math.max(0, Math.min(1, volume));
+    if (this.currentAudio) {
+      this.currentAudio.volume = this.speechVolume;
+    }
   }
 
   public subscribe(listener: (isSpeaking: boolean) => void) {
@@ -97,11 +134,66 @@ export class SurgicalTtsEngine {
     this.onSpeakingStateChangeListeners.forEach(listener => listener(speaking));
   }
 
-  public speak(text: string, force: boolean = false) {
+  /**
+   * Speak instruction:
+   * First attempts to play high-fidelity Microsoft Neural TTS MP3 audio from public/audio/voiceover/.
+   * If the file cannot be loaded or played, gracefully falls back to browser SpeechSynthesis.
+   */
+  public speak(text: string, force: boolean = false, stepId?: string) {
+    if (this.isMuted && !force) return;
+
+    // Stop any active speech or audio
+    this.stop();
+
+    const audioFile = stepId ? STEP_VOICEOVER_MAP[stepId] : null;
+
+    if (audioFile) {
+      // Determine audio base path (supporting both local dev & GitHub Pages subpaths)
+      const audioUrl = `audio/voiceover/${audioFile}`;
+      const audio = new Audio(audioUrl);
+      audio.volume = this.speechVolume;
+      audio.playbackRate = this.speechRate;
+
+      let playedSuccessfully = false;
+
+      audio.onplay = () => {
+        playedSuccessfully = true;
+        this.notify(true);
+      };
+
+      audio.onended = () => {
+        this.notify(false);
+        this.currentAudio = null;
+      };
+
+      audio.onerror = () => {
+        if (!playedSuccessfully) {
+          console.warn(`[Audio] Neural voiceover not found for ${stepId} (${audioUrl}), falling back to SpeechSynthesis.`);
+          this.currentAudio = null;
+          this.speakWithSynth(text, force);
+        } else {
+          this.notify(false);
+          this.currentAudio = null;
+        }
+      };
+
+      this.currentAudio = audio;
+      audio.play().catch((err) => {
+        console.warn(`[Audio] Audio play failed for ${stepId}:`, err);
+        this.currentAudio = null;
+        this.speakWithSynth(text, force);
+      });
+      return;
+    }
+
+    // Default fallback to browser speech synthesis
+    this.speakWithSynth(text, force);
+  }
+
+  private speakWithSynth(text: string, force: boolean = false) {
     if (!this.synth) return;
     if (this.isMuted && !force) return;
 
-    // Cancel any ongoing speech
     this.synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -132,11 +224,22 @@ export class SurgicalTtsEngine {
   }
 
   public stop() {
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+      } catch (e) {
+        // ignore
+      }
+      this.currentAudio = null;
+    }
+
     if (this.synth) {
       this.synth.cancel();
-      this.notify(false);
       this.currentUtterance = null;
     }
+
+    this.notify(false);
   }
 }
 

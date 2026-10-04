@@ -51,7 +51,7 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
   useEffect(() => {
     if (autoNarrate && currentInstruction) {
       const timer = setTimeout(() => {
-        ttsEngine.speak(currentInstruction.spokenScript);
+        ttsEngine.speak(currentInstruction.spokenScript, false, currentInstruction.id);
       }, 400);
       return () => clearTimeout(timer);
     }
@@ -61,7 +61,7 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
     if (isSpeaking) {
       ttsEngine.stop();
     } else {
-      ttsEngine.speak(currentInstruction.spokenScript, true);
+      ttsEngine.speak(currentInstruction.spokenScript, true, currentInstruction.id);
     }
   };
 

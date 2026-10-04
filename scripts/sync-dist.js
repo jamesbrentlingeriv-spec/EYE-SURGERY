@@ -46,6 +46,7 @@ copyDirRecursive(path.join(ROOT_DIR, 'public', 'guides'), path.join(ROOT_DIR, 'g
 copyDirRecursive(path.join(DIST_DIR, 'assets'), path.join(ROOT_DIR, 'assets'));
 copyDirRecursive(path.join(DIST_DIR, 'images'), path.join(ROOT_DIR, 'images'));
 copyDirRecursive(path.join(DIST_DIR, 'icons'), path.join(ROOT_DIR, 'icons'));
+copyDirRecursive(path.join(DIST_DIR, 'audio'), path.join(ROOT_DIR, 'audio'));
 // Copy video files
 const publicVideos = ['cataract.mp4', 'yag.mp4', 'istent.mp4'];
 for (const vid of publicVideos) {
