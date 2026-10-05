@@ -48,7 +48,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       tag: 'LASER READY'
     },
     {
-      title: 'PAL OPTIC SURGICAL SUITE READY',
+      title: 'RHEXIS SURGICAL SUITE READY',
       desc: 'Preparing 3 Advanced Surgical Modules: Phacoemulsification, Foldable IOL, Nd:YAG Laser',
       badge: '100% CALIBRATED',
       tag: 'ENTER SUITE'
@@ -198,16 +198,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const currentPhase = telemetryPhases[currentPhaseIndex];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-[#040812] text-slate-200 select-none overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-[#000000] text-slate-200 select-none overflow-hidden font-sans">
       {/* Top Header Bar */}
       <div className="w-full max-w-5xl flex items-center justify-between pt-2">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-950 border border-cyan-500/80 text-cyan-400 shadow-lg shadow-cyan-950/60">
-            <Eye className="w-5 h-5" />
-          </div>
+          <img
+            src="./icons/logo.png"
+            alt="RHEXIS"
+            className="w-10 h-10 rounded-xl object-contain bg-black border border-emerald-500/80 shadow-lg shadow-emerald-950/60 p-0.5"
+          />
           <div>
-            <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-bold">
-              PAL OPTIC LABS • OPHTHALMOLOGY
+            <div className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold">
+              RHEXIS • OPHTHALMIC SURGERY
             </div>
             <div className="text-xs text-slate-400 font-medium">
               Virtual Microsurgical Operating Theater 2026.1
@@ -218,18 +220,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         {/* Skip to Menu Button */}
         <button
           onClick={onComplete}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-cyan-800/80 text-cyan-300 hover:text-white font-bold text-xs transition shadow-lg active:scale-95 group"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#000000] hover:bg-[#0a0a0a] border border-emerald-700/80 text-emerald-300 hover:text-white font-bold text-xs transition shadow-lg active:scale-95 group"
           title="Skip Intro to Main Menu (or press Space / Escape)"
         >
           <span>Skip Intro to Menu</span>
-          <ChevronRight className="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+          <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
 
       {/* Center Cinematic Biometric Visual */}
       <div className="flex flex-col items-center justify-center my-auto relative w-full max-w-lg">
         {/* Animated Background Glow */}
-        <div className="absolute w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none animate-pulse" />
 
         {/* Scanning Canvas */}
         <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
@@ -242,10 +244,15 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
           {/* Central Logo Overlay */}
           <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow">
-              PAL OPTIC
+            <img
+              src="./icons/logo.png"
+              alt="RHEXIS"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-contain bg-black/90 border border-emerald-500/80 shadow-2xl p-1 mb-1.5"
+            />
+            <span className="text-2xl sm:text-3xl font-black tracking-widest text-white drop-shadow font-mono">
+              RHEXIS
             </span>
-            <span className="text-[9px] font-mono tracking-widest text-cyan-400 uppercase font-bold mt-0.5">
+            <span className="text-[9px] font-mono tracking-widest text-emerald-400 uppercase font-bold mt-0.5">
               SURGICAL SUITE
             </span>
           </div>

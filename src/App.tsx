@@ -866,27 +866,27 @@ export const App: React.FC = () => {
         onWheel={(e) => {
           if (e.deltaY) e.currentTarget.scrollLeft += e.deltaY;
         }}
-        className="bg-[#09101e] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar scroll-smooth"
+        className="bg-[#000000] border-b border-[#1b2b44] px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between text-xs gap-2 overflow-x-auto no-scrollbar scroll-smooth"
       >
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-slate-400 font-medium hidden md:inline">Surgeries:</span>
             <button
               onClick={handlePrevSurgery}
-              className="p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95"
+              className="p-1 rounded-lg bg-[#000000] hover:bg-[#0f1f18] border border-emerald-900/60 text-slate-400 hover:text-white transition active:scale-95"
               title="Switch to Previous Surgery"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleNextSurgery}
-              className="p-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-[#17253a] text-slate-400 hover:text-white transition active:scale-95"
+              className="p-1 rounded-lg bg-[#000000] hover:bg-[#0f1f18] border border-emerald-900/60 text-slate-400 hover:text-white transition active:scale-95"
               title="Switch to Next Surgery"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="flex items-center gap-1 bg-[#070c16] p-1 rounded-xl border border-emerald-900/40">
+          <div className="flex items-center gap-1 bg-[#000000] p-1 rounded-xl border border-emerald-900/40">
             {/* Procedure 1: Combined Cataract & Foldable IOL */}
             <button
               onClick={() => {
@@ -945,7 +945,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Quick Step Navigation Arrows */}
-          <div className="flex items-center gap-1 bg-[#070c16] px-1.5 sm:px-2 py-1 rounded-xl border border-emerald-900/40">
+          <div className="flex items-center gap-1 bg-[#000000] px-1.5 sm:px-2 py-1 rounded-xl border border-emerald-900/40">
             <button
               onClick={handlePrevStep}
               className="p-1 rounded hover:bg-[#121f33] text-slate-400 hover:text-white transition"
@@ -971,7 +971,7 @@ export const App: React.FC = () => {
           {/* Active Tool Chip (Tapping opens the Hamburger Tools Drawer) */}
           <button
             onClick={() => setIsToolsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070c16] hover:bg-[#121f33] border border-emerald-600/50 text-emerald-400 transition text-[11px] font-mono shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#000000] hover:bg-[#070e0a] border border-emerald-600/50 text-emerald-400 transition text-[11px] font-mono shadow-sm active:scale-95"
             title="Click to Open Tools Menu (Hamburger Drawer)"
           >
             <span className="text-emerald-500/70 hidden sm:inline">Tool:</span>

@@ -176,7 +176,7 @@ export const InstrumentTray: React.FC<InstrumentTrayProps> = ({
       )}
 
       <aside
-        className={`bg-[#0a101d] border-r border-[#1b2b44] flex flex-col select-none transition-transform duration-300 ease-in-out
+        className={`bg-[#000000] border-r border-[#1b2b44] flex flex-col select-none transition-transform duration-300 ease-in-out
           fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] h-full shadow-2xl
           ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
           lg:relative lg:translate-x-0 lg:w-64 lg:h-full lg:z-auto lg:shadow-none
@@ -186,7 +186,7 @@ export const InstrumentTray: React.FC<InstrumentTrayProps> = ({
           <div>
             <div className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2">
               <span>Surgical Tray</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#16253b] text-slate-300">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80">
                 {availableInstruments.length} Available
               </span>
             </div>
@@ -213,15 +213,15 @@ export const InstrumentTray: React.FC<InstrumentTrayProps> = ({
                 onClick={() => handleSelect(tool.id)}
                 className={`w-full text-left p-2.5 rounded-xl border transition flex items-start gap-3 active:scale-[0.98] ${
                   isSelected
-                    ? 'bg-cyan-950/60 border-cyan-500 shadow-md shadow-cyan-950/40 text-white'
-                    : 'bg-[#0d1626]/80 hover:bg-[#132037] border-[#1b2c47] text-slate-300'
+                    ? 'bg-emerald-950/70 border-emerald-500 shadow-md shadow-emerald-950/60 text-white'
+                    : 'bg-[#000000] hover:bg-[#070e0a] border-emerald-950/80 hover:border-emerald-700/60 text-slate-300'
                 }`}
               >
                 <div
                   className={`p-2 rounded-lg mt-0.5 border ${
                     isSelected
-                      ? 'bg-cyan-900/60 border-cyan-400'
-                      : 'bg-[#101b2d] border-[#1e2f4a]'
+                      ? 'bg-emerald-900/60 border-emerald-400 text-emerald-200'
+                      : 'bg-[#080808] border-[#1b2b44] text-slate-400'
                   }`}
                 >
                   {tool.icon}

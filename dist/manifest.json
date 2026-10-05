@@ -1,23 +1,23 @@
 {
-  "name": "Ophthalmic Anterior Segment Surgical Simulator",
-  "short_name": "EyeSurgSim",
-  "description": "Medically accurate, interactive ophthalmic surgical simulator for Phacoemulsification, Foldable IOL, and Nd:YAG Capsulotomy with AI Attending Voice Narration.",
-  "start_url": "/",
-  "scope": "/",
+  "name": "RHEXIS | Ophthalmic Surgical Simulator",
+  "short_name": "RHEXIS",
+  "description": "RHEXIS: Medically accurate, interactive ophthalmic surgical simulator for Phacoemulsification, Foldable IOL, and Nd:YAG Capsulotomy with AI Attending Voice Narration.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#060a12",
-  "theme_color": "#060a12",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "categories": ["medical", "education", "simulation"],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "./icons/logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "./icons/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

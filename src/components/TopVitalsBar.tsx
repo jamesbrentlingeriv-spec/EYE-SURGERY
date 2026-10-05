@@ -178,7 +178,7 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
   };
 
   return (
-    <header className="h-14 bg-[#0a101d] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2">
+    <header className="h-14 bg-[#000000] border-b border-[#1b2b44] px-2 sm:px-4 flex items-center justify-between text-xs text-slate-300 select-none shadow-md z-30 relative gap-2">
       {/* Left: Main Menu Hub + Hamburger Tools Menu + Branding */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Main Menu Hub Button */}
@@ -187,7 +187,7 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
             onClick={onOpenMenu}
             title="Return to Main Surgery Selection Menu"
             aria-label="Return to Main Surgery Menu"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#0e1726] hover:bg-[#16253c] border-emerald-600/60 text-emerald-400 hover:border-emerald-400"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 bg-[#000000] hover:bg-[#0a0a0a] border-emerald-600/60 text-emerald-400 hover:border-emerald-400"
           >
             <Home className="w-4 h-4 shrink-0 text-emerald-400" />
             <span className="text-[11px] sm:text-xs hidden xs:inline">Menu</span>
@@ -202,23 +202,28 @@ export const TopVitalsBar: React.FC<TopVitalsBarProps> = ({
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition shadow-sm active:scale-95 ${
             isToolsOpen
               ? 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-900/50'
-              : 'bg-[#0e1726] hover:bg-[#16253c] border-emerald-600/60 text-emerald-400 hover:border-emerald-400'
+              : 'bg-[#000000] hover:bg-[#0a0a0a] border-emerald-600/60 text-emerald-400 hover:border-emerald-400'
           }`}
         >
           <Menu className="w-4 h-4 shrink-0" />
           <span className="text-[11px] sm:text-xs">Tools</span>
         </button>
 
-        {/* Branding & App Title */}
-        <div className="flex items-center gap-1.5 sm:gap-2 sm:pr-3 sm:border-r border-[#1b2b44]">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse hidden xs:inline-block"></span>
-          <span className="font-bold tracking-wide text-white text-xs sm:text-sm">
-            <span className="hidden sm:inline">SURGICAL SIMULATOR</span>
-            <span className="sm:hidden">EYE SIM</span>
-          </span>
-          <span className="text-[9px] sm:text-[10px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.2 rounded hidden sm:inline-block">
-            PWA
-          </span>
+        {/* Branding & App Title: RHEXIS */}
+        <div className="flex items-center gap-2 sm:gap-2.5 sm:pr-3 sm:border-r border-[#1b2b44]">
+          <img
+            src="./icons/logo.png"
+            alt="RHEXIS"
+            className="w-8 h-8 rounded-xl object-contain bg-black border border-emerald-500/60 shadow-md shadow-emerald-950/50 p-0.5 shrink-0"
+          />
+          <div className="flex flex-col">
+            <span className="font-black tracking-widest text-white text-xs sm:text-sm font-mono leading-none">
+              RHEXIS
+            </span>
+            <span className="text-[8px] sm:text-[9px] font-mono uppercase text-emerald-400 tracking-wider font-semibold">
+              SURGICAL SIM
+            </span>
+          </div>
         </div>
 
         {/* Desktop / Tablet Step Title */}

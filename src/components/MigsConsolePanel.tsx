@@ -35,7 +35,7 @@ export const MigsConsolePanel: React.FC<MigsConsolePanelProps> = ({
   const isHypotonyProtected = state.hypotonyProtectedByVenousBackpressure;
 
   return (
-    <div className="w-80 bg-[#090f1c] border-l border-[#1b2b44] flex flex-col h-full text-slate-200 select-none overflow-y-auto no-scrollbar font-sans p-3.5 space-y-4">
+    <div className="w-80 bg-[#000000] border-l border-[#1b2b44] flex flex-col h-full text-slate-200 select-none overflow-y-auto no-scrollbar font-sans p-3.5 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-[#1b2b44]">
         <div className="flex items-center gap-2">

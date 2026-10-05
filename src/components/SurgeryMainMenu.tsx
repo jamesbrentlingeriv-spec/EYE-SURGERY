@@ -104,16 +104,18 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
   const [activeFilter, setActiveFilter] = useState<number | 'all'>('all');
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#050811] text-slate-200 select-none overflow-y-auto overscroll-contain font-sans p-4 sm:p-6 lg:p-8 flex flex-col justify-between z-10">
+    <div className="fixed inset-0 w-full h-full bg-[#000000] text-slate-200 select-none overflow-y-auto overscroll-contain font-sans p-4 sm:p-6 lg:p-8 flex flex-col justify-between z-10">
       {/* Top Navigation / Brand Header */}
       <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#1b2b44] gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-emerald-950 border border-emerald-500/80 text-emerald-400 shadow-xl shadow-emerald-950/50">
-            <Eye className="w-6 h-6" />
-          </div>
+          <img
+            src="./icons/logo.png"
+            alt="RHEXIS"
+            className="w-12 h-12 rounded-2xl object-contain bg-black border border-emerald-500/80 shadow-xl shadow-emerald-950/60 p-1 shrink-0"
+          />
           <div>
             <div className="text-[11px] font-mono tracking-widest text-emerald-400 uppercase font-bold flex items-center gap-1.5">
-              <span>PAL OPTIC MEDICAL SPECIALTY SUITE</span>
+              <span>RHEXIS MEDICAL SPECIALTY SUITE</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-ping" />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -351,7 +353,7 @@ export const SurgeryMainMenu: React.FC<SurgeryMainMenuProps> = ({
       {/* Footer System Status */}
       <footer className="max-w-6xl w-full mx-auto mt-6 pt-4 border-t border-[#1b2b44] flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-2">
         <div className="flex items-center gap-2">
-          <span>PAL OPTIC Simulator v2026.1</span>
+          <span>RHEXIS Simulator v2026.1</span>
           <span>•</span>
           <span>Chrome/Edge WebGL 3D & 2D Composite Viewports</span>
         </div>

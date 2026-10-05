@@ -11,16 +11,16 @@
 :root,
 html.theme-dark {
   --bg-app: #000000;
-  --bg-panel: #050806;
-  --bg-card: #080f0b;
-  --bg-elevated: #0d1712;
+  --bg-panel: #000000;
+  --bg-card: #000000;
+  --bg-elevated: #050505;
   --border-green: rgba(16, 185, 129, 0.35);
   --border-green-strong: rgba(16, 185, 129, 0.65);
   --accent-green: #10b981;
   --accent-green-bright: #00ff88;
   --text-main: #f0fdf4;
   --text-muted: #94a3b8;
-  --scrollbar-track: #050806;
+  --scrollbar-track: #000000;
   --scrollbar-thumb: #0f261a;
   --scrollbar-hover: #10b981;
   color-scheme: dark;

@@ -29,7 +29,7 @@ export const YagConsolePanel: React.FC<YagConsolePanelProps> = ({
   onClose,
 }) => {
   return (
-    <div className="w-full lg:w-80 bg-[#0a101d] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full">
+    <div className="w-full lg:w-80 bg-[#000000] lg:border-l border-[#1b2b44] p-3 flex flex-col gap-3 text-xs select-none overflow-y-auto h-full">
       {/* Console Header */}
       <div className="pb-2 border-b border-[#1b2b44] flex items-center justify-between">
         <div className="flex items-center gap-2">
