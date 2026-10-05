@@ -33,7 +33,10 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
   onToggleGuides
 }) => {
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
-  const [autoNarrate, setAutoNarrate] = useState<boolean>(false);
+  const [autoNarrate, setAutoNarrate] = useState<boolean>(() => {
+    const saved = localStorage.getItem('rhexis_voice_autoplay');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [speechRate, setSpeechRate] = useState<number>(0.95);
@@ -52,7 +55,7 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
     if (autoNarrate && currentInstruction) {
       const timer = setTimeout(() => {
         ttsEngine.speak(currentInstruction.spokenScript, false, currentInstruction.id);
-      }, 400);
+      }, 350);
       return () => clearTimeout(timer);
     }
   }, [currentInstruction.id, autoNarrate]);
@@ -317,6 +320,7 @@ export const SurgicalInstructionBanner: React.FC<SurgicalInstructionBannerProps>
                     onClick={() => {
                       const next = !autoNarrate;
                       setAutoNarrate(next);
+                      localStorage.setItem('rhexis_voice_autoplay', String(next));
                       ttsEngine.setAutoNarrate(next);
                     }}
                     className={`px-2 py-0.5 rounded border text-[10px] font-medium transition flex items-center gap-1 ${
