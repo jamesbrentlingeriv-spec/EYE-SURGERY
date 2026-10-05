@@ -111,18 +111,28 @@ export class YagLaserPhysicsEngine {
   }
 
   private updateOpeningGeometry() {
-    // Check if shots span at least 4 quadrants around central 3.5 mm zone
+    // Check if shots span the central optical / pupillary zone
     const centralShots = this.capsulotomy.shots.filter(s => {
       const dist = Math.hypot(s.x, s.y);
-      return dist <= 0.45; // ~3.5 mm optical zone
+      return dist <= 0.85;
     });
 
-    // Estimate opened area based on number and distribution of shots
-    const area = Math.min(12.5, centralShots.length * 0.45);
+    const shotCount = centralShots.length > 0 ? centralShots.length : this.capsulotomy.shots.length;
+
+    // Estimate opened area based on cruciate cuts releasing capsular tension:
+    // 1 shot: ~2.2mm² | 2 shots: ~4.5mm² | 3 shots: ~6.8mm² | 4 shots (full cross): ~8.5mm² (clearing visual axis)
+    let area = 0;
+    if (shotCount === 1) area = 2.2;
+    else if (shotCount === 2) area = 4.5;
+    else if (shotCount === 3) area = 6.8;
+    else if (shotCount >= 4) {
+      area = Math.min(12.0, 8.5 + (shotCount - 4) * 0.6);
+    }
+
     this.capsulotomy.cruciateOpeningAreaMm2 = +area.toFixed(1);
 
-    // Visual axis cleared if >= 8 shots distributed centrally
-    if (area >= 7.0 && centralShots.length >= 8) {
+    // Visual axis cleared once the 4 cruciate cuts release tension (aperture >= 7.0 mm²)
+    if (shotCount >= 4 || area >= 7.0) {
       this.capsulotomy.visualAxisCleared = true;
     }
   }

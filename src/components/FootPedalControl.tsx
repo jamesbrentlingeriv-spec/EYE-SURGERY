@@ -52,7 +52,7 @@ export const FootPedalControl: React.FC<FootPedalControlProps> = ({
   };
 
   return (
-    <div className="bg-[#0a101d] border-t border-[#1b2b44] p-2 sm:p-3 flex items-center justify-between text-xs select-none gap-2">
+    <div className="bg-[#000000] border-t border-[#1b2b44] p-2 sm:p-3 flex items-center justify-between text-xs select-none gap-2">
       {/* Pedal Visual & Detents */}
       <div className="flex items-center gap-2 sm:gap-4 flex-1 sm:flex-initial">
         <div className="hidden lg:flex flex-col">

@@ -966,6 +966,16 @@ export const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Spoken Attending Voice & Surgical Instructions HUD docked in empty toolbar space */}
+        <div className="flex-1 flex items-center justify-end min-w-0 max-w-xl xl:max-w-2xl px-1">
+          <SurgicalInstructionBanner
+            currentInstruction={getCurrentInstruction()}
+            onSelectInstrument={(tool) => setActiveInstrument(tool as InstrumentType)}
+            showGuides={showGuides}
+            onToggleGuides={() => setShowGuides(g => !g)}
+          />
+        </div>
+
         {/* Right side: Quick Tool Chip + Reset Button */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Active Tool Chip (Tapping opens the Hamburger Tools Drawer) */}
@@ -1005,14 +1015,6 @@ export const App: React.FC = () => {
 
         {/* Center High-Fidelity 3D/2D Viewport */}
         <div className="flex-1 flex flex-col relative overflow-hidden h-full">
-          {/* Top Left: Spoken Attending Voice & Surgical Instructions HUD */}
-          <SurgicalInstructionBanner
-            currentInstruction={getCurrentInstruction()}
-            onSelectInstrument={(tool) => setActiveInstrument(tool as InstrumentType)}
-            showGuides={showGuides}
-            onToggleGuides={() => setShowGuides(g => !g)}
-          />
-
           <SurgicalViewport
             module={module}
             activeInstrument={activeInstrument}
