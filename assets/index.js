@@ -78819,7 +78819,15 @@ class SurgicalTtsEngine {
         const audioFile = stepId ? STEP_VOICEOVER_MAP[stepId] : null;
         if (audioFile) {
             // Determine audio base path (supporting both local dev & GitHub Pages subpaths)
-            const audioUrl = `audio/voiceover/${audioFile}`;
+            const getAssetPath = (relativePath) => {
+                if (typeof window === 'undefined')
+                    return relativePath;
+                const base = window.location.pathname.endsWith('/')
+                    ? window.location.pathname
+                    : window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+                return `${base}${relativePath.replace(/^\.?\//, '')}`;
+            };
+            const audioUrl = getAssetPath(`audio/voiceover/${audioFile}`);
             const audio = new Audio(audioUrl);
             audio.volume = this.speechVolume;
             audio.playbackRate = this.speechRate;
