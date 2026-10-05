@@ -50882,6 +50882,606 @@ class MeshStandardMaterial extends Material {
 }
 
 /**
+ * An extension of the {@link MeshStandardMaterial}, providing more advanced
+ * physically-based rendering properties:
+ *
+ * - Anisotropy: Ability to represent the anisotropic property of materials
+ * as observable with brushed metals.
+ * - Clearcoat: Some materials — like car paints, carbon fiber, and wet surfaces — require
+ * a clear, reflective layer on top of another layer that may be irregular or rough.
+ * Clearcoat approximates this effect, without the need for a separate transparent surface.
+ * - Iridescence: Allows to render the effect where hue varies  depending on the viewing
+ * angle and illumination angle. This can be seen on soap bubbles, oil films, or on the
+ * wings of many insects.
+ * - Physically-based transparency: One limitation of {@link Material#opacity} is that highly
+ * transparent materials are less reflective. Physically-based transmission provides a more
+ * realistic option for thin, transparent surfaces like glass.
+ * - Advanced reflectivity: More flexible reflectivity for non-metallic materials.
+ * - Retroreflection: Redirects specular light back toward the light source for
+ * safety materials like road markings and reflective tape.
+ * - Sheen: Can be used for representing cloth and fabric materials.
+ *
+ * As a result of these complex shading features, `MeshPhysicalMaterial` has a
+ * higher performance cost, per pixel, than other three.js materials. Most
+ * effects are disabled by default, and add cost as they are enabled. For
+ * best results, always specify an environment map when using this material.
+ *
+ * @augments MeshStandardMaterial
+ * @demo scenes/material-browser.html#MeshPhysicalMaterial
+ */
+class MeshPhysicalMaterial extends MeshStandardMaterial {
+
+	/**
+	 * Constructs a new mesh physical material.
+	 *
+	 * @param {Object} [parameters] - An object with one or more properties
+	 * defining the material's appearance. Any property of the material
+	 * (including any property from inherited materials) can be passed
+	 * in here. Color values can be passed any type of value accepted
+	 * by {@link Color#set}.
+	 */
+	constructor( parameters ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isMeshPhysicalMaterial = true;
+
+		this.defines = {
+
+			'STANDARD': '',
+			'PHYSICAL': ''
+
+		};
+
+		this.type = 'MeshPhysicalMaterial';
+
+		/**
+		 * The rotation of the anisotropy in tangent, bitangent space, measured in radians
+		 * counter-clockwise from the tangent. When `anisotropyMap` is present, this
+		 * property provides additional rotation to the vectors in the texture.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.anisotropyRotation = 0;
+
+		/**
+		 * Red and green channels represent the anisotropy direction in `[-1, 1]` tangent,
+		 * bitangent space, to be rotated by `anisotropyRotation`. The blue channel
+		 * contains strength as `[0, 1]` to be multiplied by `anisotropy`.
+		 *
+		 * `anisotropyMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.anisotropyMap = null;
+
+		/**
+		 * The red channel of this texture is multiplied against `clearcoat`,
+		 * for per-pixel control over a coating's intensity.
+		 *
+		 * `clearcoatMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatMap = null;
+
+		/**
+		 * Roughness of the clear coat layer, from `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.clearcoatRoughness = 0.0;
+
+		/**
+		 * The green channel of this texture is multiplied against
+		 * `clearcoatRoughness`, for per-pixel control over a coating's roughness.
+		 *
+		 * `clearcoatRoughnessMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatRoughnessMap = null;
+
+		/**
+		 * How much `clearcoatNormalMap` affects the clear coat layer, from
+		 * `(0,0)` to `(1,1)`.
+		 *
+		 * @type {Vector2}
+		 * @default (1,1)
+		 */
+		this.clearcoatNormalScale = new Vector2( 1, 1 );
+
+		/**
+		 * Can be used to enable independent normals for the clear coat layer.
+		 *
+		 * `clearcoatNormalMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatNormalMap = null;
+
+		/**
+		 * Index-of-refraction for non-metallic materials, from `1.0` to `2.333`.
+		 *
+		 * @type {number}
+		 * @default 1.5
+		 */
+		this.ior = 1.5;
+
+		/**
+		 * Degree of reflectivity, from `0.0` to `1.0`. Default is `0.5`, which
+		 * corresponds to an index-of-refraction of `1.5`.
+		 *
+		 * This models the reflectivity of non-metallic materials. It has no effect
+		 * when `metalness` is `1.0`
+		 *
+		 * @name MeshPhysicalMaterial#reflectivity
+		 * @type {number}
+		 * @default 0.5
+		 */
+		Object.defineProperty( this, 'reflectivity', {
+			get: function () {
+
+				return ( clamp( 2.5 * ( this.ior - 1 ) / ( this.ior + 1 ), 0, 1 ) );
+
+			},
+			set: function ( reflectivity ) {
+
+				this.ior = ( 1 + 0.4 * reflectivity ) / ( 1 - 0.4 * reflectivity );
+
+			}
+		} );
+
+		/**
+		 * The red channel of this texture is multiplied against `iridescence`, for per-pixel
+		 * control over iridescence.
+		 *
+		 * `iridescenceMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.iridescenceMap = null;
+
+		/**
+		 * Strength of the iridescence RGB color shift effect, represented by an index-of-refraction.
+		 * Between `1.0` to `2.333`.
+		 *
+		 * @type {number}
+		 * @default 1.3
+		 */
+		this.iridescenceIOR = 1.3;
+
+		/**
+		 *Array of exactly 2 elements, specifying minimum and maximum thickness of the iridescence layer.
+		 Thickness of iridescence layer has an equivalent effect of the one `thickness` has on `ior`.
+		 *
+		 * @type {Array<number,number>}
+		 * @default [100,400]
+		 */
+		this.iridescenceThicknessRange = [ 100, 400 ];
+
+		/**
+		 * A texture that defines the thickness of the iridescence layer, stored in the green channel.
+		 * Minimum and maximum values of thickness are defined by `iridescenceThicknessRange` array:
+		 * - `0.0` in the green channel will result in thickness equal to first element of the array.
+		 * - `1.0` in the green channel will result in thickness equal to second element of the array.
+		 * - Values in-between will linearly interpolate between the elements of the array.
+		 *
+		 * `iridescenceThicknessMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.iridescenceThicknessMap = null;
+
+		/**
+		 * The sheen tint.
+		 *
+		 * @type {Color}
+		 * @default (0,0,0)
+		 */
+		this.sheenColor = new Color( 0x000000 );
+
+		/**
+		 * The RGB channels of this texture are multiplied against  `sheenColor`, for per-pixel control
+		 * over sheen tint.
+		 *
+		 * `sheenColorMap` represents color data, and the texture must be assigned a
+		 * {@link Texture#colorSpace}. Most `sheenColorMap` textures set
+		 * `texture.colorSpace = SRGBColorSpace`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.sheenColorMap = null;
+
+		/**
+		 * Roughness of the sheen layer, from `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.sheenRoughness = 1.0;
+
+		/**
+		 * The alpha channel of this texture is multiplied against `sheenRoughness`, for per-pixel control
+		 * over sheen roughness.
+		 *
+		 * `sheenRoughnessMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.sheenRoughnessMap = null;
+
+		/**
+		 * The red channel of this texture is multiplied against `transmission`, for per-pixel control over
+		 * optical transparency.
+		 *
+		 * `transmissionMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.transmissionMap = null;
+
+		/**
+		 * The thickness of the volume beneath the surface. The value is given in the
+		 * coordinate space of the mesh. If the value is `0` the material is
+		 * thin-walled. Otherwise the material is a volume boundary.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.thickness = 0;
+
+		/**
+		 * A texture that defines the thickness, stored in the green channel. This will
+		 * be multiplied by `thickness`.
+		 *
+		 * `thicknessMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.thicknessMap = null;
+
+		/**
+		 * Density of the medium given as the average distance that light travels in
+		 * the medium before interacting with a particle. The value is given in world
+		 * space units, and must be greater than zero.
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.attenuationDistance = Infinity;
+
+		/**
+		 * The color that white light turns into due to absorption when reaching the
+		 * attenuation distance.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.attenuationColor = new Color( 1, 1, 1 );
+
+		/**
+		 * A float that scales the amount of specular reflection for non-metals only.
+		 * When set to zero, the model is effectively Lambertian. From `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.specularIntensity = 1.0;
+
+		/**
+		 * The alpha channel of this texture is multiplied against `specularIntensity`,
+		 * for per-pixel control over specular intensity.
+		 *
+		 * `specularIntensityMap` represents non-color data. Any texture assigned must have
+		 * `texture.colorSpace = NoColorSpace` (default).
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.specularIntensityMap = null;
+
+		/**
+		 * Tints the specular reflection at normal incidence for non-metals only.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.specularColor = new Color( 1, 1, 1 );
+
+		/**
+		 * The RGB channels of this texture are multiplied against `specularColor`,
+		 * for per-pixel control over specular color.
+		 *
+		 * `specularColorMap` represents color data, and the texture must be assigned a
+		 * {@link Texture#colorSpace}. Most `specularColorMap` textures set
+		 * `texture.colorSpace = SRGBColorSpace`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.specularColorMap = null;
+
+		this._anisotropy = 0;
+		this._clearcoat = 0;
+		this._dispersion = 0;
+		this._iridescence = 0;
+		this._retroreflectivity = 0;
+		this._sheen = 0.0;
+		this._transmission = 0;
+
+		this.setValues( parameters );
+
+	}
+
+	/**
+	 * The anisotropy strength, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get anisotropy() {
+
+		return this._anisotropy;
+
+	}
+
+	set anisotropy( value ) {
+
+		if ( this._anisotropy > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._anisotropy = value;
+
+	}
+
+	/**
+	 * Represents the intensity of the clear coat layer, from `0.0` to `1.0`. Use
+	 * clear coat related properties to enable multilayer materials that have a
+	 * thin translucent layer over the base layer.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get clearcoat() {
+
+		return this._clearcoat;
+
+	}
+
+	set clearcoat( value ) {
+
+		if ( this._clearcoat > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._clearcoat = value;
+
+	}
+	/**
+	 * The intensity of the iridescence layer, simulating RGB color shift based on the angle between
+	 * the surface and the viewer, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get iridescence() {
+
+		return this._iridescence;
+
+	}
+
+	set iridescence( value ) {
+
+		if ( this._iridescence > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._iridescence = value;
+
+	}
+
+	/**
+	 * Defines the strength of the angular separation of colors (chromatic aberration) transmitting
+	 * through a relatively clear volume. Any value zero or larger is valid, the typical range of
+	 * realistic values is `[0, 1]`. This property can be only be used with transmissive objects.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get dispersion() {
+
+		return this._dispersion;
+
+	}
+
+	set dispersion( value ) {
+
+		if ( this._dispersion > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._dispersion = value;
+
+	}
+
+	/**
+	 * The strength of retroreflection, from `0.0` to `1.0`. A value of `1.0`
+	 * evaluates the material's microfacet reflection with the view direction
+	 * reflected about the surface normal, redirecting the specular lobe back
+	 * toward the light source.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get retroreflectivity() {
+
+		return this._retroreflectivity;
+
+	}
+
+	set retroreflectivity( value ) {
+
+		if ( this._retroreflectivity > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._retroreflectivity = value;
+
+	}
+
+	/**
+	 * The intensity of the sheen layer, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get sheen() {
+
+		return this._sheen;
+
+	}
+
+	set sheen( value ) {
+
+		if ( this._sheen > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._sheen = value;
+
+	}
+
+	/**
+	 * Degree of transmission (or optical transparency), from `0.0` to `1.0`.
+	 *
+	 * Thin, transparent or semitransparent, plastic or glass materials remain
+	 * largely reflective even if they are fully transmissive. The transmission
+	 * property can be used to model these materials.
+	 *
+	 * When transmission is non-zero, `opacity` should be  set to `1`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get transmission() {
+
+		return this._transmission;
+
+	}
+
+	set transmission( value ) {
+
+		if ( this._transmission > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._transmission = value;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.defines = {
+
+			'STANDARD': '',
+			'PHYSICAL': ''
+
+		};
+
+		this.anisotropy = source.anisotropy;
+		this.anisotropyRotation = source.anisotropyRotation;
+		this.anisotropyMap = source.anisotropyMap;
+
+		this.clearcoat = source.clearcoat;
+		this.clearcoatMap = source.clearcoatMap;
+		this.clearcoatRoughness = source.clearcoatRoughness;
+		this.clearcoatRoughnessMap = source.clearcoatRoughnessMap;
+		this.clearcoatNormalMap = source.clearcoatNormalMap;
+		this.clearcoatNormalScale.copy( source.clearcoatNormalScale );
+
+		this.dispersion = source.dispersion;
+		this.ior = source.ior;
+
+		this.iridescence = source.iridescence;
+		this.iridescenceMap = source.iridescenceMap;
+		this.iridescenceIOR = source.iridescenceIOR;
+		this.iridescenceThicknessRange = [ ...source.iridescenceThicknessRange ];
+		this.iridescenceThicknessMap = source.iridescenceThicknessMap;
+
+		this.retroreflectivity = source.retroreflectivity;
+
+		this.sheen = source.sheen;
+		this.sheenColor.copy( source.sheenColor );
+		this.sheenColorMap = source.sheenColorMap;
+		this.sheenRoughness = source.sheenRoughness;
+		this.sheenRoughnessMap = source.sheenRoughnessMap;
+
+		this.transmission = source.transmission;
+		this.transmissionMap = source.transmissionMap;
+
+		this.thickness = source.thickness;
+		this.thicknessMap = source.thicknessMap;
+		this.attenuationDistance = source.attenuationDistance;
+		this.attenuationColor.copy( source.attenuationColor );
+
+		this.specularIntensity = source.specularIntensity;
+		this.specularIntensityMap = source.specularIntensityMap;
+		this.specularColor.copy( source.specularColor );
+		this.specularColorMap = source.specularColorMap;
+
+		return this;
+
+	}
+
+}
+
+/**
  * A material for drawing geometry by depth. Depth is based off of the camera
  * near and far plane. White is nearest, black is farthest.
  *
@@ -53026,6 +53626,266 @@ class ArrayCamera extends PerspectiveCamera {
 		 * @type {Array<PerspectiveCamera>}
 		 */
 		this.cameras = array;
+
+	}
+
+}
+
+const _matrix = /*@__PURE__*/ new Matrix4();
+
+/**
+ * This class is designed to assist with raycasting. Raycasting is used for
+ * mouse picking (working out what objects in the 3d space the mouse is over)
+ * amongst other things.
+ */
+class Raycaster {
+
+	/**
+	 * Constructs a new raycaster.
+	 *
+	 * @param {Vector3} origin - The origin vector where the ray casts from.
+	 * @param {Vector3} direction - The (normalized) direction vector that gives direction to the ray.
+	 * @param {number} [near=0] - All results returned are further away than near. Near can't be negative.
+	 * @param {number} [far=Infinity] - All results returned are closer than far. Far can't be lower than near.
+	 */
+	constructor( origin, direction, near = 0, far = Infinity ) {
+
+		/**
+		 * The ray used for raycasting.
+		 *
+		 * @type {Ray}
+		 */
+		this.ray = new Ray( origin, direction );
+
+		/**
+		 * All results returned are further away than near. Near can't be negative.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.near = near;
+
+		/**
+		 * All results returned are closer than far. Far can't be lower than near.
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.far = far;
+
+		/**
+		 * The camera to use when raycasting against view-dependent objects such as
+		 * billboarded objects like sprites. This field can be set manually or
+		 * is set when calling `setFromCamera()`.
+		 *
+		 * @type {?Camera}
+		 * @default null
+		 */
+		this.camera = null;
+
+		/**
+		 * Allows to selectively ignore 3D objects when performing intersection tests.
+		 * The following code example ensures that only 3D objects on layer `1` will be
+		 * honored by raycaster.
+		 * ```js
+		 * raycaster.layers.set( 1 );
+		 * object.layers.enable( 1 );
+		 * ```
+		 *
+		 * @type {Layers}
+		 */
+		this.layers = new Layers();
+
+
+		/**
+		 * A parameter object that configures the raycasting. It has the structure:
+		 *
+		 * ```
+		 * {
+		 * 	Mesh: {},
+		 * 	Line: { threshold: 1 },
+		 * 	LOD: {},
+		 * 	Points: { threshold: 1 },
+		 * 	Sprite: {}
+		 * }
+		 * ```
+		 * Where `threshold` is the precision of the raycaster when intersecting objects, in world units.
+		 *
+		 * @type {Object}
+		 */
+		this.params = {
+			Mesh: {},
+			Line: { threshold: 1 },
+			LOD: {},
+			Points: { threshold: 1 },
+			Sprite: {}
+		};
+
+	}
+
+	/**
+	 * Updates the ray with a new origin and direction by copying the values from the arguments.
+	 *
+	 * @param {Vector3} origin - The origin vector where the ray casts from.
+	 * @param {Vector3} direction - The (normalized) direction vector that gives direction to the ray.
+	 */
+	set( origin, direction ) {
+
+		// direction is assumed to be normalized (for accurate distance calculations)
+
+		this.ray.set( origin, direction );
+
+	}
+
+	/**
+	 * Uses the given coordinates and camera to compute a new origin and direction for the internal ray.
+	 *
+	 * @param {Vector2} coords - 2D coordinates of the mouse, in normalized device coordinates (NDC).
+	 * X and Y components should be between `-1` and `1`.
+	 * @param {Camera} camera - The camera from which the ray should originate.
+	 */
+	setFromCamera( coords, camera ) {
+
+		if ( camera.isPerspectiveCamera ) {
+
+			this.ray.origin.setFromMatrixPosition( camera.matrixWorld );
+			this.ray.direction.set( coords.x, coords.y, 0.5 ).unproject( camera ).sub( this.ray.origin ).normalize();
+			this.camera = camera;
+
+		} else if ( camera.isOrthographicCamera ) {
+
+			this.ray.origin.set( coords.x, coords.y, camera.projectionMatrix.elements[ 14 ] ).unproject( camera ); // set origin in plane of camera
+			this.ray.direction.set( 0, 0, -1 ).transformDirection( camera.matrixWorld );
+			this.camera = camera;
+
+		} else {
+
+			error( 'Raycaster: Unsupported camera type: ' + camera.type );
+
+		}
+
+	}
+
+	/**
+	 * Uses the given WebXR controller to compute a new origin and direction for the internal ray.
+	 *
+	 * @param {WebXRController} controller - The controller to copy the position and direction from.
+	 * @return {Raycaster} A reference to this raycaster.
+	 */
+	setFromXRController( controller ) {
+
+		_matrix.identity().extractRotation( controller.matrixWorld );
+
+		this.ray.origin.setFromMatrixPosition( controller.matrixWorld );
+		this.ray.direction.set( 0, 0, -1 ).applyMatrix4( _matrix );
+
+		return this;
+
+	}
+
+	/**
+	 * The intersection point of a raycaster intersection test.
+	 * @typedef {Object} Raycaster~Intersection
+	 * @property {number} distance - The distance from the ray's origin to the intersection point.
+	 * @property {number} distanceToRay -  Some 3D objects e.g. {@link Points} provide the distance of the
+	 * intersection to the nearest point on the ray. For other objects it will be `undefined`.
+	 * @property {Vector3} point - The intersection point, in world coordinates.
+	 * @property {Object} face - The face that has been intersected.
+	 * @property {number} faceIndex - The face index.
+	 * @property {Object3D} object - The 3D object that has been intersected.
+	 * @property {Vector2} uv - U,V coordinates at point of intersection.
+	 * @property {Vector2} uv1 - Second set of U,V coordinates at point of intersection.
+	 * @property {Vector3} normal - Interpolated normal vector at point of intersection.
+	 * @property {number} instanceId - The index number of the instance where the ray
+	 * intersects the {@link InstancedMesh}.
+	 */
+
+	/**
+	 * Checks all intersection between the ray and the object with or without the
+	 * descendants. Intersections are returned sorted by distance, closest first.
+	 *
+	 * `Raycaster` delegates to the `raycast()` method of the passed 3D object, when
+	 * evaluating whether the ray intersects the object or not. This allows meshes to respond
+	 * differently to ray casting than lines or points.
+	 *
+	 * Note that for meshes, faces must be pointed towards the origin of the ray in order
+	 * to be detected; intersections of the ray passing through the back of a face will not
+	 * be detected. To raycast against both faces of an object, you'll want to set  {@link Material#side}
+	 * to `THREE.DoubleSide`.
+	 *
+	 * Note that a ray hitting a triangle mesh exactly along an edge shared by two faces may be
+	 * reported by both faces, resulting in two coincident intersections (identical point and
+	 * distance) in the returned array.
+	 *
+	 * @param {Object3D} object - The 3D object to check for intersection with the ray.
+	 * @param {boolean} [recursive=true] - If set to `true`, it also checks all descendants.
+	 * Otherwise it only checks intersection with the object.
+	 * @param {Array<Raycaster~Intersection>} [intersects=[]] The target array that holds the result of the method.
+	 * @return {Array<Raycaster~Intersection>} An array holding the intersection points.
+	 */
+	intersectObject( object, recursive = true, intersects = [] ) {
+
+		intersect( object, this, intersects, recursive );
+
+		intersects.sort( ascSort );
+
+		return intersects;
+
+	}
+
+	/**
+	 * Checks all intersection between the ray and the objects with or without
+	 * the descendants. Intersections are returned sorted by distance, closest first.
+	 *
+	 * @param {Array<Object3D>} objects - The 3D objects to check for intersection with the ray.
+	 * @param {boolean} [recursive=true] - If set to `true`, it also checks all descendants.
+	 * Otherwise it only checks intersection with the object.
+	 * @param {Array<Raycaster~Intersection>} [intersects=[]] The target array that holds the result of the method.
+	 * @return {Array<Raycaster~Intersection>} An array holding the intersection points.
+	 */
+	intersectObjects( objects, recursive = true, intersects = [] ) {
+
+		for ( let i = 0, l = objects.length; i < l; i ++ ) {
+
+			intersect( objects[ i ], this, intersects, recursive );
+
+		}
+
+		intersects.sort( ascSort );
+
+		return intersects;
+
+	}
+
+}
+
+function ascSort( a, b ) {
+
+	return a.distance - b.distance;
+
+}
+
+function intersect( object, raycaster, intersects, recursive ) {
+
+	let propagate = true;
+
+	if ( object.layers.test( raycaster.layers ) ) {
+
+		const result = object.raycast( raycaster, intersects );
+
+		if ( result === false ) propagate = false;
+
+	}
+
+	if ( propagate === true && recursive === true ) {
+
+		const children = object.children;
+
+		for ( let i = 0, l = children.length; i < l; i ++ ) {
+
+			intersect( children[ i ], raycaster, intersects, true );
+
+		}
 
 	}
 
@@ -75310,6 +76170,22 @@ class ThreeEyeScene {
     instrumentGroup;
     currentInstrumentType = null;
     instrumentMeshes = new Map();
+    raycaster = new Raycaster();
+    pointerNdc = new Vector2(0, 0);
+    surgicalPlane = new Plane();
+    planeHitPoint = new Vector3();
+    activeInstrumentType = 'none';
+    currentPedalPos = 0;
+    // 3D Interactive Target Guidance (Scales dynamically with zoom & tracks 3D tissue)
+    targetGuideGroup;
+    targetRingMesh;
+    targetPulseMesh;
+    targetBeaconArrow;
+    currentTargetWorldPos = new Vector3();
+    currentTargetWorldRadius = 0.45;
+    currentTargetLabel = '';
+    currentTargetSubLabel = '';
+    targetGuideActive = true;
     // Animation & Camera Transition
     animFrameId = 0;
     isDestroyed = false;
@@ -75322,6 +76198,7 @@ class ThreeEyeScene {
     currentStep = '';
     mouseNorm = { x: 0, y: 0, isDown: false };
     currentMagnification = 12;
+    laserDefocusMicrons = 150;
     constructor(config) {
         this.container = config.container;
         this.canvas = config.canvas;
@@ -75395,6 +76272,8 @@ class ThreeEyeScene {
         this.instrumentGroup = new Group();
         this.scene.add(this.instrumentGroup);
         this.build3DInstruments();
+        // 3D Interactive Target Guidance (Scales dynamically with zoom on tissue)
+        this.build3DTargetGuide();
         // 5. Setup Resize Listener & Animation Loop
         window.addEventListener('resize', this.onResize);
         this.animate();
@@ -75453,19 +76332,23 @@ class ThreeEyeScene {
         return mesh;
     }
     buildCorneaDome() {
-        // 3D Refractive Cornea Dome (Anterior curvature radius 7.8mm scaled)
-        const geo = new SphereGeometry(3.55, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.33);
-        const mat = new MeshStandardMaterial({
-            color: 0xe0f7fa,
+        // 3D Refractive Cornea Dome (Anterior curvature radius matching anatomical limbus)
+        const geo = new SphereGeometry(3.6, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.32);
+        const mat = new MeshPhysicalMaterial({
+            color: 0xf0fdfa,
+            transmission: 0.96,
             transparent: true,
-            opacity: 0.32,
-            roughness: 0.06,
-            metalness: 0.12,
-            side: DoubleSide
+            opacity: 0.18,
+            roughness: 0.04,
+            metalness: 0.05,
+            ior: 1.376,
+            depthWrite: false, // CRITICAL: NEVER occlude iris or pupil behind it!
+            side: FrontSide
         });
         const mesh = new Mesh(geo, mat);
         mesh.rotation.x = Math.PI / 2;
-        mesh.position.z = -1.81;
+        mesh.position.z = -1.95;
+        mesh.renderOrder = 20; // Render after opaque anatomy
         return mesh;
     }
     build3DCornealIncisions() {
@@ -75510,51 +76393,136 @@ class ThreeEyeScene {
         this.eyeGroup.add(kGroup);
     }
     buildIris() {
-        // 3D Iris Annular Diaphragm sloping gracefully toward pupillary margin
-        const geo = new RingGeometry(1.65, 3.48, 64);
-        // Rich procedural human iris texture: collarette, radial fibers, and Fuchs crypts
+        // 3D Iris Annular Diaphragm with anatomical 3D conical slope
+        const geo = new RingGeometry(1.48, 3.36, 128, 16);
+        // Explicit planar UV mapping to avoid any texture stretching
+        const pos = geo.attributes.position;
+        const uvs = new Float32Array(pos.count * 2);
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            uvs[i * 2] = (x / 3.36 + 1) / 2;
+            uvs[i * 2 + 1] = (y / 3.36 + 1) / 2;
+            // Gentle anatomical 3D conical vault: ciliary margin at -0.10, collarette at -0.05, pupil rim at -0.08
+            const r = Math.hypot(x, y);
+            const vault = -0.1 + Math.sin(((r - 1.48) / (3.36 - 1.48)) * Math.PI) * 0.05;
+            pos.setZ(i, vault);
+        }
+        geo.setAttribute('uv', new BufferAttribute(uvs, 2));
+        geo.computeVertexNormals();
+        // High-fidelity procedural human iris: layered radiating collagen fibers, crypts, collarette, sphincter
         const canvas = document.createElement('canvas');
         canvas.width = 1024;
         canvas.height = 1024;
         const ctx = canvas.getContext('2d');
-        const grad = ctx.createRadialGradient(512, 512, 170, 512, 512, 512);
-        grad.addColorStop(0, '#0c2338'); // Pupillary sphincter
-        grad.addColorStop(0.25, '#1e527d');
-        grad.addColorStop(0.52, '#2b78b5'); // Collarette prominence
-        grad.addColorStop(0.85, '#194c73');
-        grad.addColorStop(1, '#0b1d2e'); // Ciliary body root
+        // 1. Base stroma: warm, rich hazel-emerald surgical iris gradient
+        const grad = ctx.createRadialGradient(512, 512, 180, 512, 512, 510);
+        grad.addColorStop(0.0, '#1c130b'); // Pupillary pigmented margin
+        grad.addColorStop(0.12, '#38220f'); // Pupillary sphincter zone
+        grad.addColorStop(0.38, '#6b4e1e'); // Inner collarette zone (amber/hazel)
+        grad.addColorStop(0.55, '#3b5c36'); // Ciliary body transition (emerald/hazel)
+        grad.addColorStop(0.82, '#214227'); // Outer stroma
+        grad.addColorStop(0.96, '#13281a'); // Pre-limbal rim
+        grad.addColorStop(1.0, '#0a140f'); // Limbal junction
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 1024, 1024);
-        // Distinct radial collagenous trabecular ridges
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-        ctx.lineWidth = 1.8;
-        for (let a = 0; a < 360; a += 1.0) {
-            const rad = (a * Math.PI) / 180;
+        // 2. 720 fine radiating collagenous stromal fibers with realistic stochastic variation
+        for (let a = 0; a < 720; a++) {
+            const angle = (a / 720) * Math.PI * 2;
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            const startR = 195 + (Math.random() - 0.5) * 15;
+            const endR = 495 + (Math.random() - 0.5) * 10;
             ctx.beginPath();
-            ctx.moveTo(512 + Math.cos(rad) * 180, 512 + Math.sin(rad) * 180);
-            ctx.lineTo(512 + Math.cos(rad) * 490, 512 + Math.sin(rad) * 490);
+            ctx.moveTo(512 + cosA * startR, 512 + sinA * startR);
+            // Slightly wavy trabecular paths
+            const midR = (startR + endR) * 0.5;
+            const wave = (Math.random() - 0.5) * 6;
+            ctx.quadraticCurveTo(512 + Math.cos(angle + 0.01) * midR + wave, 512 + Math.sin(angle + 0.01) * midR + wave, 512 + cosA * endR, 512 + sinA * endR);
+            const alpha = 0.14 + Math.random() * 0.28;
+            const isGold = Math.random() > 0.45;
+            ctx.strokeStyle = isGold
+                ? `rgba(245, 205, 120, ${alpha})`
+                : `rgba(180, 230, 190, ${alpha * 0.85})`;
+            ctx.lineWidth = Math.random() * 1.6 + 0.6;
             ctx.stroke();
         }
+        // 3. Fuchs' crypts & lacunae (microscopic depressions in the stroma)
+        ctx.fillStyle = 'rgba(20, 15, 8, 0.45)';
+        for (let i = 0; i < 90; i++) {
+            const ca = Math.random() * Math.PI * 2;
+            const cr = 260 + Math.random() * 180;
+            ctx.beginPath();
+            ctx.ellipse(512 + Math.cos(ca) * cr, 512 + Math.sin(ca) * cr, Math.random() * 8 + 3, Math.random() * 4 + 2, ca, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // 4. Undulating Collarette Ridge
+        ctx.strokeStyle = 'rgba(255, 230, 160, 0.4)';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        for (let a = 0; a <= 128; a++) {
+            const angle = (a / 128) * Math.PI * 2;
+            const r = 295 + Math.sin(angle * 14) * 8 + Math.cos(angle * 7) * 5;
+            const x = 512 + Math.cos(angle) * r;
+            const y = 512 + Math.sin(angle) * r;
+            if (a === 0)
+                ctx.moveTo(x, y);
+            else
+                ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        // 5. Contraction furrows in outer ciliary zone
+        ctx.strokeStyle = 'rgba(10, 25, 15, 0.35)';
+        ctx.lineWidth = 2.0;
+        [380, 425, 465].forEach(furrowR => {
+            ctx.beginPath();
+            ctx.arc(512, 512, furrowR, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+        // 6. Distinct dark pupillary sphincter ring
+        ctx.strokeStyle = 'rgba(15, 10, 5, 0.85)';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.arc(512, 512, 210, 0, Math.PI * 2);
+        ctx.stroke();
         const tex = new CanvasTexture(canvas);
+        tex.generateMipmaps = true;
         const mat = new MeshStandardMaterial({
             map: tex,
-            roughness: 0.6,
-            metalness: 0.08,
-            side: DoubleSide
+            roughness: 0.52,
+            metalness: 0.05,
+            side: FrontSide
         });
         const mesh = new Mesh(geo, mat);
-        mesh.position.z = -0.12;
+        mesh.position.z = 0.0;
+        mesh.renderOrder = 5;
         return mesh;
     }
     buildPupil() {
-        const geo = new CircleGeometry(1.68, 64);
+        // Coaxial Red Reflex Retro-illumination Backdrop (Fundus reflection behind crystalline lens)
+        const geo = new CircleGeometry(1.52, 64);
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        // Warm retinal choroidal red reflex glow
+        const grad = ctx.createRadialGradient(256, 256, 30, 256, 256, 256);
+        grad.addColorStop(0.0, '#e11d48'); // Bright central coaxial red reflex
+        grad.addColorStop(0.35, '#b91c1c'); // Retinal retro-illumination
+        grad.addColorStop(0.75, '#450a0a'); // Peripheral falloff
+        grad.addColorStop(1.0, '#050202'); // Deep fundus black
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+        const tex = new CanvasTexture(canvas);
         const mat = new MeshBasicMaterial({
-            color: 0xc8260c, // Coaxial red reflex glow from retina
+            map: tex,
             transparent: true,
-            opacity: 0.94
+            opacity: 0.92
         });
         const mesh = new Mesh(geo, mat);
-        mesh.position.z = -0.16;
+        mesh.position.z = -0.75; // Safely behind cataract core & anterior capsule
+        mesh.renderOrder = 2;
         return mesh;
     }
     // =========================================================================
@@ -75721,24 +76689,24 @@ class ThreeEyeScene {
     // =========================================================================
     buildCataractLens() {
         // 1. Anterior Capsule
-        const acGeo = new SphereGeometry(2.32, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
+        const acGeo = new SphereGeometry(2.1, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
         const acMat = new MeshStandardMaterial({
             color: 0xffffff,
             transparent: true,
-            opacity: 0.32,
+            opacity: 0.28,
             roughness: 0.12,
             side: DoubleSide
         });
         this.anteriorCapsuleMesh = new Mesh(acGeo, acMat);
         this.anteriorCapsuleMesh.rotation.x = Math.PI / 2;
-        this.anteriorCapsuleMesh.position.z = -0.85;
+        this.anteriorCapsuleMesh.position.z = -0.48;
         this.lensGroup.add(this.anteriorCapsuleMesh);
         // 5.5mm Capsulorhexis Circular Rim Line
         const rimPoints = [];
         const rRadius = 1.25;
         for (let a = 0; a <= 64; a++) {
             const th = (a / 64) * Math.PI * 2;
-            rimPoints.push(new Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.22));
+            rimPoints.push(new Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.15));
         }
         const rimGeo = new BufferGeometry().setFromPoints(rimPoints);
         const rimMat = new LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
@@ -75754,13 +76722,13 @@ class ThreeEyeScene {
             side: DoubleSide
         });
         this.cccFlapMesh = new Mesh(flapGeo, flapMat);
-        this.cccFlapMesh.position.set(0.4, 0.4, -0.18);
+        this.cccFlapMesh.position.set(0.35, 0.35, -0.13);
         this.cccFlapMesh.rotation.x = 0.5;
         this.cccFlapMesh.visible = false;
         this.lensGroup.add(this.cccFlapMesh);
-        // 2. Cataract Core (LOCS III NO3 Nuclear Cataract)
-        const nGeo = new SphereGeometry(2.28, 48, 32);
-        nGeo.scale(1, 1, 0.45);
+        // 2. Cataract Core (LOCS III NO3 Nuclear Cataract - safely behind iris aperture)
+        const nGeo = new SphereGeometry(2.05, 48, 32);
+        nGeo.scale(1, 1, 0.22);
         const nMat = new MeshStandardMaterial({
             color: 0xd97706, // Amber golden nuclear grade
             roughness: 0.55,
@@ -75769,7 +76737,7 @@ class ThreeEyeScene {
             opacity: 0.94
         });
         this.nucleusMesh = new Mesh(nGeo, nMat);
-        this.nucleusMesh.position.z = -0.52;
+        this.nucleusMesh.position.z = -0.42;
         this.lensGroup.add(this.nucleusMesh);
         // Deep Phaco Trench Groove (Sculpted central canal)
         const trGeo = new BoxGeometry(0.45, 2.6, 0.38);
@@ -75778,7 +76746,7 @@ class ThreeEyeScene {
             roughness: 0.7
         });
         this.nucleusTrenchMesh = new Mesh(trGeo, trMat);
-        this.nucleusTrenchMesh.position.set(0, 0, -0.45);
+        this.nucleusTrenchMesh.position.set(0, 0, -0.38);
         this.nucleusTrenchMesh.visible = false;
         this.lensGroup.add(this.nucleusTrenchMesh);
         // 4 Chopped Nuclear Quadrants for Phacoemulsification
@@ -75789,7 +76757,7 @@ class ThreeEyeScene {
             { x: 0.5, y: -0.5, rotZ: -Math.PI / 2 }
         ];
         quadOffsets.forEach((q) => {
-            const qGeo = new CylinderGeometry(1.15, 0.18, 0.45, 16, 1, false, 0, Math.PI * 0.46);
+            const qGeo = new CylinderGeometry(1.05, 0.16, 0.38, 16, 1, false, 0, Math.PI * 0.46);
             const qMat = new MeshStandardMaterial({
                 color: 0xb45309,
                 roughness: 0.6,
@@ -75799,7 +76767,7 @@ class ThreeEyeScene {
             const qMesh = new Mesh(qGeo, qMat);
             qMesh.rotation.x = Math.PI / 2;
             qMesh.rotation.z = q.rotZ;
-            qMesh.position.set(q.x, q.y, -0.52);
+            qMesh.position.set(q.x, q.y, -0.42);
             qMesh.visible = false;
             this.nucleusQuadrants.push(qMesh);
             this.lensGroup.add(qMesh);
@@ -75974,45 +76942,148 @@ class ThreeEyeScene {
     // 3D SURGICAL INSTRUMENTS
     // =========================================================================
     build3DInstruments() {
-        // 1. Phaco Handpiece & Titanium Tip
+        // 1. Phaco Handpiece & Titanium Ultrasound Tip (Tip precisely at origin 0,0,0)
         const phacoObj = new Group();
-        const handle = new Mesh(new CylinderGeometry(0.18, 0.22, 2.8, 16), new MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 }));
-        handle.position.y = 1.4;
-        phacoObj.add(handle);
-        const sleeve = new Mesh(new CylinderGeometry(0.1, 0.14, 0.9, 16), new MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 }));
-        sleeve.position.y = 0.4;
-        phacoObj.add(sleeve);
-        const needle = new Mesh(new CylinderGeometry(0.045, 0.045, 0.6, 16), new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 }));
-        needle.position.y = -0.15;
-        phacoObj.add(needle);
-        phacoObj.rotation.x = Math.PI / 4;
+        const needleGeo = new CylinderGeometry(0.032, 0.038, 0.55, 16);
+        needleGeo.translate(0, 0.275, 0);
+        const needleMat = new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+        phacoObj.add(new Mesh(needleGeo, needleMat));
+        const sleeveGeo = new CylinderGeometry(0.09, 0.12, 0.8, 16);
+        sleeveGeo.translate(0, 0.9, 0);
+        const sleeveMat = new MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5, metalness: 0.1 });
+        phacoObj.add(new Mesh(sleeveGeo, sleeveMat));
+        const handleGeo = new CylinderGeometry(0.18, 0.22, 2.5, 16);
+        handleGeo.translate(0, 2.55, 0);
+        const handleMat = new MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.35 });
+        phacoObj.add(new Mesh(handleGeo, handleMat));
         this.instrumentMeshes.set('phaco_tip', phacoObj);
-        // 2. MVR Blade (1.0mm)
+        // 2. MVR Blade (1.0mm) - Micro-lancet with tip at (0,0,0)
         const mvrObj = new Group();
-        const mvrHandle = new Mesh(new CylinderGeometry(0.12, 0.12, 2.4, 16), new MeshStandardMaterial({ color: 0xf59e0b }));
-        mvrHandle.position.y = 1.2;
-        mvrObj.add(mvrHandle);
-        const mvrBlade = new Mesh(new ConeGeometry(0.06, 0.45, 4), new MeshStandardMaterial({ color: 0xffffff, metalness: 0.9 }));
-        mvrBlade.position.y = -0.1;
-        mvrObj.add(mvrBlade);
+        const mvrBladeGeo = new ConeGeometry(0.05, 0.42, 4);
+        mvrBladeGeo.rotateZ(Math.PI);
+        mvrBladeGeo.rotateY(Math.PI / 4);
+        mvrBladeGeo.translate(0, 0.21, 0);
+        const mvrBladeMat = new MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.1 });
+        mvrObj.add(new Mesh(mvrBladeGeo, mvrBladeMat));
+        const mvrCollarGeo = new CylinderGeometry(0.05, 0.05, 0.35, 16);
+        mvrCollarGeo.translate(0, 0.55, 0);
+        mvrObj.add(new Mesh(mvrCollarGeo, new MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 })));
+        const mvrHandleGeo = new CylinderGeometry(0.12, 0.12, 2.4, 16);
+        mvrHandleGeo.translate(0, 1.9, 0);
+        mvrObj.add(new Mesh(mvrHandleGeo, new MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })));
         this.instrumentMeshes.set('mvr_blade', mvrObj);
-        // 3. Clear Corneal Keratome (2.4mm)
+        // 3. Clear Corneal Keratome (2.4mm) - Beveled trapezoidal diamond blade
         const keratomeObj = new Group();
-        const kHandle = new Mesh(new CylinderGeometry(0.14, 0.14, 2.4, 16), new MeshStandardMaterial({ color: 0x10b981 }));
-        kHandle.position.y = 1.2;
-        keratomeObj.add(kHandle);
-        const kBlade = new Mesh(new BoxGeometry(0.24, 0.5, 0.02), new MeshStandardMaterial({ color: 0xffffff, metalness: 0.95 }));
-        kBlade.position.y = -0.12;
-        keratomeObj.add(kBlade);
+        const kBladeGeo = new BoxGeometry(0.24, 0.48, 0.02);
+        kBladeGeo.translate(0, 0.24, 0);
+        keratomeObj.add(new Mesh(kBladeGeo, new MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.1 })));
+        const kCollarGeo = new CylinderGeometry(0.07, 0.07, 0.3, 16);
+        kCollarGeo.translate(0, 0.63, 0);
+        keratomeObj.add(new Mesh(kCollarGeo, new MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 })));
+        const kHandleGeo = new CylinderGeometry(0.14, 0.14, 2.4, 16);
+        kHandleGeo.translate(0, 1.95, 0);
+        keratomeObj.add(new Mesh(kHandleGeo, new MeshStandardMaterial({ color: 0x059669, roughness: 0.4 })));
         this.instrumentMeshes.set('keratome_2_4', keratomeObj);
-        // 4. MIGS Stent Injector Trocar
+        // 4. Cystotome (27G bent needle for capsulorhexis puncture)
+        const cystoObj = new Group();
+        const tipCurve = new LineCurve3(new Vector3(0, 0, 0), new Vector3(0, 0.08, -0.06));
+        const cystoTipGeo = new TubeGeometry(tipCurve, 8, 0.016, 8, false);
+        const cystoMat = new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+        cystoObj.add(new Mesh(cystoTipGeo, cystoMat));
+        const cystoShaftGeo = new CylinderGeometry(0.02, 0.02, 1.22, 16);
+        cystoShaftGeo.translate(0, 0.69, -0.06);
+        cystoObj.add(new Mesh(cystoShaftGeo, cystoMat));
+        const hubGeo = new CylinderGeometry(0.1, 0.14, 0.5, 16);
+        hubGeo.translate(0, 1.55, -0.06);
+        cystoObj.add(new Mesh(hubGeo, new MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 })));
+        const syringeGeo = new CylinderGeometry(0.18, 0.18, 1.8, 16);
+        syringeGeo.translate(0, 2.7, -0.06);
+        cystoObj.add(new Mesh(syringeGeo, new MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })));
+        this.instrumentMeshes.set('cystotome', cystoObj);
+        // 5. Utrata Forceps (Continuous Curvilinear Capsulorhexis Micro-forceps)
+        const utrataObj = new Group();
+        const jaw1Curve = new QuadraticBezierCurve3(new Vector3(0, 0, 0), new Vector3(-0.05, 0.35, 0), new Vector3(-0.03, 0.8, 0));
+        const jaw2Curve = new QuadraticBezierCurve3(new Vector3(0, 0, 0), new Vector3(0.05, 0.35, 0), new Vector3(0.03, 0.8, 0));
+        const jawMat = new MeshStandardMaterial({ color: 0xcfd8dc, metalness: 0.9, roughness: 0.2 });
+        utrataObj.add(new Mesh(new TubeGeometry(jaw1Curve, 12, 0.018, 8, false), jawMat));
+        utrataObj.add(new Mesh(new TubeGeometry(jaw2Curve, 12, 0.018, 8, false), jawMat));
+        const utrataHandleGeo = new CylinderGeometry(0.12, 0.16, 2.2, 16);
+        utrataHandleGeo.translate(0, 1.9, 0);
+        utrataObj.add(new Mesh(utrataHandleGeo, new MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 })));
+        this.instrumentMeshes.set('utrata_forceps', utrataObj);
+        // 6. Chang Hydrodissection Cannula (Flat-tipped hydro-cannula)
+        const hydroObj = new Group();
+        const hydroTipGeo = new CylinderGeometry(0.02, 0.02, 0.15, 12);
+        hydroTipGeo.translate(0, 0.075, 0);
+        const hydroMat = new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
+        hydroObj.add(new Mesh(hydroTipGeo, hydroMat));
+        const hydroShaftGeo = new CylinderGeometry(0.025, 0.025, 1.2, 12);
+        hydroShaftGeo.translate(0, 0.75, 0);
+        hydroObj.add(new Mesh(hydroShaftGeo, hydroMat));
+        const hydroSyringeGeo = new CylinderGeometry(0.18, 0.18, 1.8, 16);
+        hydroSyringeGeo.translate(0, 2.25, 0);
+        hydroObj.add(new Mesh(hydroSyringeGeo, new MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 })));
+        this.instrumentMeshes.set('hydro_cannula', hydroObj);
+        // 7. OVD Injection Cannulas (Viscoat dispersive & Provisc cohesive)
+        const buildOvdObj = (isViscoat) => {
+            const ovdObj = new Group();
+            const cannulaTip = new CylinderGeometry(0.022, 0.022, 0.85, 12);
+            cannulaTip.translate(0, 0.425, 0);
+            ovdObj.add(new Mesh(cannulaTip, new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 })));
+            const syringe = new CylinderGeometry(0.18, 0.18, 1.8, 16);
+            syringe.translate(0, 1.75, 0);
+            ovdObj.add(new Mesh(syringe, new MeshStandardMaterial({
+                color: isViscoat ? 0xf59e0b : 0x0284c7,
+                transparent: true,
+                opacity: 0.65
+            })));
+            return ovdObj;
+        };
+        this.instrumentMeshes.set('ovd_viscoat', buildOvdObj(true));
+        this.instrumentMeshes.set('ovd_provisc', buildOvdObj(false));
+        // 8. I/A Handpiece (Irrigation & Aspiration coaxial handpiece)
+        const iaObj = new Group();
+        const iaTipGeo = new CylinderGeometry(0.045, 0.055, 0.65, 16);
+        iaTipGeo.translate(0, 0.325, 0);
+        const iaMat = new MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 });
+        iaObj.add(new Mesh(iaTipGeo, iaMat));
+        const iaHandleGeo = new CylinderGeometry(0.16, 0.2, 2.4, 16);
+        iaHandleGeo.translate(0, 1.85, 0);
+        iaObj.add(new Mesh(iaHandleGeo, new MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.4 })));
+        this.instrumentMeshes.set('ia_handpiece', iaObj);
+        // 9. Foldable IOL Injector Nozzle
+        const iolInjObj = new Group();
+        const nozzleGeo = new ConeGeometry(0.08, 0.65, 12);
+        nozzleGeo.rotateZ(Math.PI);
+        nozzleGeo.translate(0, 0.325, 0);
+        iolInjObj.add(new Mesh(nozzleGeo, new MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })));
+        const bodyGeo = new CylinderGeometry(0.2, 0.24, 2.6, 16);
+        bodyGeo.translate(0, 1.95, 0);
+        iolInjObj.add(new Mesh(bodyGeo, new MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.6, roughness: 0.3 })));
+        this.instrumentMeshes.set('iol_injector', iolInjObj);
+        // 10. Sinskey Micro-Hook
+        const sinskeyObj = new Group();
+        const hookCurve = new LineCurve3(new Vector3(0, 0, 0), new Vector3(0.05, 0, 0));
+        sinskeyObj.add(new Mesh(new TubeGeometry(hookCurve, 4, 0.015, 8, false), new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 })));
+        const sinskeyShaftGeo = new CylinderGeometry(0.025, 0.03, 1.2, 12);
+        sinskeyShaftGeo.translate(0.05, 0.6, 0);
+        sinskeyObj.add(new Mesh(sinskeyShaftGeo, new MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 })));
+        const sinskeyHandleGeo = new CylinderGeometry(0.12, 0.12, 2.2, 16);
+        sinskeyHandleGeo.translate(0.05, 2.3, 0);
+        sinskeyObj.add(new Mesh(sinskeyHandleGeo, new MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 })));
+        this.instrumentMeshes.set('sinskey_hook', sinskeyObj);
+        // 11. MIGS Stent Injector Trocar
         const migsObj = new Group();
-        const migsHandle = new Mesh(new CylinderGeometry(0.15, 0.15, 2.8, 16), new MeshStandardMaterial({ color: 0x3b82f6 }));
-        migsHandle.position.y = 1.4;
-        migsObj.add(migsHandle);
-        const trocar = new Mesh(new CylinderGeometry(0.035, 0.035, 0.7, 16), new MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9 }));
-        trocar.position.y = -0.2;
-        migsObj.add(trocar);
+        const trocarGeo = new CylinderGeometry(0.03, 0.04, 0.7, 16);
+        trocarGeo.translate(0, 0.35, 0);
+        migsObj.add(new Mesh(trocarGeo, new MeshStandardMaterial({ color: 0xdddddd, metalness: 0.95, roughness: 0.1 })));
+        const migsHandleGeo = new CylinderGeometry(0.15, 0.16, 2.6, 16);
+        migsHandleGeo.translate(0, 2.0, 0);
+        migsObj.add(new Mesh(migsHandleGeo, new MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35 })));
+        const wheelGeo = new CylinderGeometry(0.18, 0.18, 0.25, 16);
+        wheelGeo.rotateZ(Math.PI / 2);
+        wheelGeo.translate(0, 1.8, 0.1);
+        migsObj.add(new Mesh(wheelGeo, new MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6 })));
         this.instrumentMeshes.set('migs_injector', migsObj);
         // Add all instruments to group but hidden initially
         this.instrumentMeshes.forEach((mesh) => {
@@ -76021,11 +77092,174 @@ class ThreeEyeScene {
         });
     }
     // =========================================================================
+    // 3D SURGICAL TARGET GUIDANCE (SCALES DYNAMICALLY WITH ZOOM & ORBIT)
+    // =========================================================================
+    build3DTargetGuide() {
+        this.targetGuideGroup = new Group();
+        this.eyeGroup.add(this.targetGuideGroup);
+        // 1. Primary Glowing 3D Target Torus Ring
+        const torusGeo = new TorusGeometry(0.42, 0.035, 16, 48);
+        const torusMat = new MeshStandardMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.9,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        this.targetRingMesh = new Mesh(torusGeo, torusMat);
+        this.targetGuideGroup.add(this.targetRingMesh);
+        // 2. Secondary Pulsing Concentric Radar Ring
+        const pulseGeo = new RingGeometry(0.38, 0.46, 48);
+        const pulseMat = new MeshBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.6,
+            side: DoubleSide
+        });
+        this.targetPulseMesh = new Mesh(pulseGeo, pulseMat);
+        this.targetGuideGroup.add(this.targetPulseMesh);
+        // 3. 3D Floating Pointer Arrow Beacon (pointing directly to incision point)
+        const arrowGeo = new ConeGeometry(0.12, 0.35, 16);
+        arrowGeo.rotateX(Math.PI); // Tip points towards tissue!
+        const arrowMat = new MeshStandardMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.8,
+            roughness: 0.2
+        });
+        this.targetBeaconArrow = new Mesh(arrowGeo, arrowMat);
+        this.targetBeaconArrow.position.z = 0.55;
+        this.targetGuideGroup.add(this.targetBeaconArrow);
+        this.targetGuideGroup.visible = false;
+    }
+    updateTargetGuide(stepId) {
+        if (!this.targetGuideGroup)
+            return;
+        const targetPos = new Vector3();
+        let targetRadius = 0.42;
+        let color = 0x38bdf8;
+        let label = '';
+        let subLabel = '';
+        switch (stepId) {
+            case 'paracentesis':
+                targetPos.set(-2.82, 1.63, 0.22);
+                targetRadius = 0.38;
+                color = 0xf59e0b; // Amber
+                label = 'PARACENTESIS INCISION (10:00)';
+                subLabel = '1.0mm MVR Blade: Cut side-port parallel to iris';
+                break;
+            case 'clear_corneal_incision':
+                targetPos.set(2.35, 2.35, 0.22);
+                targetRadius = 0.52;
+                color = 0x00d2ff; // Cyan
+                label = 'CLEAR CORNEAL TUNNEL (1:30)';
+                subLabel = '2.4mm Keratome: Tri-planar self-sealing incision';
+                break;
+            case 'ovd_injection':
+                targetPos.set(0, 0, 0.05);
+                targetRadius = 0.75;
+                color = 0x10b981; // Emerald
+                label = 'OVD VISCOELASTIC INJECTION';
+                subLabel = 'Viscoat: Coat corneal endothelium';
+                break;
+            case 'capsulorhexis':
+                targetPos.set(0, 0, -0.16);
+                targetRadius = 1.25; // 5.5mm CCC ring!
+                color = 0x38bdf8;
+                label = '5.5mm CAPSULORHEXIS (CCC)';
+                subLabel = 'Utrata Forceps: Continuous circular tear';
+                break;
+            case 'hydrodissection':
+                targetPos.set(0, 1.25, -0.18);
+                targetRadius = 0.45;
+                color = 0x00d2ff;
+                label = 'HYDRODISSECTION (12:00)';
+                subLabel = 'Hydro Cannula: Cleave cortex from capsule';
+                break;
+            case 'phaco_chop':
+                targetPos.set(0, 0, -0.35);
+                targetRadius = 0.85;
+                color = 0xf59e0b;
+                label = 'PHACO NUCLEOFRACTIS';
+                subLabel = 'Phaco Tip: Sculpt trench & emulsify quadrants';
+                break;
+            case 'cortex_removal':
+                targetPos.set(0.85, -0.65, -0.3);
+                targetRadius = 0.65;
+                color = 0x00d2ff;
+                label = 'CORTEX REMOVAL';
+                subLabel = 'I/A Handpiece: Vacuum cortical remnants';
+                break;
+            case 'stent_1_deployment':
+                targetPos.set(0.89, 3.32, 0.12);
+                targetRadius = 0.28;
+                color = 0xf59e0b;
+                label = 'TRABECULAR MESHWORK STENT 1 (2:30)';
+                subLabel = 'MIGS Injector: Deploy stent into Schlemm canal';
+                break;
+            case 'stent_2_deployment':
+                targetPos.set(-1.72, 2.98, 0.12);
+                targetRadius = 0.28;
+                color = 0x00d2ff;
+                label = 'TRABECULAR MESHWORK STENT 2 (4:00)';
+                subLabel = 'MIGS Injector: Deploy 2nd stent 2 clock hours away';
+                break;
+            case 'cruciate_capsulotomy':
+                targetPos.set(0, 0, -0.85);
+                targetRadius = 0.95;
+                color = 0xef4444; // Rose
+                label = 'CRUCIATE CAPSULOTOMY';
+                subLabel = 'Nd:YAG Laser: Photodisrupt posterior capsule';
+                break;
+            default:
+                this.targetGuideGroup.visible = false;
+                return;
+        }
+        this.currentTargetWorldPos.copy(targetPos);
+        this.currentTargetWorldRadius = targetRadius;
+        this.currentTargetLabel = label;
+        this.currentTargetSubLabel = subLabel;
+        this.targetGuideGroup.position.copy(targetPos);
+        this.targetGuideGroup.visible = this.targetGuideActive;
+        const scale = targetRadius / 0.42;
+        this.targetRingMesh.scale.set(scale, scale, scale);
+        this.targetPulseMesh.scale.set(scale, scale, scale);
+        this.targetRingMesh.material.color.setHex(color);
+        this.targetRingMesh.material.emissive.setHex(color);
+        this.targetPulseMesh.material.color.setHex(color);
+        this.targetBeaconArrow.material.color.setHex(color);
+        this.targetBeaconArrow.material.emissive.setHex(color);
+    }
+    getStepTargetScreenPos() {
+        if (!this.targetGuideGroup || !this.targetGuideGroup.visible)
+            return null;
+        const targetWorldPos = this.currentTargetWorldPos.clone();
+        const projected = targetWorldPos.project(this.camera);
+        if (projected.z > 1.0)
+            return null;
+        const w = this.container.clientWidth || 800;
+        const h = this.container.clientHeight || 600;
+        const screenX = (projected.x * 0.5 + 0.5) * w;
+        const screenY = (-projected.y * 0.5 + 0.5) * h;
+        const dist = this.camera.position.distanceTo(targetWorldPos);
+        const fovRad = (this.camera.fov * Math.PI) / 180;
+        const screenRadius = Math.max(14, (this.currentTargetWorldRadius / (2 * Math.tan(fovRad / 2) * Math.max(0.5, dist))) * h);
+        return {
+            x: screenX,
+            y: screenY,
+            visible: true,
+            label: this.currentTargetLabel,
+            subLabel: this.currentTargetSubLabel,
+            screenRadius
+        };
+    }
+    // =========================================================================
     // STEP-SPECIFIC AUTOMATIC ZOOM & FRAMING
     // =========================================================================
     focusOnStep(stepId) {
         this.currentStep = stepId;
         this.isTransitioningCamera = true;
+        this.updateTargetGuide(stepId);
         switch (stepId) {
             // --- CATARACT PHACO STEPS ---
             case 'paracentesis':
@@ -76224,16 +77458,8 @@ class ThreeEyeScene {
             this.yagGroup.visible = true;
             this.angleGroup.visible = false;
             this.gonioprismMesh.visible = false;
-            // Focus laser reticle
-            const targetZ = -0.85 + (params.laserDefocusZ / 1000.0) * 0.5;
-            this.yagFocalDot.position.set(this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-            // Reconnect aiming beam lines to focal point
-            const b1Pos = this.yagAimingCone1.geometry.attributes.position;
-            b1Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-            b1Pos.needsUpdate = true;
-            const b2Pos = this.yagAimingCone2.geometry.attributes.position;
-            b2Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-            b2Pos.needsUpdate = true;
+            this.laserDefocusMicrons = params.laserDefocusZ;
+            this.updateYagReticle();
             // Show ripped tissue leaflets curling open once fired
             if (params.yagState.shots.length > 0) {
                 this.posteriorCapsuleMesh.material.opacity = 0.22;
@@ -76256,7 +77482,34 @@ class ThreeEyeScene {
         // 3. Active 3D Instrument positioning
         this.updateInstrumentPosition(params.activeInstrument, params.pedalPosition);
     }
+    setPointerPosition(ndcX, ndcY, isDown) {
+        this.pointerNdc.set(ndcX, ndcY);
+        this.mouseNorm.x = ndcX;
+        this.mouseNorm.y = ndcY;
+        this.mouseNorm.isDown = isDown;
+        this.updateInstrumentPosition(this.activeInstrumentType, this.currentPedalPos);
+        if (this.currentModule === 'yag') {
+            this.updateYagReticle();
+        }
+    }
+    updateYagReticle() {
+        this.raycaster.setFromCamera(this.pointerNdc, this.camera);
+        const targetZ = -0.85 + (this.laserDefocusMicrons / 1000.0) * 0.5;
+        const capsulePlane = new Plane(new Vector3(0, 0, 1), -targetZ);
+        const hit = new Vector3();
+        if (this.raycaster.ray.intersectPlane(capsulePlane, hit)) {
+            this.yagFocalDot.position.copy(hit);
+            const b1Pos = this.yagAimingCone1.geometry.attributes.position;
+            b1Pos.setXYZ(1, hit.x, hit.y, hit.z);
+            b1Pos.needsUpdate = true;
+            const b2Pos = this.yagAimingCone2.geometry.attributes.position;
+            b2Pos.setXYZ(1, hit.x, hit.y, hit.z);
+            b2Pos.needsUpdate = true;
+        }
+    }
     updateInstrumentPosition(activeInstrument, pedalPosition) {
+        this.activeInstrumentType = activeInstrument;
+        this.currentPedalPos = pedalPosition;
         if (this.currentInstrumentType !== activeInstrument) {
             if (this.currentInstrumentType && this.instrumentMeshes.has(this.currentInstrumentType)) {
                 this.instrumentMeshes.get(this.currentInstrumentType).visible = false;
@@ -76269,22 +77522,33 @@ class ThreeEyeScene {
         const currentMesh = this.instrumentMeshes.get(activeInstrument);
         if (!currentMesh)
             return;
-        // Follow cursor with corneal pivot
-        const tx = this.mouseNorm.x * 2.2;
-        const ty = this.mouseNorm.y * 2.2;
-        currentMesh.position.set(tx, ty, 0.4);
-        // Ultrasonic vibration blur when phaco pedal in position 3
-        if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
-            currentMesh.position.x += (Math.random() - 0.5) * 0.035;
-            currentMesh.position.y += (Math.random() - 0.5) * 0.035;
+        // Raycast from camera using Normalized Device Coordinates (NDC [-1, 1])
+        this.raycaster.setFromCamera(this.pointerNdc, this.camera);
+        // Working plane parallel to camera view passing through controls.target
+        const camDir = new Vector3();
+        this.camera.getWorldDirection(camDir);
+        const planeNormal = camDir.clone().negate();
+        this.surgicalPlane.setFromNormalAndCoplanarPoint(planeNormal, this.controls.target);
+        if (this.raycaster.ray.intersectPlane(this.surgicalPlane, this.planeHitPoint)) {
+            currentMesh.position.copy(this.planeHitPoint);
+            // Align instrument handle back towards surgeon's hands entering field
+            const holdVectorInCam = new Vector3(0.35, 0.52, 0.78).normalize();
+            const alignWithHandle = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), holdVectorInCam);
+            currentMesh.quaternion.copy(this.camera.quaternion).multiply(alignWithHandle);
+            // Ultrasonic vibration blur when phaco pedal in position 3
+            if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
+                currentMesh.position.x += (Math.random() - 0.5) * 0.035;
+                currentMesh.position.y += (Math.random() - 0.5) * 0.035;
+            }
         }
     }
     triggerYagPlasmaSpark(x, y) {
-        // 1. Plasma Spark at focal breakdown
-        this.yagPlasmaSpark.position.set(x * 1.8, y * 1.8, -0.85);
+        // 1. Plasma Spark at focal breakdown location
+        const focalPos = this.yagFocalDot.position.clone();
+        this.yagPlasmaSpark.position.copy(focalPos);
         this.yagPlasmaSpark.material.opacity = 1.0;
         // 2. Ultrasonic Cavitation Shockwave Bubble Ring
-        this.yagShockwaveMesh.position.set(x * 1.8, y * 1.8, -0.86);
+        this.yagShockwaveMesh.position.copy(focalPos);
         this.yagShockwaveMesh.scale.set(0.15, 0.15, 0.15);
         this.yagShockwaveMesh.material.opacity = 1.0;
         // 3. Physically rip open the capsular leaflets with ultrasonic tear
@@ -76359,6 +77623,19 @@ class ThreeEyeScene {
             if (this.ripProgress >= 1.0) {
                 this.isRippingCapsule = false;
             }
+        }
+        // Dynamic 3D target beacon pulsation (scales smoothly with 3D zoom & perspective)
+        if (this.targetGuideGroup && this.targetGuideGroup.visible) {
+            const t = performance.now() * 0.005;
+            const pulse = Math.sin(t) * 0.5 + 0.5;
+            const scale = (this.currentTargetWorldRadius / 0.42) * (1.0 + pulse * 0.25);
+            this.targetPulseMesh.scale.set(scale, scale, scale);
+            this.targetPulseMesh.material.opacity = 0.65 - pulse * 0.45;
+            this.targetBeaconArrow.position.z = 0.55 + Math.sin(t * 1.5) * 0.08;
+        }
+        // Continuously keep instrument locked to mouse cursor relative to current camera perspective
+        if (this.activeInstrumentType && this.activeInstrumentType !== 'none') {
+            this.updateInstrumentPosition(this.activeInstrumentType, this.currentPedalPos);
         }
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
@@ -77180,9 +78457,9 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 ctx.restore();
             }
             // ==========================================
-            // LAYER 3: SURGICAL INSTRUMENTS (Follows Cursor)
+            // LAYER 3: SURGICAL INSTRUMENTS (Follows Cursor in 2D Photo/Hybrid Mode)
             // ==========================================
-            if (activeInstrument !== 'none' && activeInstrument !== 'yag_laser') {
+            if (renderMode !== '3d' && activeInstrument !== 'none' && activeInstrument !== 'yag_laser') {
                 ctx.save();
                 ctx.translate(mousePos.x, mousePos.y);
                 if (activeInstrument === 'mvr_blade' || activeInstrument === 'keratome_2_4') {
@@ -77304,8 +78581,10 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 const animTime = performance.now();
                 const pulse = (Math.sin(animTime / 220) + 1) / 2; // 0 to 1
                 const bounce = Math.sin(animTime / 180) * 6; // -6 to 6 px bounce
+                // In 3D mode, query projected 3D target coordinates and dynamically calculated screen radius
+                const stepTarget3D = renderMode === '3d' ? threeEyeSceneRef.current?.getStepTargetScreenPos() : null;
                 // Helper to draw a modern glowing target beacon and pointer arrow
-                const drawTargetBeacon = (tx, ty, titleText, subText, colorTheme = 'cyan') => {
+                const drawTargetBeacon = (tx, ty, titleText, subText, colorTheme = 'cyan', targetRadiusOverride) => {
                     ctx.save();
                     const primaryColor = colorTheme === 'amber' ? '#f59e0b' :
                         colorTheme === 'emerald' ? '#10b981' :
@@ -77313,15 +78592,18 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                     const bgGlow = colorTheme === 'amber' ? 'rgba(245, 158, 11, 0.25)' :
                         colorTheme === 'emerald' ? 'rgba(16, 185, 129, 0.25)' :
                             colorTheme === 'rose' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(0, 210, 255, 0.25)';
-                    // 1. Concentric pulsing radar rings
+                    // Dynamic radius that scales with zoom!
+                    const rBase = targetRadiusOverride ?? (22 * zoomFactor);
+                    const currentRadius = Math.max(14, rBase + pulse * (rBase * 0.35));
+                    // 1. Concentric pulsing radar rings (scales dynamically with zoom & camera)
                     ctx.strokeStyle = primaryColor;
                     ctx.lineWidth = 2.0;
                     ctx.beginPath();
-                    ctx.arc(tx, ty, 14 + pulse * 14, 0, Math.PI * 2);
+                    ctx.arc(tx, ty, currentRadius, 0, Math.PI * 2);
                     ctx.stroke();
                     ctx.fillStyle = bgGlow;
                     ctx.beginPath();
-                    ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+                    ctx.arc(tx, ty, Math.max(6, currentRadius * 0.5), 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#ffffff';
                     ctx.beginPath();
@@ -77330,7 +78612,7 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                     // 2. Animated Bouncing Arrow
                     ctx.save();
                     const arrowTipX = tx;
-                    const arrowTipY = ty - 18 - bounce;
+                    const arrowTipY = ty - currentRadius - 6 - bounce;
                     const badgeX = tx;
                     const badgeY = arrowTipY - 32;
                     // Draw downward pointing chevron arrow
@@ -77385,83 +78667,117 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 // Determine target by module and currentStepId
                 if (module === 'phaco') {
                     if (currentStepId === 'paracentesis' || (!currentStepId && !incisions[0]?.completed)) {
-                        const tx = centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
-                        const ty = centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
-                        drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
+                        const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber', r);
                     }
                     else if (currentStepId === 'clear_corneal_incision' || (!currentStepId && !incisions[1]?.completed)) {
-                        const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
-                        const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+                        const r = stepTarget3D?.screenRadius ?? (28 * zoomFactor);
                         const inc = incisions.find(i => i.type === 'clear_corneal');
                         const planeTxt = !inc || inc.depthFraction === 0 ? 'Click to cut Plane 1: 300µm Groove' :
                             inc.depthFraction < 0.7 ? 'Click to cut Plane 2: 1.5mm Tunnel' : 'Click to cut Plane 3: Penetrate AC';
-                        drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan');
+                        drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan', r);
                     }
                     else if (currentStepId === 'ovd_injection' || (!currentStepId && ovdCoverage.dispersive < 40)) {
-                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.15, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY - eyeRadiusPx * 0.15;
+                        const r = stepTarget3D?.screenRadius ?? (32 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald', r);
                     }
                     else if (currentStepId === 'capsulorhexis' || (!currentStepId && !cccState.completed)) {
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? ((2.6 / 6.0) * eyeRadiusPx * 0.85);
                         if (!cccState.punctured) {
-                            drawTargetBeacon(centerX, centerY, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber');
+                            drawTargetBeacon(tx, ty, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber', r * 0.45);
                         }
                         else {
-                            drawTargetBeacon(centerX + (2.6 / 6.0) * (eyeRadiusPx * 0.85), centerY, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan');
+                            drawTargetBeacon(tx + r, ty, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan', r);
                         }
                     }
                     else if (currentStepId === 'hydrodissection' || (!currentStepId && !hydroState.corticalCleavingWaveFormed)) {
-                        const ty = centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
-                        drawTargetBeacon(centerX, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
+                        const r = stepTarget3D?.screenRadius ?? (24 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan', r);
                     }
                     else if (currentStepId === 'phaco_chop' || (!currentStepId && nucleusState.remainingMassFraction > 0.05)) {
-                        drawTargetBeacon(centerX, centerY, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (38 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber', r);
                     }
                     else if (currentStepId === 'cortex_removal') {
-                        drawTargetBeacon(centerX + eyeRadiusPx * 0.35, centerY, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.35;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan', r);
                     }
                 }
                 else if (module === 'iol') {
                     if (currentStepId === 'ovd_bag_refill' || (!currentStepId && !iolState.opticInChamber && iolState.insertionProgressFraction < 0.1)) {
-                        drawTargetBeacon(centerX, centerY, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (32 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald', r);
                     }
                     else if (currentStepId === 'cartridge_insertion' || currentStepId === 'haptic_unfolding' || (!currentStepId && !iolState.opticInChamber)) {
-                        const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
-                        const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
-                        drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+                        const r = stepTarget3D?.screenRadius ?? (28 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan', r);
                     }
                     else if (currentStepId === 'sinskey_dialing' || (!currentStepId && !iolState.trailingHapticInBag)) {
-                        drawTargetBeacon(centerX - eyeRadiusPx * 0.25, centerY + eyeRadiusPx * 0.2, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY + eyeRadiusPx * 0.2;
+                        const r = stepTarget3D?.screenRadius ?? (24 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber', r);
                     }
                     else if (currentStepId === 'viscoelastic_washout') {
-                        drawTargetBeacon(centerX, centerY, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan', r);
                     }
                 }
                 else if (module === 'yag') {
                     if (currentStepId === 'contact_lens_placement' || (!currentStepId && !yagSettings.contactLensFitted)) {
-                        drawTargetBeacon(centerX, centerY, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (45 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan', r);
                     }
                     else if (currentStepId === 'aiming_focus') {
-                        drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose');
+                        drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose', 18 * zoomFactor);
                     }
                     else if (currentStepId === 'offset_adjustment') {
-                        drawTargetBeacon(centerX, centerY, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        drawTargetBeacon(tx, ty, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber', 26 * zoomFactor);
                     }
                     else if (currentStepId === 'cruciate_capsulotomy' || (!currentStepId && yagState.shots.length < 4)) {
+                        const cx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const cy = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (eyeRadiusPx * 0.35);
                         // Draw 4 numbered targets on the capsule
                         const offsets = [
-                            { num: '1', ox: 0, oy: -eyeRadiusPx * 0.25 },
-                            { num: '2', ox: 0, oy: eyeRadiusPx * 0.25 },
-                            { num: '3', ox: -eyeRadiusPx * 0.25, oy: 0 },
-                            { num: '4', ox: eyeRadiusPx * 0.25, oy: 0 }
+                            { num: '1', ox: 0, oy: -r * 0.65 },
+                            { num: '2', ox: 0, oy: r * 0.65 },
+                            { num: '3', ox: -r * 0.65, oy: 0 },
+                            { num: '4', ox: r * 0.65, oy: 0 }
                         ];
                         offsets.forEach(off => {
-                            const sx = centerX + off.ox;
-                            const sy = centerY + off.oy;
+                            const sx = cx + off.ox;
+                            const sy = cy + off.oy;
                             ctx.save();
                             ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
                             ctx.strokeStyle = '#ef4444';
                             ctx.lineWidth = 1.5;
                             ctx.beginPath();
-                            ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+                            ctx.arc(sx, sy, Math.max(7, 9 * zoomFactor), 0, Math.PI * 2);
                             ctx.fill();
                             ctx.stroke();
                             ctx.fillStyle = '#ffffff';
@@ -77471,34 +78787,47 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                             ctx.fillText(off.num, sx, sy);
                             ctx.restore();
                         });
-                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose');
+                        drawTargetBeacon(cx, cy - r * 0.7, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose', r);
                     }
                     else if (currentStepId === 'post_yag_assessment') {
-                        drawTargetBeacon(centerX, centerY, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        drawTargetBeacon(tx, ty, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald', 32 * zoomFactor);
                     }
                 }
                 else if (module === 'migs') {
                     if (currentStepId === 'microscope_and_head_tilt') {
-                        drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY - eyeRadiusPx * 0.35;
+                        drawTargetBeacon(tx, ty, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan', 35 * zoomFactor);
                     }
                     else if (currentStepId === 'gonioprism_placement') {
-                        drawTargetBeacon(centerX, centerY, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        drawTargetBeacon(tx, ty, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald', 40 * zoomFactor);
                     }
                     else if (currentStepId === 'viscoelastic_angle_deepening') {
-                        drawTargetBeacon(centerX + eyeRadiusPx * 0.45, centerY, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.45;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        drawTargetBeacon(tx, ty, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan', 28 * zoomFactor);
                     }
                     else if (currentStepId === 'stent_1_deployment') {
-                        const s1x = centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
-                        const s1y = centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
-                        drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber');
+                        const s1x = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+                        const s1y = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+                        const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+                        drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber', r);
                     }
                     else if (currentStepId === 'stent_2_deployment') {
-                        const s2x = centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
-                        const s2y = centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
-                        drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan');
+                        const s2x = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+                        const s2y = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+                        const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+                        drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan', r);
                     }
                     else if (currentStepId === 'blood_reflux_and_washout') {
-                        drawTargetBeacon(centerX + eyeRadiusPx * 0.4, centerY, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose');
+                        const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.4;
+                        const ty = stepTarget3D ? stepTarget3D.y : centerY;
+                        const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+                        drawTargetBeacon(tx, ty, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose', r);
                     }
                 }
             }
@@ -77622,6 +78951,9 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         setMousePos({ x, y });
+        const ndcX = (x / rect.width) * 2 - 1;
+        const ndcY = -(y / rect.height) * 2 + 1;
+        threeEyeSceneRef.current?.setPointerPosition(ndcX, ndcY, true);
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const eyeRadiusPx = (175 * magnification) / 12;
@@ -77731,6 +79063,10 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         setMousePos({ x, y });
+        // Track 3D cursor position in Three.js scene continuously
+        const ndcX = (x / rect.width) * 2 - 1;
+        const ndcY = -(y / rect.height) * 2 + 1;
+        threeEyeSceneRef.current?.setPointerPosition(ndcX, ndcY, isDown);
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         const eyeRadiusPx = (175 * magnification) / 12;
@@ -78947,26 +80283,28 @@ const SurgicalInstructionBanner = ({ currentInstruction, onSelectInstrument, sho
     };
     const toolDisplayNames = {
         mvr_blade: '1.0mm MVR Blade',
-        keratome_2_4: '2.4mm Keratome Blade',
-        ovd_viscoat: 'Viscoat Protective Jelly',
-        ovd_provisc: 'Provisc Cohesive Jelly',
-        cystotome: 'Needle Cystotome',
-        utrata_forceps: 'Utrata Micro-Forceps',
-        hydro_cannula: 'Hydrodissection Cannula',
-        phaco_tip: 'Phaco Ultrasound Needle',
-        ia_handpiece: 'Irrigation & Suction Wand',
-        iol_injector: 'Foldable IOL Injector',
-        sinskey_hook: 'Sinskey Dialing Hook',
-        yag_laser: 'Nd:YAG Q-Switched Laser',
+        keratome_2_4: '2.4mm Keratome',
+        ovd_viscoat: 'Viscoat Jelly',
+        ovd_provisc: 'Provisc Jelly',
+        cystotome: 'Cystotome',
+        utrata_forceps: 'Utrata Forceps',
+        hydro_cannula: 'Hydro Cannula',
+        phaco_tip: 'Phaco Tip',
+        ia_handpiece: 'I/A Handpiece',
+        iol_injector: 'IOL Injector',
+        sinskey_hook: 'Sinskey Hook',
+        yag_laser: 'Nd:YAG Laser',
         none: 'Hands Free'
     };
-    return (jsxRuntimeExports.jsx("div", { className: "absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 w-[95%] sm:w-[90%] max-w-lg md:max-w-xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-2xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "p-2 sm:p-2.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3.5 h-3.5 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3.5 h-3.5 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3.5 h-3.5" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728] border-b border-[#1b2b44]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 sm:gap-2.5 min-w-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 sm:p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all ${isSpeaking
+    return (jsxRuntimeExports.jsx("div", { className: "absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 w-[96%] sm:w-[92%] max-w-xl md:max-w-2xl z-20 bg-[#0b1220]/95 backdrop-blur-md rounded-xl border border-emerald-600/40 shadow-2xl text-xs text-slate-200 select-none overflow-hidden transition-all duration-300", children: isMinimized ? (jsxRuntimeExports.jsxs("div", { className: "px-2.5 py-1.5 flex items-center justify-between gap-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg font-bold text-xs transition ${isSpeaking ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'}`, title: isSpeaking ? 'Stop Voice' : 'Read Aloud', children: isSpeaking ? jsxRuntimeExports.jsx(Square, { className: "w-3 h-3 fill-current" }) : jsxRuntimeExports.jsx(Play, { className: "w-3 h-3 fill-current" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(false), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Instructions HUD", children: jsxRuntimeExports.jsx(Maximize2, { className: "w-3 h-3" }) })] })] })) : (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 flex items-center justify-between gap-2 bg-gradient-to-r from-[#0d1728] via-[#0e1c33] to-[#0d1728]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0 flex-1", children: [jsxRuntimeExports.jsx("button", { onClick: toggleSpeak, className: `p-1.5 rounded-lg border flex items-center justify-center shrink-0 transition-all ${isSpeaking
                                         ? 'bg-rose-950 border-rose-400 text-rose-300 shadow-md shadow-rose-900/50 animate-pulse'
-                                        : 'bg-[#101b2e] border-[#1c2c44] text-slate-400 hover:text-emerald-300'}`, title: isSpeaking ? 'Stop Spoken Voice' : 'Play Attending Voice Narration', children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3.5 sm:h-4", children: [jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2.5 sm:h-3" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-3.5 sm:h-4 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-1 bg-rose-400 rounded-full animate-bounce h-2 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" })) }), jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 sm:gap-2", children: [jsxRuntimeExports.jsxs("span", { className: "text-[9px] sm:text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.2 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsx("span", { className: "font-bold text-white text-xs sm:text-[13px] truncate", children: isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title })] }), jsxRuntimeExports.jsx("div", { className: "text-[10px] sm:text-[11px] text-emerald-300 font-medium truncate mt-0.5", children: currentInstruction.beginnerSummary })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 sm:gap-1.5 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: () => setIsBeginnerMode(!isBeginnerMode), className: `px-2 py-1 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 ${isBeginnerMode
+                                        : 'bg-[#101b2e] border-[#1c2c44] text-slate-400 hover:text-emerald-300'}`, title: isSpeaking ? 'Stop Spoken Voice' : 'Play Attending Voice Narration', children: isSpeaking ? (jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-0.5 h-3", children: [jsxRuntimeExports.jsx("span", { className: "w-0.5 bg-rose-400 rounded-full animate-bounce h-2" }), jsxRuntimeExports.jsx("span", { className: "w-0.5 bg-rose-400 rounded-full animate-bounce h-3 delay-100" }), jsxRuntimeExports.jsx("span", { className: "w-0.5 bg-rose-400 rounded-full animate-bounce h-1.5 delay-200" })] })) : (jsxRuntimeExports.jsx(Volume2, { className: "w-3.5 h-3.5" })) }), jsxRuntimeExports.jsxs("span", { className: "text-[9px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-700/80 px-1.5 py-0.5 rounded font-bold shrink-0", children: ["STEP ", currentInstruction.stepNumber] }), jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex items-center gap-1.5 truncate", children: [jsxRuntimeExports.jsxs("span", { className: "font-bold text-white text-xs shrink-0", children: [isBeginnerMode ? currentInstruction.beginnerTitle : currentInstruction.title, ":"] }), jsxRuntimeExports.jsx("span", { className: "text-emerald-300 text-xs font-medium truncate", children: currentInstruction.actionCallout })] }), onSelectInstrument && currentInstruction.recommendedInstrument !== 'none' && (jsxRuntimeExports.jsxs("button", { onClick: () => onSelectInstrument(currentInstruction.recommendedInstrument), className: "hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 text-[10px] font-mono font-semibold transition shrink-0 active:scale-95 shadow-sm", title: "Equip recommended instrument", children: [jsxRuntimeExports.jsx(Wrench, { className: "w-2.5 h-2.5 text-emerald-400" }), jsxRuntimeExports.jsx("span", { className: "truncate max-w-[110px]", children: toolDisplayNames[currentInstruction.recommendedInstrument] || currentInstruction.recommendedInstrument })] }))] }), jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 shrink-0", children: [jsxRuntimeExports.jsx("button", { onClick: () => setIsBeginnerMode(!isBeginnerMode), className: `hidden sm:inline-flex px-1.5 py-0.5 rounded border text-[10px] font-bold transition ${isBeginnerMode
                                         ? 'bg-amber-950/80 border-amber-600 text-amber-300'
-                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, title: isBeginnerMode ? 'Beginner Guide Mode Active (Simple Plain English)' : 'Clinical Specialist Mode Active', children: jsxRuntimeExports.jsx("span", { children: isBeginnerMode ? 'Beginner' : 'Surgeon' }) }), onToggleGuides && (jsxRuntimeExports.jsx("button", { onClick: onToggleGuides, className: `p-1.5 rounded-lg border text-[10px] transition ${showGuides
+                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-400'}`, title: isBeginnerMode ? 'Mode: Beginner' : 'Mode: Surgeon', children: isBeginnerMode ? 'Beginner' : 'Surgeon' }), onToggleGuides && (jsxRuntimeExports.jsx("button", { onClick: onToggleGuides, className: `p-1.5 rounded-lg border text-[10px] transition ${showGuides
                                         ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
-                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-500'}`, title: showGuides ? 'Visual Target Guidance is ON' : 'Visual Target Guidance is OFF', children: jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5" }) })), jsxRuntimeExports.jsx("button", { onClick: () => setIsExpanded(!isExpanded), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Expand Anatomical Details & Why It's Necessary", children: isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(true), className: "p-1 sm:p-1.5 rounded-xl bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-300 transition", title: "Minimize Banner", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3.5 h-3.5 sm:w-4 sm:h-4" }) })] })] }), jsxRuntimeExports.jsxs("div", { className: "p-3 bg-gradient-to-r from-emerald-950/30 via-[#0a1426] to-[#071120] border-b border-[#1a2d48] space-y-2", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2", children: [jsxRuntimeExports.jsx("div", { className: "p-1 rounded bg-emerald-500/20 text-emerald-400 shrink-0 mt-0.5", children: jsxRuntimeExports.jsx(Compass, { className: "w-3.5 h-3.5" }) }), jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [jsxRuntimeExports.jsx("div", { className: "text-[10px] uppercase font-mono tracking-wider text-emerald-400 font-bold", children: "WHAT TO DO RIGHT NOW:" }), jsxRuntimeExports.jsx("div", { className: "text-xs text-white font-medium leading-relaxed mt-0.5", children: currentInstruction.actionCallout })] })] }), jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-[#13233a] text-[11px]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx(Crosshair, { className: "w-3 h-3 text-emerald-400 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px]", children: "Target:" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-200 font-medium text-[11px] truncate max-w-[200px] xs:max-w-none", children: currentInstruction.targetLocationDescription })] }), onSelectInstrument && currentInstruction.recommendedInstrument !== 'none' && (jsxRuntimeExports.jsxs("button", { onClick: () => onSelectInstrument(currentInstruction.recommendedInstrument), className: "flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 text-[10px] font-mono font-semibold transition active:scale-95 shadow-sm", title: "Click to automatically equip this instrument", children: [jsxRuntimeExports.jsx(Wrench, { className: "w-2.5 h-2.5 text-emerald-400" }), jsxRuntimeExports.jsxs("span", { children: ["Select ", toolDisplayNames[currentInstruction.recommendedInstrument] || currentInstruction.recommendedInstrument] })] }))] })] }), jsxRuntimeExports.jsxs("div", { className: "p-2.5 sm:p-3 bg-[#070e1c] border-b border-[#162338] text-[11px] leading-relaxed text-slate-300 flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-bold text-emerald-400 mr-1", children: "Why this is necessary:" }), jsxRuntimeExports.jsx("span", { className: "text-slate-300", children: currentInstruction.whyItsNecessary })] })] }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3.5 bg-[#050b16] space-y-3 text-[11px] border-t border-[#162338] animate-fadeIn max-h-[350px] overflow-y-auto", children: [currentInstruction.detailedAnatomy && (jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1424] p-2.5 rounded-xl border border-emerald-900/60 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-emerald-300 flex items-center gap-1.5 text-xs", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-emerald-400" }), "Micro-Surgical Anatomy & Wound Architecture:"] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px]", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Target Tissue: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.tissueTarget })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Instrument / Calibration: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.instrumentDepthOrSize })] })] }), jsxRuntimeExports.jsxs("div", { className: "text-slate-300 text-[10.5px] pt-1 border-t border-[#16253c]", children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-emerald-400", children: "Biomechanics: " }), currentInstruction.detailedAnatomy.biomechanicsExplanation] })] })), jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-emerald-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-emerald-400" }), "Surgical Pearls & Best Practices:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 pt-1.5 border-t border-[#132034]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-rose-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-rose-400" }), "Hazards & What Happens If You Do It Wrong:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-rose-200/90", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2", children: jsxRuntimeExports.jsxs("button", { onClick: () => {
+                                        : 'bg-[#101b2e] border-[#1b2b44] text-slate-500'}`, title: showGuides ? 'Visual Target Guidance is ON' : 'Visual Target Guidance is OFF', children: jsxRuntimeExports.jsx(Crosshair, { className: "w-3.5 h-3.5" }) })), jsxRuntimeExports.jsxs("button", { onClick: () => setIsExpanded(!isExpanded), className: `flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-medium transition ${isExpanded
+                                        ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
+                                        : 'bg-[#101b2e] hover:bg-[#16253c] border-[#1b2b44] text-slate-300'}`, title: "Expand Anatomical Guidance & Details", children: [jsxRuntimeExports.jsx("span", { children: "Details" }), isExpanded ? jsxRuntimeExports.jsx(ChevronUp, { className: "w-3 h-3" }) : jsxRuntimeExports.jsx(ChevronDown, { className: "w-3 h-3" })] }), jsxRuntimeExports.jsx("button", { onClick: () => setIsMinimized(true), className: "p-1.5 rounded-lg bg-[#101b2e] hover:bg-[#16253c] border border-[#1b2b44] text-slate-400 hover:text-slate-200 transition", title: "Minimize Banner", children: jsxRuntimeExports.jsx(Minimize2, { className: "w-3 h-3" }) })] })] }), isExpanded && (jsxRuntimeExports.jsxs("div", { className: "p-3 bg-[#050b16] space-y-2.5 text-[11px] border-t border-[#162338] animate-fadeIn max-h-[360px] overflow-y-auto", children: [jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center justify-between gap-1.5 p-2 bg-[#091122] rounded-lg border border-[#17253d]", children: [jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 text-slate-300", children: [jsxRuntimeExports.jsx(Compass, { className: "w-3 h-3 text-emerald-400 shrink-0" }), jsxRuntimeExports.jsx("span", { className: "text-slate-400 text-[10px]", children: "Target:" }), jsxRuntimeExports.jsx("span", { className: "text-emerald-200 font-medium text-[11px]", children: currentInstruction.targetLocationDescription })] }), onSelectInstrument && currentInstruction.recommendedInstrument !== 'none' && (jsxRuntimeExports.jsxs("button", { onClick: () => onSelectInstrument(currentInstruction.recommendedInstrument), className: "flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 text-[10px] font-mono font-semibold transition shadow-sm", children: [jsxRuntimeExports.jsx(Wrench, { className: "w-2.5 h-2.5 text-emerald-400" }), jsxRuntimeExports.jsxs("span", { children: ["Select ", toolDisplayNames[currentInstruction.recommendedInstrument] || currentInstruction.recommendedInstrument] })] }))] }), jsxRuntimeExports.jsxs("div", { className: "p-2 bg-[#081224] rounded-lg border border-[#15233c] text-[11px] leading-relaxed text-slate-300 flex items-start gap-2", children: [jsxRuntimeExports.jsx(CircleQuestionMark, { className: "w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "font-bold text-emerald-400 mr-1", children: "Why this is necessary:" }), jsxRuntimeExports.jsx("span", { className: "text-slate-300", children: currentInstruction.whyItsNecessary })] })] }), currentInstruction.detailedAnatomy && (jsxRuntimeExports.jsxs("div", { className: "bg-[#0b1424] p-2.5 rounded-lg border border-emerald-900/60 space-y-1.5", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-emerald-300 flex items-center gap-1.5 text-xs", children: [jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-emerald-400" }), "Micro-Surgical Anatomy & Wound Architecture:"] }), jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px]", children: [jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Target Tissue: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.tissueTarget })] }), jsxRuntimeExports.jsxs("div", { children: [jsxRuntimeExports.jsx("span", { className: "text-slate-400", children: "Instrument / Calibration: " }), jsxRuntimeExports.jsx("span", { className: "text-slate-200", children: currentInstruction.detailedAnatomy.instrumentDepthOrSize })] })] }), jsxRuntimeExports.jsxs("div", { className: "text-slate-300 text-[10.5px] pt-1 border-t border-[#16253c]", children: [jsxRuntimeExports.jsx("span", { className: "font-semibold text-emerald-400", children: "Biomechanics: " }), currentInstruction.detailedAnatomy.biomechanicsExplanation] })] })), jsxRuntimeExports.jsxs("div", { className: "space-y-1 bg-[#091122] p-2 rounded-lg border border-[#17253d]", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-emerald-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(Lightbulb, { className: "w-3.5 h-3.5 text-emerald-400" }), "Surgical Pearls & Best Practices:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-slate-300 text-[10.5px]", children: currentInstruction.techniquePearls.map((pearl, idx) => (jsxRuntimeExports.jsx("li", { children: pearl }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "space-y-1 bg-[#170a10] p-2 rounded-lg border border-rose-950", children: [jsxRuntimeExports.jsxs("div", { className: "font-bold text-rose-400 flex items-center gap-1.5", children: [jsxRuntimeExports.jsx(TriangleAlert, { className: "w-3.5 h-3.5 text-rose-400" }), "Hazards & What Happens If You Do It Wrong:"] }), jsxRuntimeExports.jsx("ul", { className: "list-disc pl-5 space-y-0.5 text-rose-200/90 text-[10.5px]", children: currentInstruction.hazards.map((hazard, idx) => (jsxRuntimeExports.jsx("li", { children: hazard }, idx))) })] }), jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-[#132034] flex items-center justify-between text-slate-400 text-[10px]", children: [jsxRuntimeExports.jsx("div", { className: "flex items-center gap-2", children: jsxRuntimeExports.jsxs("button", { onClick: () => {
                                             const next = !autoNarrate;
                                             setAutoNarrate(next);
                                             ttsEngine.setAutoNarrate(next);

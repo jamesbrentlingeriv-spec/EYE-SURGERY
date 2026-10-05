@@ -1001,9 +1001,9 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       }
 
       // ==========================================
-      // LAYER 3: SURGICAL INSTRUMENTS (Follows Cursor)
+      // LAYER 3: SURGICAL INSTRUMENTS (Follows Cursor in 2D Photo/Hybrid Mode)
       // ==========================================
-      if (activeInstrument !== 'none' && activeInstrument !== 'yag_laser') {
+      if (renderMode !== '3d' && activeInstrument !== 'none' && activeInstrument !== 'yag_laser') {
         ctx.save();
         ctx.translate(mousePos.x, mousePos.y);
 
@@ -1133,13 +1133,17 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         const pulse = (Math.sin(animTime / 220) + 1) / 2; // 0 to 1
         const bounce = Math.sin(animTime / 180) * 6; // -6 to 6 px bounce
 
+        // In 3D mode, query projected 3D target coordinates and dynamically calculated screen radius
+        const stepTarget3D = renderMode === '3d' ? threeEyeSceneRef.current?.getStepTargetScreenPos() : null;
+
         // Helper to draw a modern glowing target beacon and pointer arrow
         const drawTargetBeacon = (
           tx: number,
           ty: number,
           titleText: string,
           subText: string,
-          colorTheme: 'cyan' | 'amber' | 'emerald' | 'rose' = 'cyan'
+          colorTheme: 'cyan' | 'amber' | 'emerald' | 'rose' = 'cyan',
+          targetRadiusOverride?: number
         ) => {
           ctx.save();
           const primaryColor =
@@ -1151,16 +1155,20 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
             colorTheme === 'emerald' ? 'rgba(16, 185, 129, 0.25)' :
             colorTheme === 'rose' ? 'rgba(244, 63, 94, 0.25)' : 'rgba(0, 210, 255, 0.25)';
 
-          // 1. Concentric pulsing radar rings
+          // Dynamic radius that scales with zoom!
+          const rBase = targetRadiusOverride ?? (22 * zoomFactor);
+          const currentRadius = Math.max(14, rBase + pulse * (rBase * 0.35));
+
+          // 1. Concentric pulsing radar rings (scales dynamically with zoom & camera)
           ctx.strokeStyle = primaryColor;
           ctx.lineWidth = 2.0;
           ctx.beginPath();
-          ctx.arc(tx, ty, 14 + pulse * 14, 0, Math.PI * 2);
+          ctx.arc(tx, ty, currentRadius, 0, Math.PI * 2);
           ctx.stroke();
 
           ctx.fillStyle = bgGlow;
           ctx.beginPath();
-          ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+          ctx.arc(tx, ty, Math.max(6, currentRadius * 0.5), 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#ffffff';
@@ -1171,7 +1179,7 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
           // 2. Animated Bouncing Arrow
           ctx.save();
           const arrowTipX = tx;
-          const arrowTipY = ty - 18 - bounce;
+          const arrowTipY = ty - currentRadius - 6 - bounce;
           const badgeX = tx;
           const badgeY = arrowTipY - 32;
 
@@ -1235,68 +1243,102 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
         // Determine target by module and currentStepId
         if (module === 'phaco') {
           if (currentStepId === 'paracentesis' || (!currentStepId && !incisions[0]?.completed)) {
-            const tx = centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
-            const ty = centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
-            drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(-0.45) * (eyeRadiusPx * 0.98);
+            const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(-0.45) * (eyeRadiusPx * 0.98);
+            const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK HERE (10:00) FOR SIDE-PORT', '1.0mm MVR Blade: Make side door parallel to iris', 'amber', r);
           } else if (currentStepId === 'clear_corneal_incision' || (!currentStepId && !incisions[1]?.completed)) {
-            const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
-            const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+            const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+            const r = stepTarget3D?.screenRadius ?? (28 * zoomFactor);
             const inc = incisions.find(i => i.type === 'clear_corneal');
             const planeTxt = !inc || inc.depthFraction === 0 ? 'Click to cut Plane 1: 300µm Groove' :
               inc.depthFraction < 0.7 ? 'Click to cut Plane 2: 1.5mm Tunnel' : 'Click to cut Plane 3: Penetrate AC';
-            drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan');
+            drawTargetBeacon(tx, ty, 'CLICK HERE (1:30) FOR MAIN 2.4mm TUNNEL', `Keratome Blade: ${planeTxt}`, 'cyan', r);
           } else if (currentStepId === 'ovd_injection' || (!currentStepId && ovdCoverage.dispersive < 40)) {
-            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.15, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY - eyeRadiusPx * 0.15;
+            const r = stepTarget3D?.screenRadius ?? (32 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK INSIDE PUPIL TO INJECT JELLY', 'Viscoat Syringe: Coat & protect corneal cells', 'emerald', r);
           } else if (currentStepId === 'capsulorhexis' || (!currentStepId && !cccState.completed)) {
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? ((2.6 / 6.0) * eyeRadiusPx * 0.85);
             if (!cccState.punctured) {
-              drawTargetBeacon(centerX, centerY, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber');
+              drawTargetBeacon(tx, ty, 'CLICK CENTER TO PUNCTURE CAPSULE', 'Cystotome: Pierce center of lens skin to start flap', 'amber', r * 0.45);
             } else {
-              drawTargetBeacon(centerX + (2.6 / 6.0) * (eyeRadiusPx * 0.85), centerY, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan');
+              drawTargetBeacon(tx + r, ty, 'DRAG ALONG DASHED BLUE CIRCLE', 'Utrata Forceps: Peel smooth 5.2mm round window', 'cyan', r);
             }
           } else if (currentStepId === 'hydrodissection' || (!currentStepId && !hydroState.corticalCleavingWaveFormed)) {
-            const ty = centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
-            drawTargetBeacon(centerX, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY - (2.6 / 6.0) * (eyeRadiusPx * 0.85);
+            const r = stepTarget3D?.screenRadius ?? (24 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK UNDER CAPSULE RIM TO SPRAY WATER', 'Hydro Cannula: Cleave lens so it spins freely', 'cyan', r);
           } else if (currentStepId === 'phaco_chop' || (!currentStepId && nucleusState.remainingMassFraction > 0.05)) {
-            drawTargetBeacon(centerX, centerY, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (38 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'STEP ON PEDAL (POS 3) & TOUCH LENS', 'Phaco Tip: Pulverize hard core (stay >1.5mm from back capsule)', 'amber', r);
           } else if (currentStepId === 'cortex_removal') {
-            drawTargetBeacon(centerX + eyeRadiusPx * 0.35, centerY, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.35;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'STEP ON PEDAL (POS 2) & VACUUM CORTEX', 'I/A Handpiece: Vacuum fluffy cortex clean', 'cyan', r);
           }
         } else if (module === 'iol') {
           if (currentStepId === 'ovd_bag_refill' || (!currentStepId && !iolState.opticInChamber && iolState.insertionProgressFraction < 0.1)) {
-            drawTargetBeacon(centerX, centerY, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (32 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK INSIDE BAG TO RE-INFLATE', 'Provisc Jelly: Expand bag so injector nozzle enters safely', 'emerald', r);
           } else if (currentStepId === 'cartridge_insertion' || currentStepId === 'haptic_unfolding' || (!currentStepId && !iolState.opticInChamber)) {
-            const tx = centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
-            const ty = centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
-            drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + Math.cos(0.26) * (eyeRadiusPx * 0.98);
+            const ty = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(0.26) * (eyeRadiusPx * 0.98);
+            const r = stepTarget3D?.screenRadius ?? (28 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK TO ADVANCE FOLDED LENS', 'IOL Injector: Advance screw plunger with bevel DOWN', 'cyan', r);
           } else if (currentStepId === 'sinskey_dialing' || (!currentStepId && !iolState.trailingHapticInBag)) {
-            drawTargetBeacon(centerX - eyeRadiusPx * 0.25, centerY + eyeRadiusPx * 0.2, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY + eyeRadiusPx * 0.2;
+            const r = stepTarget3D?.screenRadius ?? (24 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK TO DIAL LENS CLOCKWISE', 'Sinskey Hook: Tuck trailing arm into bag & center', 'amber', r);
           } else if (currentStepId === 'viscoelastic_washout') {
-            drawTargetBeacon(centerX, centerY, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'PEDAL POS 2: VACUUM JELLY BEHIND LENS', 'I/A Handpiece: Vacuum retro-lens space to prevent IOP spikes', 'cyan', r);
           }
         } else if (module === 'yag') {
           if (currentStepId === 'contact_lens_placement' || (!currentStepId && !yagSettings.contactLensFitted)) {
-            drawTargetBeacon(centerX, centerY, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (45 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK EYE TO PLACE ABRAHAM LENS', 'Magnifying contact lens stabilizes eye & widens laser cone', 'cyan', r);
           } else if (currentStepId === 'aiming_focus') {
-            drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose');
+            drawTargetBeacon(mousePos.x || centerX, mousePos.y || centerY, 'MOVE CURSOR: MERGE TWIN RED DOTS INTO 1', 'Confocal Focus: Single sharp red dot = perfect target plane', 'rose', 18 * zoomFactor);
           } else if (currentStepId === 'offset_adjustment') {
-            drawTargetBeacon(centerX, centerY, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            drawTargetBeacon(tx, ty, 'CHECK OFFSET SETTING: MUST BE +150µm', 'Laser Console: Posterior offset protects lens from pits', 'amber', 26 * zoomFactor);
           } else if (currentStepId === 'cruciate_capsulotomy' || (!currentStepId && yagState.shots.length < 4)) {
+            const cx = stepTarget3D ? stepTarget3D.x : centerX;
+            const cy = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (eyeRadiusPx * 0.35);
             // Draw 4 numbered targets on the capsule
             const offsets = [
-              { num: '1', ox: 0, oy: -eyeRadiusPx * 0.25 },
-              { num: '2', ox: 0, oy: eyeRadiusPx * 0.25 },
-              { num: '3', ox: -eyeRadiusPx * 0.25, oy: 0 },
-              { num: '4', ox: eyeRadiusPx * 0.25, oy: 0 }
+              { num: '1', ox: 0, oy: -r * 0.65 },
+              { num: '2', ox: 0, oy: r * 0.65 },
+              { num: '3', ox: -r * 0.65, oy: 0 },
+              { num: '4', ox: r * 0.65, oy: 0 }
             ];
             offsets.forEach(off => {
-              const sx = centerX + off.ox;
-              const sy = centerY + off.oy;
+              const sx = cx + off.ox;
+              const sy = cy + off.oy;
               ctx.save();
               ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
               ctx.strokeStyle = '#ef4444';
               ctx.lineWidth = 1.5;
               ctx.beginPath();
-              ctx.arc(sx, sy, 9, 0, Math.PI * 2);
+              ctx.arc(sx, sy, Math.max(7, 9 * zoomFactor), 0, Math.PI * 2);
               ctx.fill();
               ctx.stroke();
               ctx.fillStyle = '#ffffff';
@@ -1306,27 +1348,40 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
               ctx.fillText(off.num, sx, sy);
               ctx.restore();
             });
-            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose');
+            drawTargetBeacon(cx, cy - r * 0.7, 'CLICK NUMBERED CROSS TARGETS (+)', 'Cruciate Pattern: 1 (Top) → 2 (Bottom) → 3 (Left) → 4 (Right)', 'rose', r);
           } else if (currentStepId === 'post_yag_assessment') {
-            drawTargetBeacon(centerX, centerY, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            drawTargetBeacon(tx, ty, 'VERIFY 4.0mm CENTRAL CLEAR WINDOW', 'Slit Lamp: Check 0 lens pits & apply pressure drops', 'emerald', 32 * zoomFactor);
           }
         } else if (module === 'migs') {
           if (currentStepId === 'microscope_and_head_tilt') {
-            drawTargetBeacon(centerX, centerY - eyeRadiusPx * 0.35, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY - eyeRadiusPx * 0.35;
+            drawTargetBeacon(tx, ty, 'CLICK TO TILT MICROSCOPE (40°) & HEAD (35°)', 'Goniometry: Overcome corneal total internal reflection to view angle', 'cyan', 35 * zoomFactor);
           } else if (currentStepId === 'gonioprism_placement') {
-            drawTargetBeacon(centerX, centerY, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            drawTargetBeacon(tx, ty, 'CLICK CORNEA TO PLACE SWAN-JACOB GONIOPRISM', 'Prism Lens: Converts curved cornea into flat optical window', 'emerald', 40 * zoomFactor);
           } else if (currentStepId === 'viscoelastic_angle_deepening') {
-            drawTargetBeacon(centerX + eyeRadiusPx * 0.45, centerY, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.45;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            drawTargetBeacon(tx, ty, 'CLICK TO INJECT COHESIVE OVD INTO NASAL ANGLE', 'Deepen Angle: Pushes iris back to create safe stent runway', 'cyan', 28 * zoomFactor);
           } else if (currentStepId === 'stent_1_deployment') {
-            const s1x = centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
-            const s1y = centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
-            drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber');
+            const s1x = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25 + Math.cos(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+            const s1y = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(-Math.PI * 0.11) * (eyeRadiusPx * 0.93);
+            const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+            drawTargetBeacon(s1x, s1y, 'CLICK TARGET: DEPLOY MICRO-STENT 1 (2:30)', 'Target: Pigmented Trabecular Meshwork over Collector Channel', 'amber', r);
           } else if (currentStepId === 'stent_2_deployment') {
-            const s2x = centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
-            const s2y = centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
-            drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan');
+            const s2x = stepTarget3D ? stepTarget3D.x : centerX - eyeRadiusPx * 0.25 + Math.cos(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+            const s2y = stepTarget3D ? stepTarget3D.y : centerY + Math.sin(Math.PI * 0.21) * (eyeRadiusPx * 0.93);
+            const r = stepTarget3D?.screenRadius ?? (22 * zoomFactor);
+            drawTargetBeacon(s2x, s2y, 'CLICK TARGET: DEPLOY MICRO-STENT 2 (4:00)', 'Bilateral Bypass: 2 clock hours away for 2x outflow capacity', 'cyan', r);
           } else if (currentStepId === 'blood_reflux_and_washout') {
-            drawTargetBeacon(centerX + eyeRadiusPx * 0.4, centerY, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose');
+            const tx = stepTarget3D ? stepTarget3D.x : centerX + eyeRadiusPx * 0.4;
+            const ty = stepTarget3D ? stepTarget3D.y : centerY;
+            const r = stepTarget3D?.screenRadius ?? (30 * zoomFactor);
+            drawTargetBeacon(tx, ty, 'CLICK TO OBSERVE VENOUS BLOOD WAVE & WASHOUT', 'Proof: 8-10 mmHg Venous Blood Floor Prevents Hypotony', 'rose', r);
           }
         }
       }
@@ -1467,6 +1522,11 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     setMousePos({ x, y });
+
+    const ndcX = (x / rect.width) * 2 - 1;
+    const ndcY = -(y / rect.height) * 2 + 1;
+    threeEyeSceneRef.current?.setPointerPosition(ndcX, ndcY, true);
+
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     const eyeRadiusPx = (175 * magnification) / 12;
@@ -1579,6 +1639,11 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     setMousePos({ x, y });
+
+    // Track 3D cursor position in Three.js scene continuously
+    const ndcX = (x / rect.width) * 2 - 1;
+    const ndcY = -(y / rect.height) * 2 + 1;
+    threeEyeSceneRef.current?.setPointerPosition(ndcX, ndcY, isDown);
 
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;

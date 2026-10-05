@@ -87,6 +87,23 @@ export class ThreeEyeScene {
   private instrumentGroup: THREE.Group;
   private currentInstrumentType: InstrumentType | null = null;
   private instrumentMeshes: Map<InstrumentType, THREE.Object3D> = new Map();
+  private raycaster: THREE.Raycaster = new THREE.Raycaster();
+  private pointerNdc: THREE.Vector2 = new THREE.Vector2(0, 0);
+  private surgicalPlane: THREE.Plane = new THREE.Plane();
+  private planeHitPoint: THREE.Vector3 = new THREE.Vector3();
+  private activeInstrumentType: InstrumentType = 'none';
+  private currentPedalPos: FootPedalPosition = 0;
+
+  // 3D Interactive Target Guidance (Scales dynamically with zoom & tracks 3D tissue)
+  private targetGuideGroup: THREE.Group;
+  private targetRingMesh: THREE.Mesh;
+  private targetPulseMesh: THREE.Mesh;
+  private targetBeaconArrow: THREE.Mesh;
+  private currentTargetWorldPos: THREE.Vector3 = new THREE.Vector3();
+  private currentTargetWorldRadius: number = 0.45;
+  private currentTargetLabel: string = '';
+  private currentTargetSubLabel: string = '';
+  private targetGuideActive: boolean = true;
 
   // Animation & Camera Transition
   private animFrameId: number = 0;
@@ -101,6 +118,7 @@ export class ThreeEyeScene {
   private currentStep: string = '';
   private mouseNorm: { x: number; y: number; isDown: boolean } = { x: 0, y: 0, isDown: false };
   private currentMagnification: number = 12;
+  private laserDefocusMicrons: number = 150;
 
   constructor(config: ThreeEyeSceneConfig) {
     this.container = config.container;
@@ -196,6 +214,9 @@ export class ThreeEyeScene {
     this.scene.add(this.instrumentGroup);
     this.build3DInstruments();
 
+    // 3D Interactive Target Guidance (Scales dynamically with zoom on tissue)
+    this.build3DTargetGuide();
+
     // 5. Setup Resize Listener & Animation Loop
     window.addEventListener('resize', this.onResize);
     this.animate();
@@ -263,20 +284,24 @@ export class ThreeEyeScene {
   }
 
   private buildCorneaDome(): THREE.Mesh {
-    // 3D Refractive Cornea Dome (Anterior curvature radius 7.8mm scaled)
-    const geo = new THREE.SphereGeometry(3.55, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.33);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0xe0f7fa,
+    // 3D Refractive Cornea Dome (Anterior curvature radius matching anatomical limbus)
+    const geo = new THREE.SphereGeometry(3.6, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.32);
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: 0xf0fdfa,
+      transmission: 0.96,
       transparent: true,
-      opacity: 0.32,
-      roughness: 0.06,
-      metalness: 0.12,
-      side: THREE.DoubleSide
+      opacity: 0.18,
+      roughness: 0.04,
+      metalness: 0.05,
+      ior: 1.376,
+      depthWrite: false, // CRITICAL: NEVER occlude iris or pupil behind it!
+      side: THREE.FrontSide
     });
 
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = Math.PI / 2;
-    mesh.position.z = -1.81;
+    mesh.position.z = -1.95;
+    mesh.renderOrder = 20; // Render after opaque anatomy
     return mesh;
   }
 
@@ -329,57 +354,159 @@ export class ThreeEyeScene {
   }
 
   private buildIris(): THREE.Mesh {
-    // 3D Iris Annular Diaphragm sloping gracefully toward pupillary margin
-    const geo = new THREE.RingGeometry(1.65, 3.48, 64);
+    // 3D Iris Annular Diaphragm with anatomical 3D conical slope
+    const geo = new THREE.RingGeometry(1.48, 3.36, 128, 16);
     
-    // Rich procedural human iris texture: collarette, radial fibers, and Fuchs crypts
+    // Explicit planar UV mapping to avoid any texture stretching
+    const pos = geo.attributes.position;
+    const uvs = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      uvs[i * 2] = (x / 3.36 + 1) / 2;
+      uvs[i * 2 + 1] = (y / 3.36 + 1) / 2;
+      
+      // Gentle anatomical 3D conical vault: ciliary margin at -0.10, collarette at -0.05, pupil rim at -0.08
+      const r = Math.hypot(x, y);
+      const vault = -0.10 + Math.sin(((r - 1.48) / (3.36 - 1.48)) * Math.PI) * 0.05;
+      pos.setZ(i, vault);
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.computeVertexNormals();
+
+    // High-fidelity procedural human iris: layered radiating collagen fibers, crypts, collarette, sphincter
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
     const ctx = canvas.getContext('2d')!;
 
-    const grad = ctx.createRadialGradient(512, 512, 170, 512, 512, 512);
-    grad.addColorStop(0, '#0c2338'); // Pupillary sphincter
-    grad.addColorStop(0.25, '#1e527d');
-    grad.addColorStop(0.52, '#2b78b5'); // Collarette prominence
-    grad.addColorStop(0.85, '#194c73');
-    grad.addColorStop(1, '#0b1d2e'); // Ciliary body root
+    // 1. Base stroma: warm, rich hazel-emerald surgical iris gradient
+    const grad = ctx.createRadialGradient(512, 512, 180, 512, 512, 510);
+    grad.addColorStop(0.0, '#1c130b'); // Pupillary pigmented margin
+    grad.addColorStop(0.12, '#38220f'); // Pupillary sphincter zone
+    grad.addColorStop(0.38, '#6b4e1e'); // Inner collarette zone (amber/hazel)
+    grad.addColorStop(0.55, '#3b5c36'); // Ciliary body transition (emerald/hazel)
+    grad.addColorStop(0.82, '#214227'); // Outer stroma
+    grad.addColorStop(0.96, '#13281a'); // Pre-limbal rim
+    grad.addColorStop(1.0, '#0a140f'); // Limbal junction
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 1024, 1024);
 
-    // Distinct radial collagenous trabecular ridges
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-    ctx.lineWidth = 1.8;
-    for (let a = 0; a < 360; a += 1.0) {
-      const rad = (a * Math.PI) / 180;
+    // 2. 720 fine radiating collagenous stromal fibers with realistic stochastic variation
+    for (let a = 0; a < 720; a++) {
+      const angle = (a / 720) * Math.PI * 2;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const startR = 195 + (Math.random() - 0.5) * 15;
+      const endR = 495 + (Math.random() - 0.5) * 10;
+
       ctx.beginPath();
-      ctx.moveTo(512 + Math.cos(rad) * 180, 512 + Math.sin(rad) * 180);
-      ctx.lineTo(512 + Math.cos(rad) * 490, 512 + Math.sin(rad) * 490);
+      ctx.moveTo(512 + cosA * startR, 512 + sinA * startR);
+
+      // Slightly wavy trabecular paths
+      const midR = (startR + endR) * 0.5;
+      const wave = (Math.random() - 0.5) * 6;
+      ctx.quadraticCurveTo(
+        512 + Math.cos(angle + 0.01) * midR + wave,
+        512 + Math.sin(angle + 0.01) * midR + wave,
+        512 + cosA * endR,
+        512 + sinA * endR
+      );
+
+      const alpha = 0.14 + Math.random() * 0.28;
+      const isGold = Math.random() > 0.45;
+      ctx.strokeStyle = isGold
+        ? `rgba(245, 205, 120, ${alpha})`
+        : `rgba(180, 230, 190, ${alpha * 0.85})`;
+      ctx.lineWidth = Math.random() * 1.6 + 0.6;
       ctx.stroke();
     }
 
+    // 3. Fuchs' crypts & lacunae (microscopic depressions in the stroma)
+    ctx.fillStyle = 'rgba(20, 15, 8, 0.45)';
+    for (let i = 0; i < 90; i++) {
+      const ca = Math.random() * Math.PI * 2;
+      const cr = 260 + Math.random() * 180;
+      ctx.beginPath();
+      ctx.ellipse(512 + Math.cos(ca) * cr, 512 + Math.sin(ca) * cr, Math.random() * 8 + 3, Math.random() * 4 + 2, ca, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. Undulating Collarette Ridge
+    ctx.strokeStyle = 'rgba(255, 230, 160, 0.4)';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    for (let a = 0; a <= 128; a++) {
+      const angle = (a / 128) * Math.PI * 2;
+      const r = 295 + Math.sin(angle * 14) * 8 + Math.cos(angle * 7) * 5;
+      const x = 512 + Math.cos(angle) * r;
+      const y = 512 + Math.sin(angle) * r;
+      if (a === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // 5. Contraction furrows in outer ciliary zone
+    ctx.strokeStyle = 'rgba(10, 25, 15, 0.35)';
+    ctx.lineWidth = 2.0;
+    [380, 425, 465].forEach(furrowR => {
+      ctx.beginPath();
+      ctx.arc(512, 512, furrowR, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // 6. Distinct dark pupillary sphincter ring
+    ctx.strokeStyle = 'rgba(15, 10, 5, 0.85)';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.arc(512, 512, 210, 0, Math.PI * 2);
+    ctx.stroke();
+
     const tex = new THREE.CanvasTexture(canvas);
+    tex.generateMipmaps = true;
+
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
-      roughness: 0.6,
-      metalness: 0.08,
-      side: THREE.DoubleSide
+      roughness: 0.52,
+      metalness: 0.05,
+      side: THREE.FrontSide
     });
 
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.z = -0.12;
+    mesh.position.z = 0.0;
+    mesh.renderOrder = 5;
     return mesh;
   }
 
   private buildPupil(): THREE.Mesh {
-    const geo = new THREE.CircleGeometry(1.68, 64);
+    // Coaxial Red Reflex Retro-illumination Backdrop (Fundus reflection behind crystalline lens)
+    const geo = new THREE.CircleGeometry(1.52, 64);
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d')!;
+
+    // Warm retinal choroidal red reflex glow
+    const grad = ctx.createRadialGradient(256, 256, 30, 256, 256, 256);
+    grad.addColorStop(0.0, '#e11d48'); // Bright central coaxial red reflex
+    grad.addColorStop(0.35, '#b91c1c'); // Retinal retro-illumination
+    grad.addColorStop(0.75, '#450a0a'); // Peripheral falloff
+    grad.addColorStop(1.0, '#050202'); // Deep fundus black
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    const tex = new THREE.CanvasTexture(canvas);
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xc8260c, // Coaxial red reflex glow from retina
+      map: tex,
       transparent: true,
-      opacity: 0.94
+      opacity: 0.92
     });
+
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.z = -0.16;
+    mesh.position.z = -0.75; // Safely behind cataract core & anterior capsule
+    mesh.renderOrder = 2;
     return mesh;
   }
 
@@ -572,17 +699,17 @@ export class ThreeEyeScene {
 
   private buildCataractLens(): void {
     // 1. Anterior Capsule
-    const acGeo = new THREE.SphereGeometry(2.32, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
+    const acGeo = new THREE.SphereGeometry(2.1, 48, 24, 0, Math.PI * 2, 0, Math.PI * 0.42);
     const acMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.28,
       roughness: 0.12,
       side: THREE.DoubleSide
     });
     this.anteriorCapsuleMesh = new THREE.Mesh(acGeo, acMat);
     this.anteriorCapsuleMesh.rotation.x = Math.PI / 2;
-    this.anteriorCapsuleMesh.position.z = -0.85;
+    this.anteriorCapsuleMesh.position.z = -0.48;
     this.lensGroup.add(this.anteriorCapsuleMesh);
 
     // 5.5mm Capsulorhexis Circular Rim Line
@@ -590,7 +717,7 @@ export class ThreeEyeScene {
     const rRadius = 1.25;
     for (let a = 0; a <= 64; a++) {
       const th = (a / 64) * Math.PI * 2;
-      rimPoints.push(new THREE.Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.22));
+      rimPoints.push(new THREE.Vector3(Math.cos(th) * rRadius, Math.sin(th) * rRadius, -0.15));
     }
     const rimGeo = new THREE.BufferGeometry().setFromPoints(rimPoints);
     const rimMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 2 });
@@ -607,14 +734,14 @@ export class ThreeEyeScene {
       side: THREE.DoubleSide
     });
     this.cccFlapMesh = new THREE.Mesh(flapGeo, flapMat);
-    this.cccFlapMesh.position.set(0.4, 0.4, -0.18);
+    this.cccFlapMesh.position.set(0.35, 0.35, -0.13);
     this.cccFlapMesh.rotation.x = 0.5;
     this.cccFlapMesh.visible = false;
     this.lensGroup.add(this.cccFlapMesh);
 
-    // 2. Cataract Core (LOCS III NO3 Nuclear Cataract)
-    const nGeo = new THREE.SphereGeometry(2.28, 48, 32);
-    nGeo.scale(1, 1, 0.45);
+    // 2. Cataract Core (LOCS III NO3 Nuclear Cataract - safely behind iris aperture)
+    const nGeo = new THREE.SphereGeometry(2.05, 48, 32);
+    nGeo.scale(1, 1, 0.22);
     const nMat = new THREE.MeshStandardMaterial({
       color: 0xd97706, // Amber golden nuclear grade
       roughness: 0.55,
@@ -623,7 +750,7 @@ export class ThreeEyeScene {
       opacity: 0.94
     });
     this.nucleusMesh = new THREE.Mesh(nGeo, nMat);
-    this.nucleusMesh.position.z = -0.52;
+    this.nucleusMesh.position.z = -0.42;
     this.lensGroup.add(this.nucleusMesh);
 
     // Deep Phaco Trench Groove (Sculpted central canal)
@@ -633,7 +760,7 @@ export class ThreeEyeScene {
       roughness: 0.7
     });
     this.nucleusTrenchMesh = new THREE.Mesh(trGeo, trMat);
-    this.nucleusTrenchMesh.position.set(0, 0, -0.45);
+    this.nucleusTrenchMesh.position.set(0, 0, -0.38);
     this.nucleusTrenchMesh.visible = false;
     this.lensGroup.add(this.nucleusTrenchMesh);
 
@@ -646,7 +773,7 @@ export class ThreeEyeScene {
     ];
 
     quadOffsets.forEach((q) => {
-      const qGeo = new THREE.CylinderGeometry(1.15, 0.18, 0.45, 16, 1, false, 0, Math.PI * 0.46);
+      const qGeo = new THREE.CylinderGeometry(1.05, 0.16, 0.38, 16, 1, false, 0, Math.PI * 0.46);
       const qMat = new THREE.MeshStandardMaterial({
         color: 0xb45309,
         roughness: 0.6,
@@ -656,7 +783,7 @@ export class ThreeEyeScene {
       const qMesh = new THREE.Mesh(qGeo, qMat);
       qMesh.rotation.x = Math.PI / 2;
       qMesh.rotation.z = q.rotZ;
-      qMesh.position.set(q.x, q.y, -0.52);
+      qMesh.position.set(q.x, q.y, -0.42);
       qMesh.visible = false;
       this.nucleusQuadrants.push(qMesh);
       this.lensGroup.add(qMesh);
@@ -861,50 +988,185 @@ export class ThreeEyeScene {
   // =========================================================================
 
   private build3DInstruments(): void {
-    // 1. Phaco Handpiece & Titanium Tip
+    // 1. Phaco Handpiece & Titanium Ultrasound Tip (Tip precisely at origin 0,0,0)
     const phacoObj = new THREE.Group();
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 2.8, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 }));
-    handle.position.y = 1.4;
-    phacoObj.add(handle);
+    const needleGeo = new THREE.CylinderGeometry(0.032, 0.038, 0.55, 16);
+    needleGeo.translate(0, 0.275, 0);
+    const needleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+    phacoObj.add(new THREE.Mesh(needleGeo, needleMat));
 
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 }));
-    sleeve.position.y = 0.4;
-    phacoObj.add(sleeve);
+    const sleeveGeo = new THREE.CylinderGeometry(0.09, 0.12, 0.8, 16);
+    sleeveGeo.translate(0, 0.9, 0);
+    const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5, metalness: 0.1 });
+    phacoObj.add(new THREE.Mesh(sleeveGeo, sleeveMat));
 
-    const needle = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 }));
-    needle.position.y = -0.15;
-    phacoObj.add(needle);
-    phacoObj.rotation.x = Math.PI / 4;
+    const handleGeo = new THREE.CylinderGeometry(0.18, 0.22, 2.5, 16);
+    handleGeo.translate(0, 2.55, 0);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.35 });
+    phacoObj.add(new THREE.Mesh(handleGeo, handleMat));
     this.instrumentMeshes.set('phaco_tip', phacoObj);
 
-    // 2. MVR Blade (1.0mm)
+    // 2. MVR Blade (1.0mm) - Micro-lancet with tip at (0,0,0)
     const mvrObj = new THREE.Group();
-    const mvrHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.4, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-    mvrHandle.position.y = 1.2;
-    mvrObj.add(mvrHandle);
-    const mvrBlade = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.45, 4), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9 }));
-    mvrBlade.position.y = -0.1;
-    mvrObj.add(mvrBlade);
+    const mvrBladeGeo = new THREE.ConeGeometry(0.05, 0.42, 4);
+    mvrBladeGeo.rotateZ(Math.PI);
+    mvrBladeGeo.rotateY(Math.PI / 4);
+    mvrBladeGeo.translate(0, 0.21, 0);
+    const mvrBladeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.1 });
+    mvrObj.add(new THREE.Mesh(mvrBladeGeo, mvrBladeMat));
+
+    const mvrCollarGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.35, 16);
+    mvrCollarGeo.translate(0, 0.55, 0);
+    mvrObj.add(new THREE.Mesh(mvrCollarGeo, new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8 })));
+
+    const mvrHandleGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.4, 16);
+    mvrHandleGeo.translate(0, 1.9, 0);
+    mvrObj.add(new THREE.Mesh(mvrHandleGeo, new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })));
     this.instrumentMeshes.set('mvr_blade', mvrObj);
 
-    // 3. Clear Corneal Keratome (2.4mm)
+    // 3. Clear Corneal Keratome (2.4mm) - Beveled trapezoidal diamond blade
     const keratomeObj = new THREE.Group();
-    const kHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.4, 16), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
-    kHandle.position.y = 1.2;
-    keratomeObj.add(kHandle);
-    const kBlade = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.5, 0.02), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.95 }));
-    kBlade.position.y = -0.12;
-    keratomeObj.add(kBlade);
+    const kBladeGeo = new THREE.BoxGeometry(0.24, 0.48, 0.02);
+    kBladeGeo.translate(0, 0.24, 0);
+    keratomeObj.add(new THREE.Mesh(kBladeGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.1 })));
+
+    const kCollarGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.3, 16);
+    kCollarGeo.translate(0, 0.63, 0);
+    keratomeObj.add(new THREE.Mesh(kCollarGeo, new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 })));
+
+    const kHandleGeo = new THREE.CylinderGeometry(0.14, 0.14, 2.4, 16);
+    kHandleGeo.translate(0, 1.95, 0);
+    keratomeObj.add(new THREE.Mesh(kHandleGeo, new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4 })));
     this.instrumentMeshes.set('keratome_2_4', keratomeObj);
 
-    // 4. MIGS Stent Injector Trocar
+    // 4. Cystotome (27G bent needle for capsulorhexis puncture)
+    const cystoObj = new THREE.Group();
+    const tipCurve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0.08, -0.06));
+    const cystoTipGeo = new THREE.TubeGeometry(tipCurve, 8, 0.016, 8, false);
+    const cystoMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
+    cystoObj.add(new THREE.Mesh(cystoTipGeo, cystoMat));
+
+    const cystoShaftGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.22, 16);
+    cystoShaftGeo.translate(0, 0.69, -0.06);
+    cystoObj.add(new THREE.Mesh(cystoShaftGeo, cystoMat));
+
+    const hubGeo = new THREE.CylinderGeometry(0.1, 0.14, 0.5, 16);
+    hubGeo.translate(0, 1.55, -0.06);
+    cystoObj.add(new THREE.Mesh(hubGeo, new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 })));
+
+    const syringeGeo = new THREE.CylinderGeometry(0.18, 0.18, 1.8, 16);
+    syringeGeo.translate(0, 2.7, -0.06);
+    cystoObj.add(new THREE.Mesh(syringeGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })));
+    this.instrumentMeshes.set('cystotome', cystoObj);
+
+    // 5. Utrata Forceps (Continuous Curvilinear Capsulorhexis Micro-forceps)
+    const utrataObj = new THREE.Group();
+    const jaw1Curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-0.05, 0.35, 0),
+      new THREE.Vector3(-0.03, 0.8, 0)
+    );
+    const jaw2Curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.05, 0.35, 0),
+      new THREE.Vector3(0.03, 0.8, 0)
+    );
+    const jawMat = new THREE.MeshStandardMaterial({ color: 0xcfd8dc, metalness: 0.9, roughness: 0.2 });
+    utrataObj.add(new THREE.Mesh(new THREE.TubeGeometry(jaw1Curve, 12, 0.018, 8, false), jawMat));
+    utrataObj.add(new THREE.Mesh(new THREE.TubeGeometry(jaw2Curve, 12, 0.018, 8, false), jawMat));
+
+    const utrataHandleGeo = new THREE.CylinderGeometry(0.12, 0.16, 2.2, 16);
+    utrataHandleGeo.translate(0, 1.9, 0);
+    utrataObj.add(new THREE.Mesh(utrataHandleGeo, new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 })));
+    this.instrumentMeshes.set('utrata_forceps', utrataObj);
+
+    // 6. Chang Hydrodissection Cannula (Flat-tipped hydro-cannula)
+    const hydroObj = new THREE.Group();
+    const hydroTipGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 12);
+    hydroTipGeo.translate(0, 0.075, 0);
+    const hydroMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 });
+    hydroObj.add(new THREE.Mesh(hydroTipGeo, hydroMat));
+
+    const hydroShaftGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.2, 12);
+    hydroShaftGeo.translate(0, 0.75, 0);
+    hydroObj.add(new THREE.Mesh(hydroShaftGeo, hydroMat));
+
+    const hydroSyringeGeo = new THREE.CylinderGeometry(0.18, 0.18, 1.8, 16);
+    hydroSyringeGeo.translate(0, 2.25, 0);
+    hydroObj.add(new THREE.Mesh(hydroSyringeGeo, new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 })));
+    this.instrumentMeshes.set('hydro_cannula', hydroObj);
+
+    // 7. OVD Injection Cannulas (Viscoat dispersive & Provisc cohesive)
+    const buildOvdObj = (isViscoat: boolean) => {
+      const ovdObj = new THREE.Group();
+      const cannulaTip = new THREE.CylinderGeometry(0.022, 0.022, 0.85, 12);
+      cannulaTip.translate(0, 0.425, 0);
+      ovdObj.add(new THREE.Mesh(cannulaTip, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.2 })));
+
+      const syringe = new THREE.CylinderGeometry(0.18, 0.18, 1.8, 16);
+      syringe.translate(0, 1.75, 0);
+      ovdObj.add(new THREE.Mesh(syringe, new THREE.MeshStandardMaterial({
+        color: isViscoat ? 0xf59e0b : 0x0284c7,
+        transparent: true,
+        opacity: 0.65
+      })));
+      return ovdObj;
+    };
+    this.instrumentMeshes.set('ovd_viscoat', buildOvdObj(true));
+    this.instrumentMeshes.set('ovd_provisc', buildOvdObj(false));
+
+    // 8. I/A Handpiece (Irrigation & Aspiration coaxial handpiece)
+    const iaObj = new THREE.Group();
+    const iaTipGeo = new THREE.CylinderGeometry(0.045, 0.055, 0.65, 16);
+    iaTipGeo.translate(0, 0.325, 0);
+    const iaMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.2 });
+    iaObj.add(new THREE.Mesh(iaTipGeo, iaMat));
+
+    const iaHandleGeo = new THREE.CylinderGeometry(0.16, 0.2, 2.4, 16);
+    iaHandleGeo.translate(0, 1.85, 0);
+    iaObj.add(new THREE.Mesh(iaHandleGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.4 })));
+    this.instrumentMeshes.set('ia_handpiece', iaObj);
+
+    // 9. Foldable IOL Injector Nozzle
+    const iolInjObj = new THREE.Group();
+    const nozzleGeo = new THREE.ConeGeometry(0.08, 0.65, 12);
+    nozzleGeo.rotateZ(Math.PI);
+    nozzleGeo.translate(0, 0.325, 0);
+    iolInjObj.add(new THREE.Mesh(nozzleGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })));
+
+    const bodyGeo = new THREE.CylinderGeometry(0.2, 0.24, 2.6, 16);
+    bodyGeo.translate(0, 1.95, 0);
+    iolInjObj.add(new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.6, roughness: 0.3 })));
+    this.instrumentMeshes.set('iol_injector', iolInjObj);
+
+    // 10. Sinskey Micro-Hook
+    const sinskeyObj = new THREE.Group();
+    const hookCurve = new THREE.LineCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.05, 0, 0));
+    sinskeyObj.add(new THREE.Mesh(new THREE.TubeGeometry(hookCurve, 4, 0.015, 8, false), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 })));
+
+    const sinskeyShaftGeo = new THREE.CylinderGeometry(0.025, 0.03, 1.2, 12);
+    sinskeyShaftGeo.translate(0.05, 0.6, 0);
+    sinskeyObj.add(new THREE.Mesh(sinskeyShaftGeo, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95 })));
+
+    const sinskeyHandleGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.2, 16);
+    sinskeyHandleGeo.translate(0.05, 2.3, 0);
+    sinskeyObj.add(new THREE.Mesh(sinskeyHandleGeo, new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 })));
+    this.instrumentMeshes.set('sinskey_hook', sinskeyObj);
+
+    // 11. MIGS Stent Injector Trocar
     const migsObj = new THREE.Group();
-    const migsHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.8, 16), new THREE.MeshStandardMaterial({ color: 0x3b82f6 }));
-    migsHandle.position.y = 1.4;
-    migsObj.add(migsHandle);
-    const trocar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9 }));
-    trocar.position.y = -0.2;
-    migsObj.add(trocar);
+    const trocarGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.7, 16);
+    trocarGeo.translate(0, 0.35, 0);
+    migsObj.add(new THREE.Mesh(trocarGeo, new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.95, roughness: 0.1 })));
+
+    const migsHandleGeo = new THREE.CylinderGeometry(0.15, 0.16, 2.6, 16);
+    migsHandleGeo.translate(0, 2.0, 0);
+    migsObj.add(new THREE.Mesh(migsHandleGeo, new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.35 })));
+
+    const wheelGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.25, 16);
+    wheelGeo.rotateZ(Math.PI / 2);
+    wheelGeo.translate(0, 1.8, 0.1);
+    migsObj.add(new THREE.Mesh(wheelGeo, new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6 })));
     this.instrumentMeshes.set('migs_injector', migsObj);
 
     // Add all instruments to group but hidden initially
@@ -915,12 +1177,211 @@ export class ThreeEyeScene {
   }
 
   // =========================================================================
+  // 3D SURGICAL TARGET GUIDANCE (SCALES DYNAMICALLY WITH ZOOM & ORBIT)
+  // =========================================================================
+
+  private build3DTargetGuide(): void {
+    this.targetGuideGroup = new THREE.Group();
+    this.eyeGroup.add(this.targetGuideGroup);
+
+    // 1. Primary Glowing 3D Target Torus Ring
+    const torusGeo = new THREE.TorusGeometry(0.42, 0.035, 16, 48);
+    const torusMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.9,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    this.targetRingMesh = new THREE.Mesh(torusGeo, torusMat);
+    this.targetGuideGroup.add(this.targetRingMesh);
+
+    // 2. Secondary Pulsing Concentric Radar Ring
+    const pulseGeo = new THREE.RingGeometry(0.38, 0.46, 48);
+    const pulseMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide
+    });
+    this.targetPulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
+    this.targetGuideGroup.add(this.targetPulseMesh);
+
+    // 3. 3D Floating Pointer Arrow Beacon (pointing directly to incision point)
+    const arrowGeo = new THREE.ConeGeometry(0.12, 0.35, 16);
+    arrowGeo.rotateX(Math.PI); // Tip points towards tissue!
+    const arrowMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.8,
+      roughness: 0.2
+    });
+    this.targetBeaconArrow = new THREE.Mesh(arrowGeo, arrowMat);
+    this.targetBeaconArrow.position.z = 0.55;
+    this.targetGuideGroup.add(this.targetBeaconArrow);
+
+    this.targetGuideGroup.visible = false;
+  }
+
+  public updateTargetGuide(stepId: string): void {
+    if (!this.targetGuideGroup) return;
+
+    const targetPos = new THREE.Vector3();
+    let targetRadius = 0.42;
+    let color = 0x38bdf8;
+    let label = '';
+    let subLabel = '';
+
+    switch (stepId) {
+      case 'paracentesis':
+        targetPos.set(-2.82, 1.63, 0.22);
+        targetRadius = 0.38;
+        color = 0xf59e0b; // Amber
+        label = 'PARACENTESIS INCISION (10:00)';
+        subLabel = '1.0mm MVR Blade: Cut side-port parallel to iris';
+        break;
+
+      case 'clear_corneal_incision':
+        targetPos.set(2.35, 2.35, 0.22);
+        targetRadius = 0.52;
+        color = 0x00d2ff; // Cyan
+        label = 'CLEAR CORNEAL TUNNEL (1:30)';
+        subLabel = '2.4mm Keratome: Tri-planar self-sealing incision';
+        break;
+
+      case 'ovd_injection':
+        targetPos.set(0, 0, 0.05);
+        targetRadius = 0.75;
+        color = 0x10b981; // Emerald
+        label = 'OVD VISCOELASTIC INJECTION';
+        subLabel = 'Viscoat: Coat corneal endothelium';
+        break;
+
+      case 'capsulorhexis':
+        targetPos.set(0, 0, -0.16);
+        targetRadius = 1.25; // 5.5mm CCC ring!
+        color = 0x38bdf8;
+        label = '5.5mm CAPSULORHEXIS (CCC)';
+        subLabel = 'Utrata Forceps: Continuous circular tear';
+        break;
+
+      case 'hydrodissection':
+        targetPos.set(0, 1.25, -0.18);
+        targetRadius = 0.45;
+        color = 0x00d2ff;
+        label = 'HYDRODISSECTION (12:00)';
+        subLabel = 'Hydro Cannula: Cleave cortex from capsule';
+        break;
+
+      case 'phaco_chop':
+        targetPos.set(0, 0, -0.35);
+        targetRadius = 0.85;
+        color = 0xf59e0b;
+        label = 'PHACO NUCLEOFRACTIS';
+        subLabel = 'Phaco Tip: Sculpt trench & emulsify quadrants';
+        break;
+
+      case 'cortex_removal':
+        targetPos.set(0.85, -0.65, -0.30);
+        targetRadius = 0.65;
+        color = 0x00d2ff;
+        label = 'CORTEX REMOVAL';
+        subLabel = 'I/A Handpiece: Vacuum cortical remnants';
+        break;
+
+      case 'stent_1_deployment':
+        targetPos.set(0.89, 3.32, 0.12);
+        targetRadius = 0.28;
+        color = 0xf59e0b;
+        label = 'TRABECULAR MESHWORK STENT 1 (2:30)';
+        subLabel = 'MIGS Injector: Deploy stent into Schlemm canal';
+        break;
+
+      case 'stent_2_deployment':
+        targetPos.set(-1.72, 2.98, 0.12);
+        targetRadius = 0.28;
+        color = 0x00d2ff;
+        label = 'TRABECULAR MESHWORK STENT 2 (4:00)';
+        subLabel = 'MIGS Injector: Deploy 2nd stent 2 clock hours away';
+        break;
+
+      case 'cruciate_capsulotomy':
+        targetPos.set(0, 0, -0.85);
+        targetRadius = 0.95;
+        color = 0xef4444; // Rose
+        label = 'CRUCIATE CAPSULOTOMY';
+        subLabel = 'Nd:YAG Laser: Photodisrupt posterior capsule';
+        break;
+
+      default:
+        this.targetGuideGroup.visible = false;
+        return;
+    }
+
+    this.currentTargetWorldPos.copy(targetPos);
+    this.currentTargetWorldRadius = targetRadius;
+    this.currentTargetLabel = label;
+    this.currentTargetSubLabel = subLabel;
+
+    this.targetGuideGroup.position.copy(targetPos);
+    this.targetGuideGroup.visible = this.targetGuideActive;
+
+    const scale = targetRadius / 0.42;
+    this.targetRingMesh.scale.set(scale, scale, scale);
+    this.targetPulseMesh.scale.set(scale, scale, scale);
+
+    (this.targetRingMesh.material as THREE.MeshStandardMaterial).color.setHex(color);
+    (this.targetRingMesh.material as THREE.MeshStandardMaterial).emissive.setHex(color);
+    (this.targetPulseMesh.material as THREE.MeshBasicMaterial).color.setHex(color);
+    (this.targetBeaconArrow.material as THREE.MeshStandardMaterial).color.setHex(color);
+    (this.targetBeaconArrow.material as THREE.MeshStandardMaterial).emissive.setHex(color);
+  }
+
+  public getStepTargetScreenPos(): {
+    x: number;
+    y: number;
+    visible: boolean;
+    label: string;
+    subLabel: string;
+    screenRadius: number;
+  } | null {
+    if (!this.targetGuideGroup || !this.targetGuideGroup.visible) return null;
+
+    const targetWorldPos = this.currentTargetWorldPos.clone();
+    const projected = targetWorldPos.project(this.camera);
+
+    if (projected.z > 1.0) return null;
+
+    const w = this.container.clientWidth || 800;
+    const h = this.container.clientHeight || 600;
+    const screenX = (projected.x * 0.5 + 0.5) * w;
+    const screenY = (-projected.y * 0.5 + 0.5) * h;
+
+    const dist = this.camera.position.distanceTo(targetWorldPos);
+    const fovRad = (this.camera.fov * Math.PI) / 180;
+    const screenRadius = Math.max(
+      14,
+      (this.currentTargetWorldRadius / (2 * Math.tan(fovRad / 2) * Math.max(0.5, dist))) * h
+    );
+
+    return {
+      x: screenX,
+      y: screenY,
+      visible: true,
+      label: this.currentTargetLabel,
+      subLabel: this.currentTargetSubLabel,
+      screenRadius
+    };
+  }
+
+  // =========================================================================
   // STEP-SPECIFIC AUTOMATIC ZOOM & FRAMING
   // =========================================================================
 
   public focusOnStep(stepId: string): void {
     this.currentStep = stepId;
     this.isTransitioningCamera = true;
+    this.updateTargetGuide(stepId);
 
     switch (stepId) {
       // --- CATARACT PHACO STEPS ---
@@ -1169,18 +1630,8 @@ export class ThreeEyeScene {
       this.angleGroup.visible = false;
       this.gonioprismMesh.visible = false;
 
-      // Focus laser reticle
-      const targetZ = -0.85 + (params.laserDefocusZ / 1000.0) * 0.5;
-      this.yagFocalDot.position.set(this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-
-      // Reconnect aiming beam lines to focal point
-      const b1Pos = this.yagAimingCone1.geometry.attributes.position as THREE.BufferAttribute;
-      b1Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-      b1Pos.needsUpdate = true;
-
-      const b2Pos = this.yagAimingCone2.geometry.attributes.position as THREE.BufferAttribute;
-      b2Pos.setXYZ(1, this.mouseNorm.x * 1.8, this.mouseNorm.y * 1.8, targetZ);
-      b2Pos.needsUpdate = true;
+      this.laserDefocusMicrons = params.laserDefocusZ;
+      this.updateYagReticle();
 
       // Show ripped tissue leaflets curling open once fired
       if (params.yagState.shots.length > 0) {
@@ -1207,7 +1658,39 @@ export class ThreeEyeScene {
     this.updateInstrumentPosition(params.activeInstrument, params.pedalPosition);
   }
 
+  public setPointerPosition(ndcX: number, ndcY: number, isDown: boolean): void {
+    this.pointerNdc.set(ndcX, ndcY);
+    this.mouseNorm.x = ndcX;
+    this.mouseNorm.y = ndcY;
+    this.mouseNorm.isDown = isDown;
+    this.updateInstrumentPosition(this.activeInstrumentType, this.currentPedalPos);
+    if (this.currentModule === 'yag') {
+      this.updateYagReticle();
+    }
+  }
+
+  private updateYagReticle(): void {
+    this.raycaster.setFromCamera(this.pointerNdc, this.camera);
+    const targetZ = -0.85 + (this.laserDefocusMicrons / 1000.0) * 0.5;
+    const capsulePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -targetZ);
+    const hit = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(capsulePlane, hit)) {
+      this.yagFocalDot.position.copy(hit);
+
+      const b1Pos = this.yagAimingCone1.geometry.attributes.position as THREE.BufferAttribute;
+      b1Pos.setXYZ(1, hit.x, hit.y, hit.z);
+      b1Pos.needsUpdate = true;
+
+      const b2Pos = this.yagAimingCone2.geometry.attributes.position as THREE.BufferAttribute;
+      b2Pos.setXYZ(1, hit.x, hit.y, hit.z);
+      b2Pos.needsUpdate = true;
+    }
+  }
+
   private updateInstrumentPosition(activeInstrument: InstrumentType, pedalPosition: FootPedalPosition): void {
+    this.activeInstrumentType = activeInstrument;
+    this.currentPedalPos = pedalPosition;
+
     if (this.currentInstrumentType !== activeInstrument) {
       if (this.currentInstrumentType && this.instrumentMeshes.has(this.currentInstrumentType)) {
         this.instrumentMeshes.get(this.currentInstrumentType)!.visible = false;
@@ -1221,25 +1704,42 @@ export class ThreeEyeScene {
     const currentMesh = this.instrumentMeshes.get(activeInstrument);
     if (!currentMesh) return;
 
-    // Follow cursor with corneal pivot
-    const tx = this.mouseNorm.x * 2.2;
-    const ty = this.mouseNorm.y * 2.2;
-    currentMesh.position.set(tx, ty, 0.4);
+    // Raycast from camera using Normalized Device Coordinates (NDC [-1, 1])
+    this.raycaster.setFromCamera(this.pointerNdc, this.camera);
 
-    // Ultrasonic vibration blur when phaco pedal in position 3
-    if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
-      currentMesh.position.x += (Math.random() - 0.5) * 0.035;
-      currentMesh.position.y += (Math.random() - 0.5) * 0.035;
+    // Working plane parallel to camera view passing through controls.target
+    const camDir = new THREE.Vector3();
+    this.camera.getWorldDirection(camDir);
+    const planeNormal = camDir.clone().negate();
+    this.surgicalPlane.setFromNormalAndCoplanarPoint(planeNormal, this.controls.target);
+
+    if (this.raycaster.ray.intersectPlane(this.surgicalPlane, this.planeHitPoint)) {
+      currentMesh.position.copy(this.planeHitPoint);
+
+      // Align instrument handle back towards surgeon's hands entering field
+      const holdVectorInCam = new THREE.Vector3(0.35, 0.52, 0.78).normalize();
+      const alignWithHandle = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        holdVectorInCam
+      );
+      currentMesh.quaternion.copy(this.camera.quaternion).multiply(alignWithHandle);
+
+      // Ultrasonic vibration blur when phaco pedal in position 3
+      if (activeInstrument === 'phaco_tip' && pedalPosition === 3) {
+        currentMesh.position.x += (Math.random() - 0.5) * 0.035;
+        currentMesh.position.y += (Math.random() - 0.5) * 0.035;
+      }
     }
   }
 
   public triggerYagPlasmaSpark(x: number, y: number): void {
-    // 1. Plasma Spark at focal breakdown
-    this.yagPlasmaSpark.position.set(x * 1.8, y * 1.8, -0.85);
+    // 1. Plasma Spark at focal breakdown location
+    const focalPos = this.yagFocalDot.position.clone();
+    this.yagPlasmaSpark.position.copy(focalPos);
     (this.yagPlasmaSpark.material as THREE.MeshBasicMaterial).opacity = 1.0;
 
     // 2. Ultrasonic Cavitation Shockwave Bubble Ring
-    this.yagShockwaveMesh.position.set(x * 1.8, y * 1.8, -0.86);
+    this.yagShockwaveMesh.position.copy(focalPos);
     this.yagShockwaveMesh.scale.set(0.15, 0.15, 0.15);
     (this.yagShockwaveMesh.material as THREE.MeshBasicMaterial).opacity = 1.0;
 
@@ -1323,6 +1823,21 @@ export class ThreeEyeScene {
       if (this.ripProgress >= 1.0) {
         this.isRippingCapsule = false;
       }
+    }
+
+    // Dynamic 3D target beacon pulsation (scales smoothly with 3D zoom & perspective)
+    if (this.targetGuideGroup && this.targetGuideGroup.visible) {
+      const t = performance.now() * 0.005;
+      const pulse = Math.sin(t) * 0.5 + 0.5;
+      const scale = (this.currentTargetWorldRadius / 0.42) * (1.0 + pulse * 0.25);
+      this.targetPulseMesh.scale.set(scale, scale, scale);
+      (this.targetPulseMesh.material as THREE.MeshBasicMaterial).opacity = 0.65 - pulse * 0.45;
+      this.targetBeaconArrow.position.z = 0.55 + Math.sin(t * 1.5) * 0.08;
+    }
+
+    // Continuously keep instrument locked to mouse cursor relative to current camera perspective
+    if (this.activeInstrumentType && this.activeInstrumentType !== 'none') {
+      this.updateInstrumentPosition(this.activeInstrumentType, this.currentPedalPos);
     }
 
     this.controls.update();
