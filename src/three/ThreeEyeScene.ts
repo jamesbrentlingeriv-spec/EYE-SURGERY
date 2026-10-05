@@ -1616,11 +1616,28 @@ export class ThreeEyeScene {
       this.angleGroup.visible = false;
       this.gonioprismMesh.visible = false;
 
-      // Foldable IOL unfolding & centering
-      if (params.iolState.opticInChamber) {
+      // Foldable IOL unfolding, rotation & centration in 3D
+      const prog = params.iolState.insertionProgressFraction || 0;
+      if (prog > 0.1 || params.iolState.opticInChamber) {
+        this.iolGroup.visible = true;
         this.iolOpticMesh.visible = true;
         this.iolHapticLeading.visible = true;
-        this.iolHapticTrailing.visible = params.iolState.trailingHapticInBag;
+        this.iolHapticTrailing.visible = true;
+
+        // Animate unfolding scale as injector advances
+        const scaleFactor = Math.min(1.0, 0.45 + prog * 0.55);
+        this.iolGroup.scale.set(scaleFactor, scaleFactor, 1.0);
+
+        // Rotate lens dynamically when dialed with Sinskey hook
+        const rotRad = ((params.iolState.rotationDeg || 0) * Math.PI) / 180;
+        this.iolGroup.rotation.z = rotRad;
+
+        // Centration offset
+        const cx = (params.iolState.centrationOffsetMm?.x || 0) * 0.35;
+        const cy = (params.iolState.centrationOffsetMm?.y || 0) * 0.35;
+        this.iolGroup.position.set(cx, cy, -0.65);
+      } else {
+        this.iolGroup.visible = false;
       }
 
     } else if (params.module === 'yag') {

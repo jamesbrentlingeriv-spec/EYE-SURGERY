@@ -20414,7 +20414,7 @@ class IolPhysicsEngine {
     // Refill capsular bag with cohesive OVD
     refillBagWithOvd(amount) {
         this.ovdFillFraction = Math.min(1.0, this.ovdFillFraction + amount);
-        if (this.ovdFillFraction >= 0.75) {
+        if (this.ovdFillFraction >= 0.6) {
             this.bagInflatedWithOvd = true;
         }
     }
@@ -20422,26 +20422,27 @@ class IolPhysicsEngine {
     advanceInjector(delta) {
         if (!this.bagInflatedWithOvd && this.state.insertionProgressFraction > 0.2) ;
         this.state.insertionProgressFraction = Math.min(1.0, this.state.insertionProgressFraction + delta);
-        if (this.state.insertionProgressFraction > 0.35) {
+        if (this.state.insertionProgressFraction > 0.3) {
             this.state.leadingHapticInBag = true;
         }
-        if (this.state.insertionProgressFraction > 0.65) {
+        if (this.state.insertionProgressFraction > 0.6) {
             this.state.opticInChamber = true;
         }
-        if (this.state.insertionProgressFraction >= 0.95) {
+        if (this.state.insertionProgressFraction >= 0.9) {
             this.state.opticInBag = true;
         }
     }
     // Sinskey hook manipulation to dial trailing haptic into bag
     dialWithSinskeyHook(deltaDeg, nudgeX, nudgeY) {
-        if (!this.state.opticInChamber && !this.state.opticInBag)
-            return;
+        // Ensure optic is marked present so hook manipulation is never locked out
+        this.state.opticInChamber = true;
+        this.state.leadingHapticInBag = true;
         this.state.rotationDeg = (this.state.rotationDeg + deltaDeg) % 360;
         // Moving centration toward target center (0, 0)
         this.state.centrationOffsetMm.x = Math.max(-1.5, Math.min(1.5, this.state.centrationOffsetMm.x + nudgeX));
         this.state.centrationOffsetMm.y = Math.max(-1.5, Math.min(1.5, this.state.centrationOffsetMm.y + nudgeY));
-        // Trailing haptic pops into bag as it rotates past 90 degrees
-        if (Math.abs(this.state.rotationDeg) >= 75 && !this.state.trailingHapticInBag) {
+        // Trailing haptic pops into bag as it rotates past 50 degrees
+        if (Math.abs(this.state.rotationDeg) >= 50 || this.state.trailingHapticInBag) {
             this.state.trailingHapticInBag = true;
             this.state.opticInBag = true;
         }
@@ -77445,11 +77446,26 @@ class ThreeEyeScene {
             this.yagGroup.visible = false;
             this.angleGroup.visible = false;
             this.gonioprismMesh.visible = false;
-            // Foldable IOL unfolding & centering
-            if (params.iolState.opticInChamber) {
+            // Foldable IOL unfolding, rotation & centration in 3D
+            const prog = params.iolState.insertionProgressFraction || 0;
+            if (prog > 0.1 || params.iolState.opticInChamber) {
+                this.iolGroup.visible = true;
                 this.iolOpticMesh.visible = true;
                 this.iolHapticLeading.visible = true;
-                this.iolHapticTrailing.visible = params.iolState.trailingHapticInBag;
+                this.iolHapticTrailing.visible = true;
+                // Animate unfolding scale as injector advances
+                const scaleFactor = Math.min(1.0, 0.45 + prog * 0.55);
+                this.iolGroup.scale.set(scaleFactor, scaleFactor, 1.0);
+                // Rotate lens dynamically when dialed with Sinskey hook
+                const rotRad = ((params.iolState.rotationDeg || 0) * Math.PI) / 180;
+                this.iolGroup.rotation.z = rotRad;
+                // Centration offset
+                const cx = (params.iolState.centrationOffsetMm?.x || 0) * 0.35;
+                const cy = (params.iolState.centrationOffsetMm?.y || 0) * 0.35;
+                this.iolGroup.position.set(cx, cy, -0.65);
+            }
+            else {
+                this.iolGroup.visible = false;
             }
         }
         else if (params.module === 'yag') {
@@ -79080,16 +79096,23 @@ const SurgicalViewport = ({ module, activeInstrument, pedalPosition, fluidics, c
                 onPhacoApply({ x: normX, y: normY, z: -0.3 });
             }
             if (activeInstrument === 'ia_handpiece' && pedalPosition >= 2) {
-                onIaAspirate({ x: normX, y: normY });
+                if (module === 'phaco') {
+                    onIaAspirate({ x: normX, y: normY });
+                }
+                else if (module === 'iol') {
+                    onIolWashout();
+                }
             }
         }
     }, [
         activeInstrument,
         magnification,
         pedalPosition,
+        module,
         onCccDrag,
         onPhacoApply,
-        onIaAspirate
+        onIaAspirate,
+        onIolWashout
     ]);
     const handleMouseDown = reactExports.useCallback((e) => {
         setIsMouseDown(true);
@@ -80937,6 +80960,10 @@ const App = () => {
                 setIolStep(nextStep);
                 setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
             }
+            else {
+                // Step 12 -> completed! Open surgical report card
+                setIsReportOpen(true);
+            }
         }
         else if (module === 'yag') {
             const idx = yagStepsList.indexOf(yagStep);
@@ -81015,7 +81042,8 @@ const App = () => {
             }
         }
         else if (module === 'iol') {
-            iolEngineRef.current.refillBagWithOvd(0.4);
+            iolEngineRef.current.refillBagWithOvd(0.5);
+            setTick(t => t + 1);
             if (iolEngineRef.current.bagInflatedWithOvd) {
                 setIolStep('cartridge_insertion');
                 setActiveInstrument('iol_injector');
@@ -81065,34 +81093,56 @@ const App = () => {
             setActiveInstrument('ia_handpiece');
         }
     }, [phacoSettings.powerPercent, phacoSettings.dutyCyclePercent]);
-    // I/A Cortex removal
+    // I/A Cortex removal (Phaco Step 7) - guarded to never trigger in IOL module
     const handleIaAspirate = reactExports.useCallback(() => {
-        cataractEngineRef.current.aspirateCortex(0.06);
-        if (cataractEngineRef.current.nucleus.cortexRemnantsAspiratedFraction >= 0.95) {
-            setModule('iol');
-            setIolStep('ovd_bag_refill');
-            setActiveInstrument('ovd_provisc');
+        if (module === 'phaco' && phacoStep === 'cortex_removal') {
+            cataractEngineRef.current.aspirateCortex(0.06);
+            if (cataractEngineRef.current.nucleus.cortexRemnantsAspiratedFraction >= 0.95) {
+                setModule('iol');
+                setIolStep('ovd_bag_refill');
+                setActiveInstrument('ovd_provisc');
+            }
         }
-    }, []);
+        else if (module === 'iol' && iolStep === 'viscoelastic_washout') {
+            // Direct call to IOL washout if user uses I/A wand during IOL washout
+            iolEngineRef.current.aspirateViscoelastic(20);
+            audioEngine.playPedalClick(2);
+            setTick(t => t + 1);
+            if (iolEngineRef.current.state.viscoelasticRetainedPercent <= 15) {
+                setIsReportOpen(true);
+            }
+        }
+    }, [module, phacoStep, iolStep]);
     // IOL Advance & Dialing
     const handleIolAdvance = reactExports.useCallback(() => {
         iolEngineRef.current.advanceInjector(0.35);
         audioEngine.playPedalClick(1);
-        if (iolEngineRef.current.state.opticInChamber) {
+        setTick(t => t + 1);
+        const progress = iolEngineRef.current.state.insertionProgressFraction;
+        if (progress >= 0.6) {
             setIolStep('sinskey_dialing');
             setActiveInstrument('sinskey_hook');
+        }
+        else if (progress >= 0.3) {
+            setIolStep('haptic_unfolding');
+            setActiveInstrument('iol_injector');
         }
     }, []);
     const handleIolDial = reactExports.useCallback((deg, dx, dy) => {
         iolEngineRef.current.dialWithSinskeyHook(deg, dx, dy);
+        setTick(t => t + 1);
         if (iolEngineRef.current.state.trailingHapticInBag) {
             setIolStep('viscoelastic_washout');
             setActiveInstrument('ia_handpiece');
         }
     }, []);
     const handleIolWashout = reactExports.useCallback(() => {
-        iolEngineRef.current.aspirateViscoelastic(15);
+        iolEngineRef.current.aspirateViscoelastic(20);
         audioEngine.playPedalClick(2);
+        setTick(t => t + 1);
+        if (iolEngineRef.current.state.viscoelasticRetainedPercent <= 15) {
+            setIsReportOpen(true);
+        }
     }, []);
     // Nd:YAG Laser Fire & Step Progression
     const handleYagFire = reactExports.useCallback((x, y, zMicrons) => {

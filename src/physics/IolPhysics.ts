@@ -21,7 +21,7 @@ export class IolPhysicsEngine {
   // Refill capsular bag with cohesive OVD
   public refillBagWithOvd(amount: number) {
     this.ovdFillFraction = Math.min(1.0, this.ovdFillFraction + amount);
-    if (this.ovdFillFraction >= 0.75) {
+    if (this.ovdFillFraction >= 0.6) {
       this.bagInflatedWithOvd = true;
     }
   }
@@ -37,20 +37,22 @@ export class IolPhysicsEngine {
       this.state.insertionProgressFraction + delta
     );
 
-    if (this.state.insertionProgressFraction > 0.35) {
+    if (this.state.insertionProgressFraction > 0.3) {
       this.state.leadingHapticInBag = true;
     }
-    if (this.state.insertionProgressFraction > 0.65) {
+    if (this.state.insertionProgressFraction > 0.6) {
       this.state.opticInChamber = true;
     }
-    if (this.state.insertionProgressFraction >= 0.95) {
+    if (this.state.insertionProgressFraction >= 0.9) {
       this.state.opticInBag = true;
     }
   }
 
   // Sinskey hook manipulation to dial trailing haptic into bag
   public dialWithSinskeyHook(deltaDeg: number, nudgeX: number, nudgeY: number) {
-    if (!this.state.opticInChamber && !this.state.opticInBag) return;
+    // Ensure optic is marked present so hook manipulation is never locked out
+    this.state.opticInChamber = true;
+    this.state.leadingHapticInBag = true;
 
     this.state.rotationDeg = (this.state.rotationDeg + deltaDeg) % 360;
 
@@ -58,8 +60,8 @@ export class IolPhysicsEngine {
     this.state.centrationOffsetMm.x = Math.max(-1.5, Math.min(1.5, this.state.centrationOffsetMm.x + nudgeX));
     this.state.centrationOffsetMm.y = Math.max(-1.5, Math.min(1.5, this.state.centrationOffsetMm.y + nudgeY));
 
-    // Trailing haptic pops into bag as it rotates past 90 degrees
-    if (Math.abs(this.state.rotationDeg) >= 75 && !this.state.trailingHapticInBag) {
+    // Trailing haptic pops into bag as it rotates past 50 degrees
+    if (Math.abs(this.state.rotationDeg) >= 50 || this.state.trailingHapticInBag) {
       this.state.trailingHapticInBag = true;
       this.state.opticInBag = true;
     }

@@ -1661,16 +1661,22 @@ export const SurgicalViewport: React.FC<SurgicalViewportProps> = ({
       }
 
       if (activeInstrument === 'ia_handpiece' && pedalPosition >= 2) {
-        onIaAspirate({ x: normX, y: normY });
+        if (module === 'phaco') {
+          onIaAspirate({ x: normX, y: normY });
+        } else if (module === 'iol') {
+          onIolWashout();
+        }
       }
     }
   }, [
     activeInstrument,
     magnification,
     pedalPosition,
+    module,
     onCccDrag,
     onPhacoApply,
-    onIaAspirate
+    onIaAspirate,
+    onIolWashout
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

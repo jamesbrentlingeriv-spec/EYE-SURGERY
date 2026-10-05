@@ -308,6 +308,9 @@ export const App: React.FC = () => {
         const nextStep = iolStepsList[idx + 1];
         setIolStep(nextStep);
         setActiveInstrument(SURGICAL_INSTRUCTIONS[nextStep].recommendedInstrument);
+      } else {
+        // Step 12 -> completed! Open surgical report card
+        setIsReportOpen(true);
       }
     } else if (module === 'yag') {
       const idx = yagStepsList.indexOf(yagStep);
@@ -383,7 +386,8 @@ export const App: React.FC = () => {
         setActiveInstrument('cystotome');
       }
     } else if (module === 'iol') {
-      iolEngineRef.current.refillBagWithOvd(0.4);
+      iolEngineRef.current.refillBagWithOvd(0.5);
+      setTick(t => t + 1);
       if (iolEngineRef.current.bagInflatedWithOvd) {
         setIolStep('cartridge_insertion');
         setActiveInstrument('iol_injector');
@@ -446,28 +450,44 @@ export const App: React.FC = () => {
     }
   }, [phacoSettings.powerPercent, phacoSettings.dutyCyclePercent]);
 
-  // I/A Cortex removal
+  // I/A Cortex removal (Phaco Step 7) - guarded to never trigger in IOL module
   const handleIaAspirate = useCallback(() => {
-    cataractEngineRef.current.aspirateCortex(0.06);
-    if (cataractEngineRef.current.nucleus.cortexRemnantsAspiratedFraction >= 0.95) {
-      setModule('iol');
-      setIolStep('ovd_bag_refill');
-      setActiveInstrument('ovd_provisc');
+    if (module === 'phaco' && phacoStep === 'cortex_removal') {
+      cataractEngineRef.current.aspirateCortex(0.06);
+      if (cataractEngineRef.current.nucleus.cortexRemnantsAspiratedFraction >= 0.95) {
+        setModule('iol');
+        setIolStep('ovd_bag_refill');
+        setActiveInstrument('ovd_provisc');
+      }
+    } else if (module === 'iol' && iolStep === 'viscoelastic_washout') {
+      // Direct call to IOL washout if user uses I/A wand during IOL washout
+      iolEngineRef.current.aspirateViscoelastic(20);
+      audioEngine.playPedalClick(2);
+      setTick(t => t + 1);
+      if (iolEngineRef.current.state.viscoelasticRetainedPercent <= 15) {
+        setIsReportOpen(true);
+      }
     }
-  }, []);
+  }, [module, phacoStep, iolStep]);
 
   // IOL Advance & Dialing
   const handleIolAdvance = useCallback(() => {
     iolEngineRef.current.advanceInjector(0.35);
     audioEngine.playPedalClick(1);
-    if (iolEngineRef.current.state.opticInChamber) {
+    setTick(t => t + 1);
+    const progress = iolEngineRef.current.state.insertionProgressFraction;
+    if (progress >= 0.6) {
       setIolStep('sinskey_dialing');
       setActiveInstrument('sinskey_hook');
+    } else if (progress >= 0.3) {
+      setIolStep('haptic_unfolding');
+      setActiveInstrument('iol_injector');
     }
   }, []);
 
   const handleIolDial = useCallback((deg: number, dx: number, dy: number) => {
     iolEngineRef.current.dialWithSinskeyHook(deg, dx, dy);
+    setTick(t => t + 1);
     if (iolEngineRef.current.state.trailingHapticInBag) {
       setIolStep('viscoelastic_washout');
       setActiveInstrument('ia_handpiece');
@@ -475,8 +495,12 @@ export const App: React.FC = () => {
   }, []);
 
   const handleIolWashout = useCallback(() => {
-    iolEngineRef.current.aspirateViscoelastic(15);
+    iolEngineRef.current.aspirateViscoelastic(20);
     audioEngine.playPedalClick(2);
+    setTick(t => t + 1);
+    if (iolEngineRef.current.state.viscoelasticRetainedPercent <= 15) {
+      setIsReportOpen(true);
+    }
   }, []);
 
   // Nd:YAG Laser Fire & Step Progression
